@@ -1,6 +1,8 @@
-# Coach.AI – Datenmatrix (Entwurf 1)
+# Coach.AI – Datenmatrix (Entwurf 2)
 
-Stand: 05.11.2026 · Grundlage: Briefing, aktuelle Vorschau, Referenzdossier „TSG Wilhelmshöhe – Eintracht Baunatal V1“.
+Stand: 05.11.2026 · Grundlage: Briefing, aktuelle Vorschau, Referenzdossier „TSG Wilhelmshöhe – Eintracht Baunatal V1“, FAQ von fussball.de zur Schnittstelle (Screenshot des Trainers).
+
+**Neu in Entwurf 2:** Offizieller Datenweg über Sportmedia gefunden (Abschnitt 1a), Ausbaustufe C angepasst, Fragenkatalog an Sportmedia (Abschnitt 6).
 
 Zweck: Für jede Angabe im Dossier festlegen, **woher** sie kommt, **wie aktuell** sie sein muss, **was bei Fehlen** passiert und **was bei Widerspruch** gilt.
 Mit **[E…]** markierte Stellen sind Entscheidungen, die nur der Trainer bzw. Produktverantwortliche treffen kann (Liste am Ende).
@@ -11,18 +13,34 @@ Mit **[E…]** markierte Stellen sind Entscheidungen, die nur der Trainer bzw. P
 
 | Quelle | Zugang | Was liefert sie (nach heutigem Kenntnisstand) | Risiko |
 | --- | --- | --- | --- |
-| **fussball.de** (DFB/DFBnet) | Keine offizielle, öffentlich dokumentierte Programmierschnittstelle gefunden. Offiziell nur **Widgets** zum Einbetten (Tabelle, Spielplan, Kader) mit domaingebundenem Schlüssel für Vereinsseiten. | Ansetzungen, Anstoßzeiten, Spielorte, Ergebnisse, Tabelle, Spieltagspaarungen, Kader (je nach Verein), Vereinslogos. Amtliche Quelle für Spielbetrieb. | Automatisches Auslesen der Webseiten: technisch fragil, Nutzungsbedingungen **noch nicht geprüft** (Seite aus der Entwicklungsumgebung nicht erreichbar). Inoffizielle Dienste wie api-fussball.de: Doku-Repository seit 31.03.2026 archiviert. |
+| **fussball.de** (DFB/DFBnet) | Keine direkte Schnittstelle (laut FAQ „derzeit nicht möglich“). **Offizieller Weg: automatisierte Datenlieferung über Sportmedia per SFTP** (Abschnitt 1a). Daneben Widgets für Vereinsseiten. | Ansetzungen, Anstoßzeiten, Spielorte, Ergebnisse, Tabelle, Spieltagspaarungen, Kader (je nach Verein), Vereinslogos. Amtliche Quelle für Spielbetrieb. | Automatisches Auslesen der Webseiten: technisch fragil, Nutzungsbedingungen **noch nicht geprüft** (Seite aus der Entwicklungsumgebung nicht erreichbar). Inoffizielle Dienste wie api-fussball.de: Doku-Repository seit 31.03.2026 archiviert. |
 | **FuPa** | Keine öffentliche Schnittstelle oder Nutzungsregel für automatisierten Abruf gefunden. | Spielerstatistiken (Einsätze, Tore, Vorlagen), FuPa-MVP-Wert, Spielerfotos, Körpergröße, Transfers, Vereinsnachrichten, Aufstellungen (wenn getickert). | Datenqualität abhängig davon, ob Vereine/Reporter pflegen. Rechte an Fotos und Texten. Zugang nur mit Zustimmung von FuPa sinnvoll. |
 | **Vereinswebseiten / Social Media** | Manuell | Trainerwechsel, Neuzugänge, Ausfälle | Unstrukturiert, selten aktuell |
 | **Trainer** | Eingabe in Coach.AI | Beobachtungen, Organisation, Kleidung, Kader, Botschaften, Fahrzeit, Korrekturen | Zeitaufwand am Spieltag |
 | **Berechnet** (Coach.AI) | Intern | Bilanzen, Serien, Kennzahlen, Zeitplan, „3 Facts“ | Nur so gut wie die Eingangsdaten |
 | **Kostenpflichtige Sportdaten-Anbieter** | Vertrag/API | Meist Profi- und höhere Amateurligen | Gruppenliga-Abdeckung unwahrscheinlich, zu prüfen |
 
-**Konsequenz:** Eine vollautomatische, rechtssichere Recherche ist derzeit **nicht gesichert**. Empfohlene Reihenfolge der Klärung:
+### 1a. Offizieller Datenweg: Sportmedia (laut FAQ von fussball.de)
 
-1. Nutzungsbedingungen fussball.de und FuPa lesen und bei Bedarf **schriftlich anfragen** (DFB/DFBnet-Support, support@fupa.net): Ist ein automatisierter Abruf für ein Trainerwerkzeug erlaubt, ggf. gegen Entgelt?
-2. Technischer Test mit 2–3 echten Ligen (z. B. Gruppenliga Kassel 2): Was ist stabil abrufbar?
-3. Bis dahin: **Halbautomatik** – Trainer fügt Links oder kopierte Tabellen ein, Coach.AI liest und prüft sie (siehe Abschnitt 4).
+> „Für automatisierte Datenlieferungen (z. B. Spielberichte, Ergebnisse, Tabellen, Spielpläne) nutze bitte den Service von Sportmedia. Eine direkte Schnittstelle zu FUSSBALL.DE ist derzeit nicht möglich, aber der Versand erfolgt über einen automatisierten Plan via SFTP-Verbindung.“ Kontakt: www.sportmedia.de/kontakt.php
+
+Laut FAQ einzeln konfigurierbare Datenprodukte:
+
+| Datenprodukt | Deckt im Dossier ab |
+| --- | --- |
+| Ergebnisse & Tabellen | Folie 3 (Tabelle), Folien 5/9 (Ergebnislisten, letzte 5, Bilanzen), Folie 7 (Kennzahlen) |
+| Spielberichte inkl. Aufstellungen, Schiedsrichter, Ereignisse | Torschützen und Einsätze (Folie 6), Kaderstatistik „Spieler mit Ligaeinsatz“ und Torjägeranteil (Folie 7), direkte Duelle (Folie 4) |
+| Spielpläne (alle Spiele der Saison nach Spieltag) | Folie 1 (Termin, Anstoß), Folie 3 (Spieltagspaarungen), Folie 4 (Spielort – sofern enthalten) |
+
+**Nicht abgedeckt** (bleibt FuPa, Verein oder Trainer): Spielerfotos, Logos (zu klären), FuPa-MVP-Wert, Körpergröße, Transfers/Trainerwechsel, Spielkleidung, Fahrzeit, alle Trainerangaben.
+
+**Was das technisch bedeutet:** SFTP ist eine *Lieferung* von Dateien an einen Server, kein Abruf aus dem Browser. Coach.AI braucht dafür ein **Backend** (Server mit SFTP-Empfang, Einlesen der Dateien, Datenbank, Bereitstellung an die App). Die heutige Vorschau läuft rein im Browser; die Schnittstelle für Datenanbieter ist aber bereits so angelegt, dass ein Server-Anbieter angeschlossen werden kann.
+
+**Konsequenz:** Für die **amtlichen Spielbetriebsdaten** gibt es einen offiziellen, voraussichtlich vertraglich geregelten Weg. Für **Spielerdetails und Bilder** bleibt FuPa bzw. der Trainer. Empfohlene Reihenfolge:
+
+1. **Sportmedia anfragen** (Fragen in Abschnitt 6): Konditionen, Formate, Abdeckung, Lizenz für ein Trainerwerkzeug.
+2. **FuPa anfragen** (support@fupa.net) für Spielerdaten und Bilder.
+3. Bis zur Klärung: **Halbautomatik (Stufe B)** – Trainer fügt Tabellen/Ergebnisse ein, Coach.AI liest und prüft sie.
 
 ---
 
@@ -137,9 +155,10 @@ Ausschließlich Trainer: 3 Botschaften (Überschrift + Begleittext), Leitmotiv, 
 | --- | --- | --- | --- |
 | **A – Manuell geführt** (heute) | Trainer erfasst bzw. ergänzt; Coach.AI prüft und berechnet | gering | keine |
 | **B – Halbautomatisch** | Trainer fügt Tabelle/Ergebnisliste per Kopieren ein oder lädt Screenshot; Coach.AI liest strukturiert aus, zeigt Quelle und Stand, Trainer bestätigt | mittel | keine Rechtefrage, da Trainer die Daten selbst bereitstellt |
-| **C – Automatisch mit Erlaubnis** | Serverseitiger Abruf aus fussball.de/FuPa mit Zwischenspeicher | hoch | schriftliche Zustimmung bzw. Vertrag **[E11]** |
+| **C1 – Amtliche Daten via Sportmedia** | Backend empfängt SFTP-Lieferungen (Ergebnisse, Tabellen, Spielberichte, Spielpläne), liest sie ein, stellt sie Coach.AI mit Datenstand bereit | hoch (Backend, Betrieb) | Vertrag Sportmedia, Kosten **[E11] [E12]** |
+| **C2 – Spielerdetails via FuPa** | Abruf nur mit Zustimmung von FuPa | mittel–hoch | Zustimmung FuPa |
 
-Empfehlung: **B als nächster Schritt**, parallel Anfragen für C stellen.
+Empfehlung: **B als nächster Schritt** (sofort nutzbar, kein Vertrag nötig), parallel Anfrage bei Sportmedia. Das Datenmodell von B wird so gebaut, dass die Sportmedia-Lieferung später dieselben Datenblöcke befüllt.
 
 ---
 
@@ -158,5 +177,20 @@ Empfehlung: **B als nächster Schritt**, parallel Anfragen für C stellen.
 | E9 | Neue Trainerfelder „Sportliche Einordnung“ und „Merksatz zur Spielweise“ aufnehmen? | Ja (fehlen in der Vorschau) |
 | E10 | Trainer/Staff auf der Kaderfolie? | Ja, aus Profil |
 | E11 | Für welche Ligen/Regionen und Altersklassen soll Stufe C zuerst funktionieren? | Hessen, Herren, Gruppen-/Kreisoberliga |
+| E12 | Soll Coach.AI ein eigenes Backend bekommen (Voraussetzung für Sportmedia, Mehrgeräte-Nutzung, später KI)? Wer betreibt es, welches Budget? | Ja, schlank (z. B. verwalteter Server + Datenbank), erst nach Antwort von Sportmedia |
 
-Quellenhinweise zur Recherche: DFBnet-Widget-Anleitungen, Doku von api-fussball.de (Repository archiviert), Open-Source-Crawler „fussball_de_api“, FuPa-App-Beschreibung. Nutzungsbedingungen von fussball.de und FuPa sind **noch nicht gelesen** und müssen vor Stufe C geprüft werden.
+---
+
+## 6. Fragen an Sportmedia (Entwurf für das Kontaktformular)
+
+1. Wir entwickeln ein Werkzeug zur Spielvorbereitung für Trainer im Amateurfußball. Ist eine Datenlieferung für diesen Zweck möglich, und zu welchen Konditionen (einmalig, monatlich, je Wettbewerb)?
+2. Welche Ligen sind lieferbar – insbesondere Hessen, Gruppenliga Kassel und Kreisligen, auch Jugend?
+3. In welchem Format kommen die Daten (XML, JSON, CSV), und gibt es eine Formatbeschreibung bzw. Beispieldateien?
+4. Wie oft wird geliefert (z. B. nach jedem Spieltag, täglich, bei Änderung)? Enthalten die Dateien einen fachlichen Datenstand und Spielverlegungen?
+5. Enthalten Spielpläne Spielstätten mit Adresse? Enthalten Tabellen Punktabzüge als eigene Angabe?
+6. Enthalten Spielberichte Torschützen, Vorlagen, Einwechslungen und Spielminuten?
+7. Sind Vereinslogos enthalten, und dürfen sie in einer Präsentation für die eigene Mannschaft verwendet werden?
+8. Dürfen die Daten in einer App für mehrere Vereine (Abonnement) angezeigt und in exportierten Präsentationen (PPTX/PDF) verwendet werden?
+9. Gibt es eine Testlieferung bzw. einen Testzugang?
+
+Quellenhinweise zur Recherche: FAQ fussball.de „Gibt es eine Schnittstelle/API“ (Screenshot), DFBnet-Widget-Anleitungen, Doku von api-fussball.de (Repository archiviert), Open-Source-Crawler „fussball_de_api“, FuPa-App-Beschreibung. Nutzungsbedingungen von FuPa sind **noch nicht gelesen**.
