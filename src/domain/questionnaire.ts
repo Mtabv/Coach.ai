@@ -1,0 +1,153 @@
+import type { Answer, Match, Preparation, QuestionId, TeamProfile } from './types';
+
+/**
+ * Fachlicher Trainerfragebogen. Die Fragen sind Daten, die Logik zur Anzeige
+ * (adaptiv: nur Offenes und tatsächliche Änderungen) ist hier gekapselt.
+ */
+
+export type SectionId = 'A' | 'B' | 'C' | 'D';
+
+export const SECTIONS: { id: SectionId; title: string; intro: string }[] = [
+  { id: 'A', title: 'Gegnerbeobachtung', intro: 'Ihre eigenen Beobachtungen. Sie werden getrennt von statistischen Daten ausgegeben.' },
+  { id: 'B', title: 'Organisation und Spielkleidung', intro: 'Zeiten werden aus dem gespeicherten Zeitmuster berechnet. Nur ausdrückliche Abweichungen eintragen.' },
+  { id: 'C', title: 'Kader und Ausgabe', intro: 'Der zuletzt bestätigte Kader wird übernommen und bleibt editierbar.' },
+  { id: 'D', title: 'Unser Auftrag', intro: 'Ihre Botschaften an die Mannschaft. Coach.AI ergänzt keine eigenen Botschaften.' },
+];
+
+export type QuestionKind = 'text' | 'organisation' | 'kit' | 'squad' | 'layout' | 'mission' | 'motto' | 'players';
+
+export interface QuestionDef {
+  id: QuestionId;
+  section: SectionId;
+  number: number;
+  title: string;
+  help?: string;
+  kind: QuestionKind;
+  placeholder?: string;
+  /** Darf mit „Nicht bekannt“ beantwortet werden. */
+  allowUnknown: boolean;
+  /** Antwort ist gegnerspezifisch und darf nie in neue Spiele übernommen werden. */
+  opponentSpecific: boolean;
+  appliesTo?: (match: Match) => boolean;
+}
+
+export const QUESTIONS: QuestionDef[] = [
+  { id: 'q1_grundordnung', section: 'A', number: 1, kind: 'text', allowUnknown: true, opponentSpecific: true,
+    title: 'Welche Grundordnung(en) erwarten wir? Welche Wechsel sind zu beobachten?',
+    placeholder: 'z. B. 4-2-3-1, im Ballbesitz 3-2-5 …' },
+  { id: 'q2_aufbau', section: 'A', number: 2, kind: 'text', allowUnknown: true, opponentSpecific: true,
+    title: 'Wie baut der Gegner auf und erzeugt Chancen?',
+    help: 'Zentrum, Breite, Halbfeld, Flanken, lange Bälle oder Tiefenläufe.' },
+  { id: 'q3_verteidigung', section: 'A', number: 3, kind: 'text', allowUnknown: true, opponentSpecific: true,
+    title: 'Wie verteidigt und presst er?',
+    help: 'Höhe, Zuordnung, Auslöser und Verhalten bei überspieltem Pressing.' },
+  { id: 'q4_umschalten', section: 'A', number: 4, kind: 'text', allowUnknown: true, opponentSpecific: true,
+    title: 'Wie reagiert er nach Ballgewinn und nach Ballverlust?' },
+  { id: 'q5_staerken', section: 'A', number: 5, kind: 'text', allowUnknown: true, opponentSpecific: true,
+    title: 'Was sind seine größten Stärken, einschließlich offensiver Standards?' },
+  { id: 'q6_verwundbar', section: 'A', number: 6, kind: 'text', allowUnknown: true, opponentSpecific: true,
+    title: 'Wo ist er verwundbar?',
+    help: 'Nur beobachtete gegnerische Schwächen beschreiben. Daraus wird kein Matchplan abgeleitet.' },
+  { id: 'q7_schluesselspieler', section: 'A', number: 7, kind: 'players', allowUnknown: true, opponentSpecific: true,
+    title: 'Welche Spieler sind besonders wichtig und warum?',
+    help: 'Vorschläge stammen nur aus belegten Daten. Ihre Hinweise haben Vorrang. Bei dünner Datenlage werden keine vier Spieler erzwungen.' },
+  { id: 'q8_ausfaelle', section: 'A', number: 8, kind: 'text', allowUnknown: true, opponentSpecific: true,
+    title: 'Gibt es zuverlässig bekannte Ausfälle, Veränderungen oder besondere Beobachtungen?' },
+  { id: 'q9_abweichungen', section: 'B', number: 9, kind: 'organisation', allowUnknown: false, opponentSpecific: true,
+    title: 'Gibt es ausdrücklich neue Abweichungen von Spielort oder Zeitmuster?',
+    help: 'Ohne Abweichung berechnet Coach.AI die Zeiten selbst. Bei Auswärtsspielen bitte die aktuelle Fahrzeit für genau diese Fahrt angeben.' },
+  { id: 'q10_ablauf', section: 'B', number: 10, kind: 'text', allowUnknown: false, opponentSpecific: true,
+    title: 'Berechneter Ablauf: Gibt es ausdrücklich genannte Änderungen?',
+    help: 'Die Traineransprache wird nur als organisatorischer Zeitblock dargestellt.' },
+  { id: 'q11_kleidung', section: 'B', number: 11, kind: 'kit', allowUnknown: false, opponentSpecific: true,
+    title: 'Welche Kombination tragen wir: Trikot, Hose und Stutzen? Weitere organisatorische Besonderheiten?' },
+  { id: 'q12_kader', section: 'C', number: 12, kind: 'squad', allowUnknown: false, opponentSpecific: false,
+    title: 'Kader für dieses Spiel',
+    help: 'Übernommen aus dem zuletzt bestätigten Dossier. Änderungen nur durch Ihre ausdrückliche Bearbeitung – keine Nominierung aus Online-Vereinskadern.' },
+  { id: 'q13_layout', section: 'C', number: 13, kind: 'layout', allowUnknown: false, opponentSpecific: false,
+    title: 'Gibt es abweichende Ausgabe- oder Layoutwünsche?',
+    help: 'Sonst wird die zuletzt bestätigte Vorlage verwendet. Ausgabe: PPTX und PDF.' },
+  { id: 'q14_auftrag', section: 'D', number: 14, kind: 'mission', allowUnknown: false, opponentSpecific: true,
+    title: 'Was sollen die Jungs aus dem Dossier mitnehmen und in dieses Spiel tragen?',
+    help: 'Drei Kernbotschaften in Ihren Worten. Überschriften und Begleitsätze formulieren Sie selbst oder übernehmen sie regelbasiert aus Ihrem Text.' },
+  { id: 'q15_leitmotiv', section: 'D', number: 15, kind: 'motto', allowUnknown: false, opponentSpecific: true,
+    title: 'Welches kurze Leitmotiv steht im schwarzen Kasten? Welche zwei oder drei Merksätze gehören darunter?' },
+];
+
+export function questionsFor(match: Match): QuestionDef[] {
+  return QUESTIONS.filter((q) => (q.appliesTo ? q.appliesTo(match) : true));
+}
+
+export type QuestionStatus = 'erledigt' | 'offen' | 'übernommen';
+
+export interface QuestionProgress {
+  id: QuestionId;
+  status: QuestionStatus;
+  summary: string;
+}
+
+function answered(a: Answer | undefined): boolean {
+  return Boolean(a && a.state !== 'offen' && (a.state !== 'beantwortet' || a.text.trim().length > 0));
+}
+
+export function missionComplete(prep: Preparation): boolean {
+  return prep.mission.messages.every((m) => m.headline.trim() || m.text.trim());
+}
+
+export function mottoComplete(prep: Preparation): boolean {
+  const mantrasOk = prep.mission.mantrasWaived || prep.mission.mantras.filter((m) => m.trim()).length >= 1;
+  return Boolean(prep.mission.motto.trim()) && mantrasOk;
+}
+
+/** Bewertet jede Frage: bereits bekannt/übernommen, erledigt oder noch offen. */
+export function questionProgress(team: TeamProfile, match: Match, prep: Preparation): QuestionProgress[] {
+  return questionsFor(match).map((q) => {
+    const a = prep.answers[q.id];
+    switch (q.kind) {
+      case 'organisation': {
+        if (!match.isHome && prep.organisation.travelMinutes === null)
+          return { id: q.id, status: 'offen', summary: 'Fahrzeit für diese Fahrt fehlt' };
+        if (answered(a)) return { id: q.id, status: 'erledigt', summary: a!.state === 'keine_abweichung' ? 'Keine Abweichung' : a!.text };
+        return { id: q.id, status: 'offen', summary: 'Abweichungen bestätigen oder „keine Abweichung“ wählen' };
+      }
+      case 'kit': {
+        if (prep.organisation.kit && answered(a)) return { id: q.id, status: 'erledigt', summary: kitLabel(prep.organisation.kit) };
+        if (prep.organisation.kit) return { id: q.id, status: 'übernommen', summary: `Vorausgefüllt: ${kitLabel(prep.organisation.kit)} – bitte bestätigen` };
+        return { id: q.id, status: 'offen', summary: 'Spielkleidung fehlt' };
+      }
+      case 'squad': {
+        if (prep.squadReviewed && prep.squad?.players.length) return { id: q.id, status: 'erledigt', summary: `${prep.squad.players.length} Spieler` };
+        if (prep.squad?.players.length) return { id: q.id, status: 'übernommen', summary: `${prep.squad.players.length} Spieler aus „${originLabel(prep)}“` };
+        return { id: q.id, status: 'offen', summary: team.lastConfirmedSquad ? 'Kader übernehmen' : 'Noch kein bestätigter Kader – Ersteingabe' };
+      }
+      case 'layout':
+        if (answered(a)) return { id: q.id, status: 'erledigt', summary: a!.state === 'keine_abweichung' ? `Vorlage „${team.template.name}“` : a!.text };
+        return { id: q.id, status: 'übernommen', summary: `Vorlage „${team.template.name}“ wird verwendet` };
+      case 'mission':
+        return missionComplete(prep)
+          ? { id: q.id, status: 'erledigt', summary: prep.mission.messages.map((m) => m.headline || m.text).join(' · ') }
+          : { id: q.id, status: 'offen', summary: `${prep.mission.messages.filter((m) => m.headline.trim() || m.text.trim()).length} von 3 Botschaften` };
+      case 'motto':
+        return mottoComplete(prep)
+          ? { id: q.id, status: 'erledigt', summary: prep.mission.motto }
+          : { id: q.id, status: 'offen', summary: prep.mission.motto.trim() ? 'Merksätze erfassen oder ausdrücklich abwählen' : 'Leitmotiv fehlt' };
+      case 'players':
+        if (answered(a) || prep.playerHints.length) return { id: q.id, status: 'erledigt', summary: a?.state === 'nicht_bekannt' ? 'Nicht bekannt' : `${prep.playerHints.length} Trainerhinweis(e)` };
+        return { id: q.id, status: 'offen', summary: 'Hinweise ergänzen oder „Nicht bekannt“' };
+      default:
+        if (answered(a)) return { id: q.id, status: 'erledigt', summary: a!.state === 'nicht_bekannt' ? 'Nicht bekannt' : a!.text };
+        return { id: q.id, status: 'offen', summary: 'Noch keine Beobachtung' };
+    }
+  });
+}
+
+export function kitLabel(k: { shirt: string; shorts: string; socks: string }): string {
+  return `Trikot ${k.shirt || '–'} · Hose ${k.shorts || '–'} · Stutzen ${k.socks || '–'}`;
+}
+
+function originLabel(prep: Preparation): string {
+  const o = prep.squad?.origin;
+  if (!o) return '';
+  if (o.kind === 'dossier' || o.kind === 'beispiel') return o.label;
+  return 'Ersteingabe';
+}
