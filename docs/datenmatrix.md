@@ -32,7 +32,17 @@ Laut FAQ einzeln konfigurierbare Datenprodukte:
 | Spielberichte inkl. Aufstellungen, Schiedsrichter, Ereignisse | Torschützen und Einsätze (Folie 6), Kaderstatistik „Spieler mit Ligaeinsatz“ und Torjägeranteil (Folie 7), direkte Duelle (Folie 4) |
 | Spielpläne (alle Spiele der Saison nach Spieltag) | Folie 1 (Termin, Anstoß), Folie 3 (Spieltagspaarungen), Folie 4 (Spielort – sofern enthalten) |
 
-**Ergänzend laut Suchergebnissen zu sportmedia.de** (Seiten selbst aus der Entwicklungsumgebung nicht abrufbar, daher noch zu bestätigen): Sportmedia ist der „DFBnet-Medienservice“. Geliefert wird **XML** per **FTP oder SFTP**, die **XML-Schemata (XSD)** für Spielpläne, Ergebnisse und Spielberichte stehen auf der Downloadseite. Ergebnis- und Tabellendateien kommen **nach jeder Aktualisierung oder zu festen Zeiten**, Spielberichte **automatisch nach Freigabe in DFBnet** (Aufstellungen, Ereignisse, Halbzeit- und Endstand, oft Zuschauerzahl). Auswahl über **alle Spielklassen bis zur Kreisklasse**. **Preise werden nicht genannt** – Anfrage nötig (Entwurf: `docs/anfrage-sportmedia.md`).
+**Ergänzend laut Suchergebnissen zu sportmedia.de** (Seiten selbst aus der Entwicklungsumgebung nicht abrufbar, daher noch zu bestätigen): Sportmedia ist der „DFBnet-Medienservice“. Geliefert wird **XML** per **FTP oder SFTP**, die **XML-Schemata (XSD)** für Spielpläne, Ergebnisse und Spielberichte stehen auf der Downloadseite. Ergebnis- und Tabellendateien kommen **nach jeder Aktualisierung oder zu festen Zeiten**, Spielberichte **automatisch nach Freigabe in DFBnet** (Aufstellungen, Ereignisse, Halbzeit- und Endstand, oft Zuschauerzahl). Auswahl über **alle Spielklassen bis zur Kreisklasse**. Preise siehe unten; Anfrage-Entwurf: `docs/anfrage-sportmedia.md`.
+
+**Preismodell (DFB GmbH & Co. KG, Stand 12.05.2022, Dateiname „DFB_250101_Sportmedia_Preismodell“, vom Trainer erhalten):** Preis **pro Staffel und Saison**, Ust.-Ausweis nicht angegeben.
+
+| Produkt | Printnutzung only | Basispreis (Print + Web oder nur Web) |
+| --- | --- | --- |
+| Ergebnisservice, bis 30 Staffeln | 100,00 € | 125,00 € |
+| Spielberichtservice, bis 15 Staffeln | 300,00 € | 350,00 € |
+| Einmalig: Sportmedia-Account und technische Anbindung | 500,00 € | 500,00 € |
+
+Rechnung für **eine Staffel** (eigene Liga) zum Basispreis: Ergebnisse/Tabellen 625 € im ersten Jahr, danach 125 €/Saison; mit Spielberichten 975 € im ersten Jahr, danach 475 €/Saison. Spielpläne sind im Preisblatt nicht aufgeführt, ein Pokalwettbewerb wäre vermutlich eine weitere Staffel – beides zu klären.
 
 **Nicht abgedeckt** (bleibt FuPa, Verein oder Trainer): Spielerfotos, Logos (zu klären), FuPa-MVP-Wert, Körpergröße, Transfers/Trainerwechsel, Spielkleidung, Fahrzeit, alle Trainerangaben.
 

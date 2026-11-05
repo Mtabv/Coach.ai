@@ -18,7 +18,7 @@ Benötigt würden nur die Daten unserer eigenen Spielklasse:
 Dazu meine Fragen:
 
 1. Ist eine Lieferung für diesen Zweck möglich – Nutzung ausschließlich intern für unsere Mannschaft?
-2. Zu welchen Konditionen und mit welcher Laufzeit?
+2. Ihr Preismodell (Ergebnisservice 125 €, Spielberichtservice 350 € je Staffel und Saison, einmalig 500 € Anbindung) liegt mir vor. Welcher Preis gilt für eine rein interne Nutzung ohne Veröffentlichung, sind die Spielpläne enthalten, und sind die Preise netto?
 3. Gibt es Beispieldateien oder eine Testlieferung? Die XML-Schemata auf Ihrer Downloadseite habe ich gesehen.
 4. Wie häufig wird geliefert, und werden Spielverlegungen und Korrekturen nachgeliefert?
 5. Enthalten die Daten Spielstätten mit Adresse, Punktabzüge sowie Torschützen und Wechsel mit Spielminute?
