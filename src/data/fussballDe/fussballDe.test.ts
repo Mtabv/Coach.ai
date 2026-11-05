@@ -5,7 +5,7 @@ import { createPreparation } from '../../domain/factory';
 import { analyzeTable, evaluateBlocks } from '../../domain/dataQuality';
 import { lastLeagueGames } from '../../domain/stats';
 import { buildDossier } from '../../dossier/build';
-import { berlinDateTime, competitionTypeOf, mapToBlocks, nameSimilarity } from './mapping';
+import { berlinDateTime, cleanName, competitionTypeOf, mapTable, mapToBlocks, nameSimilarity, sameTeam } from './mapping';
 import { extractTeamId } from './api';
 import { fussballDeProvider } from './provider';
 import { ownNext, ownPrev, oppPrev, table } from './__fixtures__/sample';
@@ -33,6 +33,20 @@ describe('fussball.de-Anbindung (inoffiziell)', () => {
     expect(competitionTypeOf('Freundschaftsspiel')).toBe('test');
     expect(competitionTypeOf('Gruppenliga')).toBe('liga');
     expect(nameSimilarity('GSV Eintr. Baunatal', 'GSV Eintracht Baunatal')).toBeGreaterThanOrEqual(0.5);
+  });
+
+  it('gleicht reale fussball.de-Schreibweisen ab (Abkürzungen, unsichtbare Zeichen)', () => {
+    expect(cleanName('SG Hombressen/\u200bUdenhausen')).toBe('SG Hombressen/Udenhausen');
+    expect(sameTeam('GSV Eintr.Baunatal', 'GSV Eintracht Baunatal')).toBe(true);
+    expect(sameTeam('SV Türkgücü KS', 'SV Türkgücü Kassel')).toBe(true);
+    expect(sameTeam('TSG Sandershausen', 'TSG Wilhelmshöhe')).toBe(false);
+    expect(sameTeam('TSV Wolfsanger', 'TSV Rothwesten')).toBe(false);
+    const row = (place: number, team: string) => ({ place, team, games: 1, won: 1, draw: 0, lost: 0, goal: '1 : 0', goal_difference: 1, points: 3 });
+    const rows = mapTable({ entries: [row(1, 'TSG Sandershausen'), row(2, 'GSV Eintr.Baunatal'), row(3, 'TSG Wilhelmshöhe')] }, [
+      { from: null, to: 'TSG Wilhelmshöhe', fallbackMatch: 'TSG Wilhelmshöhe' },
+      { from: null, to: 'GSV Eintracht Baunatal', fallbackMatch: 'GSV Eintracht Baunatal' },
+    ]);
+    expect(rows.map((r) => r.team)).toEqual(['TSG Sandershausen', 'GSV Eintracht Baunatal', 'TSG Wilhelmshöhe']);
   });
 
   it('erzeugt Datenblöcke ohne erfundene Werte', () => {
@@ -82,6 +96,9 @@ describe('fussball.de-Anbindung (inoffiziell)', () => {
     const form = d.slides.find((x) => x.key === 'gegnerForm') as Extract<typeof d.slides[number], { key: 'gegnerForm' }>;
     expect(form.records[0]).toEqual({ label: 'Saisonbilanz (Liga, laut Tabelle)', value: { text: '11S 0U 2N · 42:16 Tore', flag: 'ok' } });
     expect(form.records[1].value.flag).toBe('offen');
+    const facts = form.facts.map((f) => f.text).join(' | ');
+    expect(facts).not.toMatch(/in dieser Saison ohne Niederlage/);
+    expect(facts).not.toMatch(/Seit 4 Ligaspielen/);
     const ev = evaluateBlocks(team, match, prep).find((e) => e.key === 'ergebnisseGegner')!;
     expect(ev.issues.join(' ')).toMatch(/unvollständig: 4 von 13/);
   });

@@ -13,6 +13,14 @@ export const FD_SOURCE_LABEL = 'fussball.de (inoffiziell ausgelesen)';
 // Namen abgleichen
 // ---------------------------------------------------------------------------
 
+/** Entfernt unsichtbare Zeichen, die fussball.de in Namen einstreut (z. B. „Hombressen/\u200bUdenhausen“). */
+export function cleanName(s: string): string {
+  return s.replace(/[\u200b-\u200d\u2060\ufeff\u00ad]/g, '').replace(/\s+/g, ' ').trim();
+}
+
+/** Übliche Abkürzungen in Vereinsnamen auf fussball.de. */
+const ABBREVIATIONS: Record<string, string> = { ks: 'kassel', ffm: 'frankfurt', eintr: 'eintracht', vikt: 'viktoria', bor: 'borussia', germ: 'germania' };
+
 export function foldName(s: string): string {
   return s
     .toLowerCase()
@@ -34,10 +42,14 @@ export function nameSimilarity(a: string, b: string): number {
   if (!x || !y) return 0;
   if (x === y) return 1;
   if (x.includes(y) || y.includes(x)) return 0.9;
-  const tx = new Set(x.split(' ').filter((t) => t.length > 2));
-  const ty = new Set(y.split(' ').filter((t) => t.length > 2));
-  const inter = [...tx].filter((t) => ty.has(t)).length;
-  const union = new Set([...tx, ...ty]).size;
+  // Wortweiser Vergleich; Abkürzungen („KS“, „Eintr.“) und Wortanfänge („Eintr“ ↔ „Eintracht“) zählen als Treffer.
+  const tokens = (v: string) => [...new Set(v.split(' ').map((t) => ABBREVIATIONS[t] ?? t).filter((t) => t.length > 2))];
+  const tx = tokens(x);
+  const ty = tokens(y);
+  if (!tx.length || !ty.length) return 0;
+  const same = (a: string, b: string) => a === b || (Math.min(a.length, b.length) >= 4 && (a.startsWith(b) || b.startsWith(a)));
+  const inter = tx.filter((a) => ty.some((b) => same(a, b))).length;
+  const union = tx.length + ty.length - inter;
   return union ? inter / union : 0;
 }
 
@@ -117,12 +129,25 @@ export function mapResults(games: FdGame[], canonicalName: string): { results: R
 }
 
 export function mapTable(table: FdTable, renames: { from: string | null; to: string; fallbackMatch: string }[]): TableRow[] {
-  return table.entries.map((e) => {
-    const [gf, ga] = e.goal.split(':').map((x) => Number(x.trim()));
-    let team = e.team;
-    for (const r of renames) {
-      if ((r.from && e.team === r.from) || (!r.from && nameSimilarity(e.team, r.fallbackMatch) >= 0.6)) team = r.to;
+  // Je Umbenennung genau eine Zeile: exakter Quellname, sonst die ähnlichste Zeile (mind. 0,5).
+  const target = new Map<number, string>();
+  for (const r of renames) {
+    let idx = r.from ? table.entries.findIndex((e) => e.team === r.from) : -1;
+    if (idx < 0) {
+      let best = 0.5;
+      table.entries.forEach((e, i) => {
+        const sim = nameSimilarity(e.team, r.fallbackMatch);
+        if (sim >= best && !target.has(i)) {
+          best = sim;
+          idx = i;
+        }
+      });
     }
+    if (idx >= 0 && !target.has(idx)) target.set(idx, r.to);
+  }
+  return table.entries.map((e, i) => {
+    const [gf, ga] = e.goal.split(':').map((x) => Number(x.trim()));
+    const team = target.get(i) ?? e.team;
     return {
       rank: e.place,
       team,
@@ -165,7 +190,18 @@ export interface FdRaw {
   retrievedAt: string;
 }
 
-export function mapToBlocks(team: TeamProfile, match: Match, raw: FdRaw): { blocks: Partial<DataBlocks>; messages: string[] } {
+function cleanGames(games: FdGame[]): FdGame[] {
+  return games.map((g) => ({ ...g, home_team: cleanName(g.home_team), away_team: cleanName(g.away_team) }));
+}
+
+export function mapToBlocks(team: TeamProfile, match: Match, input: FdRaw): { blocks: Partial<DataBlocks>; messages: string[] } {
+  const raw: FdRaw = {
+    ...input,
+    ownTable: input.ownTable ? { ...input.ownTable, entries: input.ownTable.entries.map((e) => ({ ...e, team: cleanName(e.team) })) } : null,
+    ownPrev: cleanGames(input.ownPrev),
+    ownNext: cleanGames(input.ownNext),
+    oppPrev: input.oppPrev ? cleanGames(input.oppPrev) : null,
+  };
   const messages: string[] = [];
   const blocks: Partial<DataBlocks> = {};
   const src = (id: string, asOf?: string, asOfRank?: number): SourceRef => ({ id, label: FD_SOURCE_LABEL, kind: 'extern', asOf, asOfRank, retrievedAt: raw.retrievedAt });
@@ -225,7 +261,11 @@ export function mapToBlocks(team: TeamProfile, match: Match, raw: FdRaw): { bloc
   }
 
   // Ansetzung abgleichen
-  const fixture = raw.ownNext.find((g) => sameTeam(g.home_team, match.opponent) || sameTeam(g.away_team, match.opponent));
+  const oppName = opp?.sourceName ?? null;
+  const isOpp = (n: string) => (oppName ? n === oppName : sameTeam(n, match.opponent));
+  const candidates = raw.ownNext.filter((g) => isOpp(g.home_team) || isOpp(g.away_team));
+  // Gleiches Datum bevorzugen (z. B. Liga- und Pokalspiel gegen denselben Gegner), sonst das nächste.
+  const fixture = candidates.find((g) => berlinDateTime(g.datetime_utc)?.date === match.date) ?? candidates[0];
   if (fixture) {
     const dt = berlinDateTime(fixture.datetime_utc);
     blocks.begegnung = {

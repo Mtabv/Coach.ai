@@ -242,14 +242,23 @@ export function buildDossier(team: TeamProfile, match: Match, prep: Preparation)
     const has = s.all.played > 0;
     const rel = relevant === 'home' ? s.home : s.away;
     const tableRow = ta.rows.find((r) => normalizeName(r.team) === normalizeName(teamName));
+    // Liefert die Quelle weniger Ligaspiele als die Tabelle ausweist, ist die Ergebnisliste unvollständig.
+    const incomplete = Boolean(tableRow && tableRow.played > s.all.played);
     const facts: FV[] = [];
     if (has) {
       const league = teamResults(teamName, results, { type: 'liga', before: match.date });
       const ub = unbeatenStreak(league);
       const wl = winlessStreak(league);
-      if (ub >= 3) facts.push(fv(`Seit ${ub} Ligaspielen ungeschlagen.`));
-      if (wl >= 3) facts.push(fv(`Seit ${wl} Ligaspielen ohne Sieg.`));
-      if (rel.played > 0 && rel.lost === 0) facts.push(fv(`${relevant === 'home' ? 'Zu Hause' : 'Auswärts'} in dieser Saison ohne Niederlage.`));
+      // Bei unvollständiger Liste: Reicht eine Serie bis an den Anfang der Liste, ist nur eine Untergrenze belegt.
+      const streak = (n: number, text: string, wholeSeason: boolean, seasonText: string) => {
+        if (n < 3) return;
+        if (!incomplete || n < league.length) facts.push(fv(`Seit ${n} ${text}.`));
+        else if (wholeSeason) facts.push(fv(`${seasonText} (laut Tabelle).`));
+        else facts.push(fv(`Seit mindestens ${n} ${text}.`));
+      };
+      streak(ub, 'Ligaspielen ungeschlagen', Boolean(tableRow && tableRow.lost === 0), `In dieser Saison noch ungeschlagen: ${tableRow?.played} Ligaspiele`);
+      streak(wl, 'Ligaspielen ohne Sieg', Boolean(tableRow && tableRow.won === 0), `In dieser Saison noch ohne Sieg: ${tableRow?.played} Ligaspiele`);
+      if (!incomplete && rel.played > 0 && rel.lost === 0) facts.push(fv(`${relevant === 'home' ? 'Zu Hause' : 'Auswärts'} in dieser Saison ohne Niederlage.`));
       if (tableRow) {
         facts.push(tableRow.unresolved.length ? fv(`Tabellenplatz ${tableRow.rank} – Punktzahl ungeklärt`, 'widersprüchlich') : fv(`Tabellenplatz ${tableRow.rank} mit ${tableRow.points} Punkten${tableRow.pointDeduction ? ` (nach ${tableRow.pointDeduction} Punkten Abzug)` : ''}.`));
       }
@@ -268,8 +277,6 @@ export function buildDossier(team: TeamProfile, match: Match, prep: Preparation)
     const leagueAll = teamResults(teamName, results, { type: 'liga', before: match.date });
     const maxMd = Math.max(0, ...leagueAll.map((r) => r.matchday ?? 0));
     const stale = expectedMd !== null && maxMd > 0 && maxMd < expectedMd;
-    // Liefert die Quelle weniger Ligaspiele als die Tabelle ausweist, ist die Ergebnisliste unvollständig.
-    const incomplete = Boolean(tableRow && tableRow.played > s.all.played);
     return {
       key,
       number,

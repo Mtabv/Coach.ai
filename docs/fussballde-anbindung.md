@@ -22,6 +22,16 @@ Hinweis: Die Spielliste je Mannschaft umfasst vermutlich nur die letzten Spiele 
 Zahl der Spiele laut Tabelle, übernimmt Coach.AI die Saisonbilanz aus der Tabelle und markiert Heim-/Auswärtsbilanz als
 „unvollständig“.
 
+**Live geprüft am 05.11.2026** mit TSG Wilhelmshöhe (Herren, Gruppenliga) gegen TSG Sandershausen: Tabelle, je 10 letzte
+Spiele beider Mannschaften, Ansetzung mit Spielort und Anstoßabgleich kamen korrekt an. Der **erste Abruf dauert 1–2 Minuten**
+(der Crawler lädt Schriftdateien und Vereinslogos), danach wenige Sekunden aus dem Zwischenspeicher.
+
+Schreibweisen: fussball.de kürzt Namen ab („GSV Eintr.Baunatal“, „SV Türkgücü KS“) und streut unsichtbare Zeichen ein.
+Coach.AI gleicht das beim Zuordnen aus; angezeigt wird die Schreibweise von fussball.de.
+
+Team-IDs finden: Der Crawler hat eine Vereinssuche, z. B. `http://127.0.0.1:8000/api/search/clubs?query=Sandershausen`
+(Header `X-API-Key`), danach `/api/club/<Vereins-ID>/teams` – dort steht der fussball.de-Link jeder Mannschaft.
+
 ## Einrichtung (einmalig, ca. 15 Minuten)
 
 Voraussetzung: **Python 3.11 oder neuer** (python.org) – oder Docker.
