@@ -30,9 +30,9 @@ Ein Klick auf **„Daten von fussball.de laden“** füllt alle Datenblöcke au�
 sonst (z. B. im Pokal) über die Vereinssuche von fussball.de – jeweils die erste Mannschaft derselben Mannschaftsart
 (z. B. Herren). Ein eingetragener Gegner-Link hat Vorrang.
 
-**Ladezeit:** Der erste Abruf einer Begegnung dauert **mehrere Minuten** (fussball.de verschlüsselt jede Seite mit
-eigenen Schriftdateien, der Dienst muss sie einzeln laden). Danach kommen die Daten für einige Stunden in Sekunden aus
-dem Zwischenspeicher. Der Fortschritt wird beim Laden angezeigt.
+**Ladezeit:** Der erste Abruf einer Begegnung dauert etwa **5–15 Sekunden** (eine Spielplanseite pro Saison,
+dazu Tabelle, Spieltag und bis zu 5 Spielberichte). Danach kommen die Daten für einige Stunden in rund 1,5 Sekunden
+aus dem Zwischenspeicher. Der Fortschritt wird beim Laden angezeigt.
 
 **Live geprüft am 05.11.2026** mit TSG Wilhelmshöhe (Herren, Gruppenliga Kassel Gr. 2) gegen TSG Sandershausen.
 
