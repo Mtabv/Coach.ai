@@ -172,6 +172,8 @@ Ausschließlich Trainer: 3 Botschaften (Überschrift + Begleittext), Leitmotiv, 
 
 **Stand 05.11.2026:** Als Übergang ist ein inoffizieller fussball.de-Anbieter über einen lokal laufenden Crawler umgesetzt (`docs/fussballde-anbindung.md`), nur für die eigene Mannschaft, nur auf Klick.
 
+**Entscheidung des Trainers (05.11.2026):** Nach Sichtung des Sportmedia-Preismodells wird vorerst die **kostenfreie inoffizielle fussball.de-Anbindung** genutzt. Sportmedia (C1) wird erst wieder geprüft, wenn sich der Übergangsweg als unzuverlässig erweist oder Spielberichte benötigt werden.
+
 Empfehlung: **B als nächster Schritt** (sofort nutzbar, kein Vertrag nötig), parallel Anfrage bei Sportmedia. Das Datenmodell von B wird so gebaut, dass die Sportmedia-Lieferung später dieselben Datenblöcke befüllt.
 
 ---
