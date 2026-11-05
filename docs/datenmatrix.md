@@ -32,6 +32,8 @@ Laut FAQ einzeln konfigurierbare Datenprodukte:
 | Spielberichte inkl. Aufstellungen, Schiedsrichter, Ereignisse | Torschützen und Einsätze (Folie 6), Kaderstatistik „Spieler mit Ligaeinsatz“ und Torjägeranteil (Folie 7), direkte Duelle (Folie 4) |
 | Spielpläne (alle Spiele der Saison nach Spieltag) | Folie 1 (Termin, Anstoß), Folie 3 (Spieltagspaarungen), Folie 4 (Spielort – sofern enthalten) |
 
+**Ergänzend laut Suchergebnissen zu sportmedia.de** (Seiten selbst aus der Entwicklungsumgebung nicht abrufbar, daher noch zu bestätigen): Sportmedia ist der „DFBnet-Medienservice“. Geliefert wird **XML** per **FTP oder SFTP**, die **XML-Schemata (XSD)** für Spielpläne, Ergebnisse und Spielberichte stehen auf der Downloadseite. Ergebnis- und Tabellendateien kommen **nach jeder Aktualisierung oder zu festen Zeiten**, Spielberichte **automatisch nach Freigabe in DFBnet** (Aufstellungen, Ereignisse, Halbzeit- und Endstand, oft Zuschauerzahl). Auswahl über **alle Spielklassen bis zur Kreisklasse**. **Preise werden nicht genannt** – Anfrage nötig (Entwurf: `docs/anfrage-sportmedia.md`).
+
 **Nicht abgedeckt** (bleibt FuPa, Verein oder Trainer): Spielerfotos, Logos (zu klären), FuPa-MVP-Wert, Körpergröße, Transfers/Trainerwechsel, Spielkleidung, Fahrzeit, alle Trainerangaben.
 
 **Was das technisch bedeutet:** SFTP ist eine *Lieferung* von Dateien an einen Server, kein Abruf aus dem Browser. Coach.AI braucht dafür ein **Backend** (Server mit SFTP-Empfang, Einlesen der Dateien, Datenbank, Bereitstellung an die App). Die heutige Vorschau läuft rein im Browser; die Schnittstelle für Datenanbieter ist aber bereits so angelegt, dass ein Server-Anbieter angeschlossen werden kann.
