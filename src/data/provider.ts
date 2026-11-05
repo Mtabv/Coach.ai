@@ -22,7 +22,14 @@ export interface MatchDataProvider {
   /** Beschriftung der Schaltfläche in der Oberfläche. */
   actionLabel: string;
   supports(team: TeamProfile, match: Match): boolean;
-  fetch(team: TeamProfile, match: Match, fetchImpl?: typeof fetch): Promise<ProviderResult>;
+  fetch(team: TeamProfile, match: Match, options?: ProviderFetchOptions): Promise<ProviderResult>;
+}
+
+export interface ProviderFetchOptions {
+  /** Ersatz für fetch (Tests). */
+  fetchImpl?: typeof fetch;
+  /** Zwischenstände für die Oberfläche, z. B. „Spielpläne werden geladen …“. */
+  onProgress?: (message: string) => void;
 }
 
 /** Beispielinhalte, die nur im historischen Referenzfall angeboten werden. */

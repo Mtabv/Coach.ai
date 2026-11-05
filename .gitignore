@@ -6,3 +6,4 @@ scripts/out
 Coach.ai-Vorschau.zip
 .env.local
 .env
+__pycache__/

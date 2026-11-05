@@ -170,7 +170,7 @@ Ausschließlich Trainer: 3 Botschaften (Überschrift + Begleittext), Leitmotiv, 
 | **C1 – Amtliche Daten via Sportmedia** | Backend empfängt SFTP-Lieferungen (Ergebnisse, Tabellen, Spielberichte, Spielpläne), liest sie ein, stellt sie Coach.AI mit Datenstand bereit | hoch (Backend, Betrieb) | Vertrag Sportmedia, Kosten **[E11] [E12]** |
 | **C2 – Spielerdetails via FuPa** | Abruf nur mit Zustimmung von FuPa | mittel–hoch | Zustimmung FuPa |
 
-**Stand 05.11.2026:** Als Übergang ist ein inoffizieller fussball.de-Anbieter über einen lokal laufenden Crawler umgesetzt (`docs/fussballde-anbindung.md`), nur für die eigene Mannschaft, nur auf Klick.
+**Stand 05.11.2026:** Als Übergang ist ein inoffizieller fussball.de-Anbieter über einen lokal laufenden Crawler plus Coach.AI-Erweiterung umgesetzt (`docs/fussballde-anbindung.md`), nur auf Klick. Er füllt alle Datenblöcke außer der Fahrzeit (Tabelle mit Punktabzügen, Spieltag, Saisonergebnisse, direkte Duelle, Gegenspieler, Gegnerfakten) und findet den Gegner automatisch. Live geprüft mit TSG Wilhelmshöhe – TSG Sandershausen.
 
 **Entscheidung des Trainers (05.11.2026):** Nach Sichtung des Sportmedia-Preismodells wird vorerst die **kostenfreie inoffizielle fussball.de-Anbindung** genutzt. Sportmedia (C1) wird erst wieder geprüft, wenn sich der Übergangsweg als unzuverlässig erweist oder Spielberichte benötigt werden.
 

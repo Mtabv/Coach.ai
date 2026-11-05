@@ -4,7 +4,7 @@ import { analyzeTable, evaluateBlocks, type BlockEvaluation } from '../../domain
 import { now } from '../../domain/factory';
 import { lastLeagueGames, seasonSummary } from '../../domain/stats';
 import { formatDate, formatTimestamp, isValidDate, isValidTime } from '../../domain/time';
-import type { DataBlockKey, Match, SourceRef, TeamProfile } from '../../domain/types';
+import type { DataBlockKey, Match, Preparation, SourceRef, TeamProfile } from '../../domain/types';
 import { applyProviderResult, deleteMatch, resetReferenceCase, updatePrep } from '../../state/actions';
 import { useStore } from '../../state/store';
 import { navigate } from '../../router';
@@ -23,15 +23,18 @@ export function DataTab({ match, team }: { match: Match; team: TeamProfile }) {
   const prep = state.preparations[match.id];
   const [messages, setMessages] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
+  const [progress, setProgress] = useState<string | null>(null);
   const evals = evaluateBlocks(team, match, prep);
   const provider = providers.find((p) => p.supports(team, match));
 
   const load = async () => {
     if (!provider) return;
     setLoading(true);
-    const res = await provider.fetch(team, match);
+    setMessages([]);
+    const res = await provider.fetch(team, match, { onProgress: setProgress });
     update((s) => applyProviderResult(s, match.id, res));
     setMessages(res.messages);
+    setProgress(null);
     setLoading(false);
   };
 
@@ -42,7 +45,7 @@ export function DataTab({ match, team }: { match: Match; team: TeamProfile }) {
         actions={
           provider ? (
             <button className="btn btn-primary" onClick={load} disabled={loading}>
-              {loading ? 'Lädt …' : prep.dataLoadedAt ? 'Beispieldaten neu laden' : provider.actionLabel}
+              {loading ? 'Lädt …' : prep.dataLoadedAt ? (provider.kind === 'demo' ? 'Beispieldaten neu laden' : 'Daten neu laden') : provider.actionLabel}
             </button>
           ) : null
         }
@@ -54,14 +57,18 @@ export function DataTab({ match, team }: { match: Match; team: TeamProfile }) {
         )}
         {provider?.kind === 'live' && (
           <Notice tone="info" title="fussball.de (inoffiziell ausgelesen)">
-            Abruf über Ihren lokal laufenden fussball.de-Dienst – nur auf Klick, keine Hintergrundabfragen. Die Daten werden mit Quelle und Datenstand gekennzeichnet; bitte Zuordnung prüfen.
-            {!match.opponentFussballDe && <> Für Gegnerergebnisse bitte unten bei der Begegnung den fussball.de-Link des Gegners eintragen.</>}
+            Abruf über Ihren lokal laufenden fussball.de-Dienst – nur auf Klick, keine Hintergrundabfragen. Geladen werden Tabelle, Spielpläne, Spieltag, direkte Duelle, Torjäger und Aufstellungen; der Gegner wird über die Tabelle oder die Vereinssuche gefunden. Die Daten werden mit Quelle und Datenstand gekennzeichnet; bitte Zuordnung prüfen.
           </Notice>
         )}
         {!provider && (
           <Notice tone="info" title="Keine automatische Datenquelle">
-            Hinterlegen Sie unter „Mannschaft“ den fussball.de-Link Ihrer Mannschaft und hier bei der Begegnung den Link des Gegners, um Daten über den lokalen fussball.de-Dienst zu laden. Ohne Quelle bleiben fehlende Angaben sichtbar offen; je Datenblock ist eine manuelle Ergänzung möglich.
+            Hinterlegen Sie unter „Mannschaft“ den fussball.de-Link Ihrer Mannschaft, um Daten über den lokalen fussball.de-Dienst zu laden. Ohne Quelle bleiben fehlende Angaben sichtbar offen; je Datenblock ist eine manuelle Ergänzung möglich.
           </Notice>
+        )}
+        {loading && progress && (
+          <p className="muted small" role="status" aria-live="polite">
+            {progress}
+          </p>
         )}
         {messages.map((m) => (
           <p key={m} className="muted small">
@@ -112,6 +119,26 @@ export function DataTab({ match, team }: { match: Match; team: TeamProfile }) {
   );
 }
 
+type SourceFixture = NonNullable<NonNullable<Preparation['dataBlocks']['begegnung']['value']>['sourceFixture']>;
+
+/** Weicht die Ansetzung laut Quelle von der Spielanlage ab oder ergänzt fehlende Angaben? */
+function fixtureDiffers(match: Match, sf: SourceFixture): boolean {
+  return Boolean(
+    (sf.date && sf.date !== match.date) ||
+      (sf.kickoff && sf.kickoff !== match.kickoff) ||
+      (sf.matchday && match.competitionType === 'liga' && sf.matchday !== match.matchday) ||
+      (sf.competition && !match.competition.trim()) ||
+      (sf.venue && !match.isHome && !match.venue?.name),
+  );
+}
+
+/** „KR Kassel, Schulstr., 34131 Kassel“ → Name „KR Kassel“, Adresse „Schulstr., 34131 Kassel“. */
+function splitVenue(v: string): { name: string; address: string } {
+  const parts = v.split(',').map((x) => x.trim()).filter(Boolean);
+  if (parts.length < 3) return { name: v, address: '' };
+  return { name: parts.slice(0, -2).join(', '), address: parts.slice(-2).join(', ') };
+}
+
 function MatchBasics({ match, team, evaluation }: { match: Match; team: TeamProfile; evaluation: BlockEvaluation }) {
   const { update, state } = useStore();
   const prep = state.preparations[match.id];
@@ -119,6 +146,7 @@ function MatchBasics({ match, team, evaluation }: { match: Match; team: TeamProf
   const setM = (fn: (m: Match) => void) => update((s) => fn(s.matches.find((x) => x.id === match.id)!));
   const venue = prep.organisation.venueOverride ?? match.venue ?? (match.isHome ? team.homeVenue : null);
   const blk = prep.dataBlocks.begegnung;
+  const sf = blk.value?.sourceFixture;
   return (
     <Card
       title={
@@ -180,19 +208,21 @@ function MatchBasics({ match, team, evaluation }: { match: Match; team: TeamProf
           {i}
         </p>
       ))}
-      {blk.value?.sourceFixture?.venue && <p className="small">Spielort laut {blk.value.sourceFixture.sourceLabel}: {blk.value.sourceFixture.venue}</p>}
-      {evaluation.status === 'widersprüchlich' && blk.value?.sourceFixture && !match.isHistoricalReference && (
+      {sf?.venue && <p className="small">Spielort laut {sf.sourceLabel}: {sf.venue}</p>}
+      {sf && !match.isHistoricalReference && fixtureDiffers(match, sf) && (
         <button
           className="btn btn-small"
           onClick={() =>
             setM((m) => {
-              const sf = blk.value!.sourceFixture!;
               if (sf.date) m.date = sf.date;
               if (sf.kickoff) m.kickoff = sf.kickoff;
+              if (sf.matchday && m.competitionType === 'liga') m.matchday = sf.matchday;
+              if (sf.competition && !m.competition.trim()) m.competition = sf.competition;
+              if (sf.venue && !m.isHome && !m.venue?.name) m.venue = splitVenue(sf.venue);
             })
           }
         >
-          Termin von fussball.de übernehmen
+          Angaben von fussball.de übernehmen
         </button>
       )}
       <ConfirmButton blockKey="begegnung" match={match} disabled={evaluation.status === 'fehlend'} />

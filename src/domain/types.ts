@@ -285,7 +285,7 @@ export interface DataBlocks {
   begegnung: DataBlock<{
     confirmedFromSource: boolean;
     /** Ansetzung laut externer Quelle – wird mit der Spielanlage verglichen. */
-    sourceFixture?: { date: LocalDate | null; kickoff: LocalTime | null; venue: string | null; sourceLabel: string };
+    sourceFixture?: { date: LocalDate | null; kickoff: LocalTime | null; venue: string | null; sourceLabel: string; matchday?: number | null; competition?: string | null };
   }>;
   tabelle: DataBlock<{ snapshots: TableSnapshot[]; primarySourceId: string | null }>;
   spieltag: DataBlock<{ matchday: number | null; pairings: FixturePairing[] }>;

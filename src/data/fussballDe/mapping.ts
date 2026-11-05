@@ -1,10 +1,25 @@
-import type { CompetitionType, DataBlocks, HeadToHead, LocalDate, LocalTime, Match, ResultEntry, SourceRef, TableRow, TeamProfile } from '../../domain/types';
-import type { FdGame, FdTable } from './api';
+import type {
+  CompetitionType,
+  DataBlocks,
+  FixturePairing,
+  HeadToHead,
+  LocalDate,
+  LocalTime,
+  Match,
+  OpponentPlayerCandidate,
+  ResultEntry,
+  SourceRef,
+  SourcedFact,
+  TableRow,
+  TeamProfile,
+} from '../../domain/types';
+import type { FdGame, FdGameDetail, FdLiga, FdMatchday, FdTableRow } from './api';
 
 /**
- * Reine Umwandlung der Crawler-Antworten in Coach.AI-Datenblöcke.
- * Keine Werte werden ergänzt oder geschätzt: Was fussball.de nicht liefert
- * (z. B. Punktabzüge, ligaweite Spieltagspaarungen), bleibt leer bzw. fehlend.
+ * Reine Umwandlung der Antworten des lokalen fussball.de-Dienstes in Coach.AI-Datenblöcke.
+ * Keine Werte werden geschätzt: Was fussball.de nicht liefert, bleibt leer bzw. fehlend.
+ * Einzige Ableitung: Die Höhe eines Punktabzugs wird aus Bilanz und Punkten errechnet,
+ * wenn fussball.de ausdrücklich auf Punktabzüge in der Tabelle hinweist.
  */
 
 export const FD_SOURCE_LABEL = 'fussball.de (inoffiziell ausgelesen)';
@@ -13,16 +28,21 @@ export const FD_SOURCE_LABEL = 'fussball.de (inoffiziell ausgelesen)';
 // Namen abgleichen
 // ---------------------------------------------------------------------------
 
-/** Entfernt unsichtbare Zeichen, die fussball.de in Namen einstreut (z. B. „Hombressen/\u200bUdenhausen“). */
+/** Entfernt unsichtbare Zeichen, die fussball.de in Namen einstreut, und Tabellenkürzel (zg., oW, SW). */
 export function cleanName(s: string): string {
-  return s.replace(/[\u200b-\u200d\u2060\ufeff\u00ad]/g, '').replace(/\s+/g, ' ').trim();
+  return s
+    .replace(/[​-‍⁠﻿­]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .replace(/\s+(zg\.|oW|SW|a\.\s?K\.)$/u, '')
+    .trim();
 }
 
 /** Übliche Abkürzungen in Vereinsnamen auf fussball.de. */
 const ABBREVIATIONS: Record<string, string> = { ks: 'kassel', ffm: 'frankfurt', eintr: 'eintracht', vikt: 'viktoria', bor: 'borussia', germ: 'germania' };
 
 export function foldName(s: string): string {
-  return s
+  return cleanName(s)
     .toLowerCase()
     .replace(/ä/g, 'ae')
     .replace(/ö/g, 'oe')
@@ -35,8 +55,17 @@ export function foldName(s: string): string {
     .trim();
 }
 
-/** Ähnlichkeit zweier Vereinsnamen (0–1): Gleichheit, Enthaltensein oder Wortüberschneidung. */
+/** Kennung einer zweiten/dritten Mannschaft („II“, „2“, „III“ …), sonst leer. */
+export function teamSuffix(s: string): string {
+  const m = /\s(i{1,3}|iv|[2-9])$/.exec(foldName(s));
+  if (!m) return '';
+  const roman: Record<string, string> = { i: '1', ii: '2', iii: '3', iv: '4' };
+  return roman[m[1]] ?? m[1];
+}
+
+/** Ähnlichkeit zweier Vereinsnamen (0–1). Erste und zweite Mannschaft gelten nie als gleich. */
 export function nameSimilarity(a: string, b: string): number {
+  if (teamSuffix(a) !== teamSuffix(b)) return 0;
   const x = foldName(a);
   const y = foldName(b);
   if (!x || !y) return 0;
@@ -47,8 +76,8 @@ export function nameSimilarity(a: string, b: string): number {
   const tx = tokens(x);
   const ty = tokens(y);
   if (!tx.length || !ty.length) return 0;
-  const same = (a: string, b: string) => a === b || (Math.min(a.length, b.length) >= 4 && (a.startsWith(b) || b.startsWith(a)));
-  const inter = tx.filter((a) => ty.some((b) => same(a, b))).length;
+  const same = (p: string, q: string) => p === q || (Math.min(p.length, q.length) >= 4 && (p.startsWith(q) || q.startsWith(p)));
+  const inter = tx.filter((p) => ty.some((q) => same(p, q))).length;
   const union = tx.length + ty.length - inter;
   return union ? inter / union : 0;
 }
@@ -57,11 +86,22 @@ export function sameTeam(a: string, b: string): boolean {
   return nameSimilarity(a, b) >= 0.5;
 }
 
-/** Ermittelt den Mannschaftsnamen, der in allen Spielen einer Mannschaftsliste vorkommt. */
+/** Gleiche Mannschaft laut Quelle: identischer Name nach Bereinigung (für Ergebnislisten). */
+export function isSourceTeam(name: string, sourceName: string | null): boolean {
+  return Boolean(sourceName) && foldName(name) === foldName(sourceName!);
+}
+
+/** Erkennt eine Mannschaft in Spiellisten: über die Team-ID, wenn vorhanden, sonst über den Quellnamen. */
+export type TeamMatcher = (name: string, id?: string | null) => boolean;
+export function teamMatcher(teamId: string | null | undefined, sourceName: string | null): TeamMatcher {
+  return (name, id) => (id && teamId ? id === teamId : isSourceTeam(name, sourceName));
+}
+
+/** Ermittelt den Mannschaftsnamen, der in fast allen Spielen einer Mannschaftsliste vorkommt. */
 export function teamNameFromGames(games: FdGame[]): string | null {
   if (!games.length) return null;
   const counts = new Map<string, number>();
-  for (const g of games) for (const n of [g.home_team, g.away_team]) counts.set(n, (counts.get(n) ?? 0) + 1);
+  for (const g of games) for (const n of [cleanName(g.home_team), cleanName(g.away_team)]) counts.set(n, (counts.get(n) ?? 0) + 1);
   const [best] = [...counts.entries()].sort((a, b) => b[1] - a[1]);
   return best && best[1] >= Math.ceil(games.length * 0.8) ? best[0] : null;
 }
@@ -70,7 +110,8 @@ export function teamNameFromGames(games: FdGame[]): string | null {
 // Datum, Wettbewerb, Ergebnis
 // ---------------------------------------------------------------------------
 
-export function berlinDateTime(iso: string): { date: LocalDate; time: LocalTime } | null {
+export function berlinDateTime(iso: string | null | undefined): { date: LocalDate; time: LocalTime } | null {
+  if (!iso) return null;
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return null;
   const parts = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Berlin', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(d);
@@ -78,8 +119,8 @@ export function berlinDateTime(iso: string): { date: LocalDate; time: LocalTime 
   return { date: `${get('year')}-${get('month')}-${get('day')}`, time: `${get('hour')}:${get('minute')}` };
 }
 
-export function competitionTypeOf(label: string): CompetitionType {
-  const l = label.toLowerCase();
+export function competitionTypeOf(label: string | null | undefined): CompetitionType {
+  const l = (label ?? '').toLowerCase();
   if (/pokal/.test(l)) return 'pokal';
   if (/freundschaft|test|turnier|hallen/.test(l)) return 'test';
   return 'liga';
@@ -87,8 +128,8 @@ export function competitionTypeOf(label: string): CompetitionType {
 
 function score(v: string | null | undefined): number | null {
   if (v === null || v === undefined) return null;
-  const n = Number(String(v).trim());
-  return Number.isInteger(n) && n >= 0 ? n : null;
+  const s = String(v).trim();
+  return /^\d{1,2}$/.test(s) ? Number(s) : null;
 }
 
 export function seasonOf(date: LocalDate): string {
@@ -97,188 +138,368 @@ export function seasonOf(date: LocalDate): string {
   return `${start}/${String((start + 1) % 100).padStart(2, '0')}`;
 }
 
+/** Zeitraum einer Saison (1.7.–30.6.), optional um n Saisons zurückversetzt. */
+export function seasonRange(date: LocalDate, back = 0): { von: LocalDate; bis: LocalDate } {
+  const [y, m] = date.split('-').map(Number);
+  const start = (m >= 7 ? y : y - 1) - back;
+  return { von: `${start}-07-01`, bis: `${start + 1}-06-30` };
+}
+
 /**
- * Ergebnisliste einer Mannschaft. Die eigene Seite wird auf `canonicalName` umbenannt,
+ * Ergebnisliste einer Mannschaft. Die eigene Seite (`sourceName`) wird auf `canonicalName` umbenannt,
  * damit die Berechnungen (letzte 5, Bilanzen) eindeutig zuordnen.
- * Spiele ohne gültiges Ergebnis (abgesagt, nicht gewertet) werden ausgelassen und gezählt.
+ * Vergangene Spiele ohne gültiges Ergebnis (abgesagt, verlegt, nicht gewertet) werden ausgelassen und gezählt.
  */
-export function mapResults(games: FdGame[], canonicalName: string): { results: ResultEntry[]; skipped: number; sourceName: string | null } {
-  const sourceName = teamNameFromGames(games);
+export function mapResults(games: FdGame[], isSelf: TeamMatcher, canonicalName: string, today: LocalDate): { results: ResultEntry[]; skipped: number } {
   const results: ResultEntry[] = [];
   let skipped = 0;
+  const seen = new Set<string>();
   for (const g of games) {
+    const dt = berlinDateTime(g.datetime_utc);
+    if (!dt || dt.date > today) continue;
     const gh = score(g.home_score);
     const ga = score(g.away_score);
-    const dt = berlinDateTime(g.datetime_utc);
-    if (gh === null || ga === null || !dt) {
-      skipped++;
+    if (gh === null || ga === null) {
+      // Verlegte Spiele stehen zusätzlich mit neuem Datum in der Liste – nur echte Ausfälle zählen.
+      if (!games.some((o) => o !== g && o.id === g.id && score(o.home_score) !== null)) skipped++;
       continue;
     }
-    const rename = (n: string) => (sourceName && n === sourceName ? canonicalName : n);
+    if (seen.has(g.id)) continue;
+    seen.add(g.id);
+    const rename = (n: string, id?: string | null) => (isSelf(n, id) ? canonicalName : cleanName(n));
     results.push({
       date: dt.date,
       competitionType: competitionTypeOf(g.competition),
-      competitionLabel: g.competition,
-      home: rename(g.home_team),
-      away: rename(g.away_team),
+      competitionLabel: g.competition ?? 'Spiel',
+      home: rename(g.home_team, g.home_team_id),
+      away: rename(g.away_team, g.away_team_id),
       goalsHome: gh,
       goalsAway: ga,
     });
   }
-  return { results, skipped, sourceName };
+  return { results: results.sort((a, b) => (a.date < b.date ? 1 : -1)), skipped };
 }
 
-export function mapTable(table: FdTable, renames: { from: string | null; to: string; fallbackMatch: string }[]): TableRow[] {
-  // Je Umbenennung genau eine Zeile: exakter Quellname, sonst die ähnlichste Zeile (mind. 0,5).
-  const target = new Map<number, string>();
-  for (const r of renames) {
-    let idx = r.from ? table.entries.findIndex((e) => e.team === r.from) : -1;
-    if (idx < 0) {
-      let best = 0.5;
-      table.entries.forEach((e, i) => {
-        const sim = nameSimilarity(e.team, r.fallbackMatch);
-        if (sim >= best && !target.has(i)) {
-          best = sim;
-          idx = i;
-        }
-      });
-    }
-    if (idx >= 0 && !target.has(idx)) target.set(idx, r.to);
-  }
-  return table.entries.map((e, i) => {
-    const [gf, ga] = e.goal.split(':').map((x) => Number(x.trim()));
-    const team = target.get(i) ?? e.team;
-    return {
-      rank: e.place,
-      team,
-      played: e.games,
-      won: e.won,
-      drawn: e.draw,
-      lost: e.lost,
-      goalsFor: Number.isFinite(gf) ? gf : 0,
-      goalsAgainst: Number.isFinite(ga) ? ga : 0,
-      points: e.points,
-      // fussball.de-Tabelle liefert über den Crawler keinen Punktabzug als eigene Angabe.
-      pointDeduction: null,
-    };
-  });
+/** Errechneter Punktabzug, nur wenn fussball.de auf Punktabzüge hinweist und die Bilanz mehr Punkte ergäbe. */
+export function deductionFor(row: FdTableRow, note: string | null): number | null {
+  if (!note || !/abz(u|ü)g/i.test(note)) return null;
+  if (row.won === null || row.draw === null || row.points === null) return null;
+  const diff = row.won * 3 + row.draw - row.points;
+  return diff > 0 ? diff : null;
 }
 
-export function headToHead(own: ResultEntry[], opp: ResultEntry[], ownName: string, oppName: string): HeadToHead[] {
-  const seen = new Set<string>();
-  const out: HeadToHead[] = [];
-  for (const r of [...own, ...opp]) {
-    const teams = [r.home, r.away];
-    if (!teams.includes(ownName) || !teams.includes(oppName)) continue;
-    const key = `${r.date}|${r.home}|${r.away}`;
-    if (seen.has(key)) continue;
-    seen.add(key);
-    out.push({ season: seasonOf(r.date), date: r.date, competitionLabel: r.competitionLabel, competitionType: r.competitionType, home: r.home, away: r.away, goalsHome: r.goalsHome, goalsAway: r.goalsAway });
-  }
-  return out.sort((a, b) => (a.date < b.date ? 1 : -1));
+export function mapTable(liga: FdLiga, renames: Map<string, string>): TableRow[] {
+  return liga.table.map((e, i) => ({
+    rank: e.place ?? i + 1,
+    team: (e.team_id && renames.get(e.team_id)) || cleanName(e.team),
+    played: e.games ?? 0,
+    won: e.won ?? 0,
+    drawn: e.draw ?? 0,
+    lost: e.lost ?? 0,
+    goalsFor: e.goals_for ?? 0,
+    goalsAgainst: e.goals_against ?? 0,
+    points: e.points ?? 0,
+    pointDeduction: deductionFor(e, liga.deduction_note),
+  }));
+}
+
+// ---------------------------------------------------------------------------
+// Gegner finden
+// ---------------------------------------------------------------------------
+
+/** Sucht den Gegner in der Tabelle der eigenen Liga (eindeutig ähnlichster Name). */
+export function findOpponentInTable(liga: FdLiga | null, opponent: string, ownId: string): { id: string; name: string } | null {
+  if (!liga) return null;
+  const scored = liga.table
+    .filter((r) => r.team_id && r.team_id !== ownId)
+    .map((r) => ({ id: r.team_id!, name: cleanName(r.team), sim: nameSimilarity(r.team, opponent) }))
+    .filter((r) => r.sim >= 0.5)
+    .sort((a, b) => b.sim - a.sim);
+  if (!scored.length) return null;
+  if (scored.length > 1 && scored[1].sim === scored[0].sim) return null; // nicht eindeutig
+  return { id: scored[0].id, name: scored[0].name };
+}
+
+/** Mannschaftsart aus dem Staffelnamen (z. B. „… – Herren - 2026/2027“). */
+export function categoryOf(staffelName: string | null): string | null {
+  if (!staffelName) return null;
+  const m = /(Alte Herren|Herren|Frauen|[A-G]-Junior(?:en|innen)|Ü\s?\d{2})/i.exec(staffelName);
+  return m ? m[1] : null;
+}
+
+/** Wählt aus den Mannschaften eines Vereins die passende („Herren - TSG X“ zu Gegner „TSG X“). */
+export function pickClubTeam(teams: { id: string; name: string }[], opponent: string, category: string): { id: string; name: string } | null {
+  const fits = teams
+    .map((t) => {
+      const [cat, ...rest] = t.name.split(' - ');
+      return { id: t.id, cat: cat.trim(), name: cleanName(rest.join(' - ') || t.name) };
+    })
+    .filter((t) => t.cat.toLowerCase() === category.toLowerCase())
+    .map((t) => ({ ...t, sim: nameSimilarity(t.name, opponent) }))
+    .filter((t) => t.sim >= 0.5)
+    .sort((a, b) => b.sim - a.sim);
+  return fits.length && (fits.length === 1 || fits[0].sim > fits[1].sim) ? { id: fits[0].id, name: fits[0].name } : null;
 }
 
 // ---------------------------------------------------------------------------
 // Gesamtumwandlung
 // ---------------------------------------------------------------------------
 
-export interface FdRaw {
-  ownTable: FdTable | null;
-  ownPrev: FdGame[];
-  ownNext: FdGame[];
-  oppPrev: FdGame[] | null;
+export interface FdBundle {
+  liga: FdLiga | null;
+  ownId: string;
+  opp: { id: string; name: string; via: string } | null;
+  ownSeason: FdGame[];
+  oppSeason: FdGame[] | null;
+  history: FdGame[];
+  historySeasons: string[];
+  matchday: FdMatchday | null;
+  lineups: FdGameDetail[];
   retrievedAt: string;
 }
 
-function cleanGames(games: FdGame[]): FdGame[] {
-  return games.map((g) => ({ ...g, home_team: cleanName(g.home_team), away_team: cleanName(g.away_team) }));
+const fmtDate = (d: string) => d.split('-').reverse().join('.');
+
+export function headToHead(games: FdGame[], isOwn: TeamMatcher, isOpp: TeamMatcher, ownName: string, oppName: string, today: LocalDate): HeadToHead[] {
+  const between = games.filter(
+    (g) => (isOwn(g.home_team, g.home_team_id) && isOpp(g.away_team, g.away_team_id)) || (isOpp(g.home_team, g.home_team_id) && isOwn(g.away_team, g.away_team_id)),
+  );
+  const { results } = mapResults(
+    between.map((g) => ({ ...g, home_team: isOwn(g.home_team, g.home_team_id) ? ownName : oppName, away_team: isOwn(g.away_team, g.away_team_id) ? ownName : oppName, home_team_id: null, away_team_id: null })),
+    () => false,
+    '',
+    today,
+  );
+  return results.map((r) => ({ season: seasonOf(r.date), date: r.date, competitionLabel: r.competitionLabel, competitionType: r.competitionType, home: r.home, away: r.away, goalsHome: r.goalsHome, goalsAway: r.goalsAway }));
 }
 
-export function mapToBlocks(team: TeamProfile, match: Match, input: FdRaw): { blocks: Partial<DataBlocks>; messages: string[] } {
-  const raw: FdRaw = {
-    ...input,
-    ownTable: input.ownTable ? { ...input.ownTable, entries: input.ownTable.entries.map((e) => ({ ...e, team: cleanName(e.team) })) } : null,
-    ownPrev: cleanGames(input.ownPrev),
-    ownNext: cleanGames(input.ownNext),
-    oppPrev: input.oppPrev ? cleanGames(input.oppPrev) : null,
+export function playerCandidates(bundle: FdBundle, oppSource: string | null, sourceId: string): { candidates: OpponentPlayerCandidate[]; games: number } {
+  const opp = bundle.opp;
+  if (!opp) return { candidates: [], games: 0 };
+  type Acc = { name: string; number?: string; gk: boolean; starts: number; captain: number; recentGoals: number; seasonGoals: number | null; rank: number | null };
+  const acc = new Map<string, Acc>();
+  const get = (name: string) => {
+    const key = foldName(name);
+    let a = acc.get(key);
+    if (!a) {
+      a = { name: cleanName(name), gk: false, starts: 0, captain: 0, recentGoals: 0, seasonGoals: null, rank: null };
+      acc.set(key, a);
+    }
+    return a;
   };
+  for (const s of bundle.liga?.scorers ?? []) {
+    if (s.team_id !== opp.id || s.goals === null) continue;
+    const a = get(s.name);
+    a.seasonGoals = s.goals;
+    a.rank = s.rank;
+  }
+  let games = 0;
+  for (const d of bundle.lineups) {
+    if (!d.lineup) continue;
+    const side = isSourceTeam(d.lineup.home.team, oppSource) ? 'home' : isSourceTeam(d.lineup.away.team, oppSource) ? 'away' : null;
+    if (!side) continue;
+    games++;
+    for (const p of d.lineup[side].starting) {
+      const a = get(p.name);
+      a.starts++;
+      if (p.is_captain) a.captain++;
+      if (p.is_goalkeeper) a.gk = true;
+      if (p.number !== null && p.number !== undefined && a.number === undefined) a.number = String(p.number);
+    }
+    for (const e of d.events) {
+      if (e.type === 'goal' && e.team === side && e.description && !/eigentor/i.test(e.description)) get(e.description).recentGoals++;
+    }
+  }
+  const candidates: OpponentPlayerCandidate[] = [];
+  for (const a of acc.values()) {
+    const evidence: { text: string; sourceId: string }[] = [];
+    if (a.seasonGoals !== null) evidence.push({ text: `${a.seasonGoals} Saisontore in der Liga${a.rank ? ` (Platz ${a.rank} der Torjägerliste)` : ''}`, sourceId });
+    if (a.recentGoals) evidence.push({ text: `${a.recentGoals} ${a.recentGoals === 1 ? 'Tor' : 'Tore'} in den letzten ${games} Ligaspielen`, sourceId });
+    if (a.starts) evidence.push({ text: `In der Startelf in ${a.starts} der letzten ${games} Ligaspiele${a.captain ? `, davon ${a.captain}× Kapitän` : ''}`, sourceId });
+    const relevant = a.seasonGoals !== null || a.recentGoals > 0 || (games > 0 && a.starts >= Math.ceil(games / 2));
+    if (!relevant || !evidence.length) continue;
+    candidates.push({
+      id: `fd:${foldName(a.name).replace(/ /g, '-')}`,
+      name: a.name,
+      number: a.number,
+      position: a.gk ? 'Torwart' : undefined,
+      evidence,
+      goals: a.seasonGoals ?? a.recentGoals,
+    });
+  }
+  candidates.sort((x, y) => (y.goals ?? 0) - (x.goals ?? 0) || x.name.localeCompare(y.name));
+  return { candidates, games };
+}
+
+export function mapToBlocks(team: TeamProfile, match: Match, raw: FdBundle): { blocks: Partial<DataBlocks>; messages: string[] } {
   const messages: string[] = [];
   const blocks: Partial<DataBlocks> = {};
+  const today = raw.retrievedAt.slice(0, 10);
   const src = (id: string, asOf?: string, asOfRank?: number): SourceRef => ({ id, label: FD_SOURCE_LABEL, kind: 'extern', asOf, asOfRank, retrievedAt: raw.retrievedAt });
+  const opp = raw.opp;
+  const tableName = (id: string | undefined) => {
+    const r = id ? raw.liga?.table.find((x) => x.team_id === id) : undefined;
+    return r ? cleanName(r.team) : null;
+  };
+  const ownSource = tableName(raw.ownId) ?? teamNameFromGames(raw.ownSeason);
+  const oppSource = tableName(opp?.id) ?? (raw.oppSeason ? teamNameFromGames(raw.oppSeason) : null) ?? opp?.name ?? null;
+  const isOwn = teamMatcher(raw.ownId, ownSource);
+  const isOpp = teamMatcher(opp?.id, oppSource);
 
-  const own = mapResults(raw.ownPrev, team.name);
-  const opp = raw.oppPrev ? mapResults(raw.oppPrev, match.opponent) : null;
-
-  // Ergebnisse
+  // Ergebnisse (ganze Saison, alle Wettbewerbe)
+  const own = mapResults(raw.ownSeason, isOwn, team.name, today);
   if (own.results.length) {
-    const last = own.results.map((r) => r.date).sort().at(-1)!;
     blocks.ergebnisseEigene = {
       key: 'ergebnisseEigene',
       label: 'Ergebnisse eigene Mannschaft (Liga, Pokal, Test)',
       value: { team: team.name, results: own.results },
-      provenance: { sources: [src('fd-ergebnisse-eigene', `Spiele bis ${last.split('-').reverse().join('.')}`)], status: 'vorhanden', note: `Name auf fussball.de: „${own.sourceName ?? 'nicht eindeutig'}“. Spieltagnummern liefert die Quelle nicht.${own.skipped ? ` ${own.skipped} Spiel(e) ohne gültiges Ergebnis ausgelassen.` : ''}` },
+      provenance: {
+        sources: [src('fd-ergebnisse-eigene', `Spiele bis ${fmtDate(own.results[0].date)}`)],
+        status: 'vorhanden',
+        note: `Spielplan der Saison laut fussball.de („${ownSource ?? 'Name nicht eindeutig'}“). Spieltagnummern liefert diese Liste nicht.${own.skipped ? ` ${own.skipped} Spiel(e) ohne gültiges Ergebnis (abgesagt/verlegt) ausgelassen.` : ''}`,
+      },
     };
-  } else messages.push('Keine Ergebnisse der eigenen Mannschaft gefunden.');
+  } else messages.push('Keine Ergebnisse der eigenen Mannschaft in dieser Saison gefunden.');
 
-  if (opp && opp.results.length) {
-    const last = opp.results.map((r) => r.date).sort().at(-1)!;
-    blocks.ergebnisseGegner = {
-      key: 'ergebnisseGegner',
-      label: 'Ergebnisse Gegner (Liga, Pokal, Test)',
-      value: { team: match.opponent, results: opp.results },
-      provenance: { sources: [src('fd-ergebnisse-gegner', `Spiele bis ${last.split('-').reverse().join('.')}`)], status: 'vorhanden', note: `Name auf fussball.de: „${opp.sourceName ?? 'nicht eindeutig'}“.${opp.skipped ? ` ${opp.skipped} Spiel(e) ohne gültiges Ergebnis ausgelassen.` : ''}` },
-    };
-  } else if (!raw.oppPrev) messages.push('Kein fussball.de-Link des Gegners hinterlegt – Gegnerergebnisse bleiben offen.');
-  else messages.push('Keine Ergebnisse des Gegners gefunden.');
+  if (raw.oppSeason) {
+    const r = mapResults(raw.oppSeason, isOpp, match.opponent, today);
+    if (r.results.length) {
+      blocks.ergebnisseGegner = {
+        key: 'ergebnisseGegner',
+        label: 'Ergebnisse Gegner (Liga, Pokal, Test)',
+        value: { team: match.opponent, results: r.results },
+        provenance: {
+          sources: [src('fd-ergebnisse-gegner', `Spiele bis ${fmtDate(r.results[0].date)}`)],
+          status: 'vorhanden',
+          note: `Spielplan der Saison laut fussball.de („${oppSource ?? 'Name nicht eindeutig'}“).${r.skipped ? ` ${r.skipped} Spiel(e) ohne gültiges Ergebnis (abgesagt/verlegt) ausgelassen.` : ''}`,
+        },
+      };
+    } else messages.push('Keine Ergebnisse des Gegners in dieser Saison gefunden.');
+  }
 
   // Tabelle
-  if (raw.ownTable && raw.ownTable.entries.length) {
-    const rows = mapTable(raw.ownTable, [
-      { from: own.sourceName, to: team.name, fallbackMatch: team.name },
-      { from: opp?.sourceName ?? null, to: match.opponent, fallbackMatch: match.opponent },
-    ]);
+  if (raw.liga && raw.liga.table.length) {
+    const renames = new Map<string, string>([[raw.ownId, team.name]]);
+    if (opp) renames.set(opp.id, match.opponent);
+    const rows = mapTable(raw.liga, renames);
     const maxGames = Math.max(...rows.map((r) => r.played));
     const s = src('fd-tabelle', `nach ${maxGames} Spielen (laut Tabelle)`, maxGames);
+    const deducted = rows.filter((r) => r.pointDeduction);
+    const note = [
+      raw.liga.staffel_name ? `Staffel: ${raw.liga.staffel_name}.` : '',
+      raw.liga.deduction_note ? `Hinweis von fussball.de: „${raw.liga.deduction_note}“.` : '',
+      deducted.length ? `Höhe des Abzugs aus Bilanz und Punkten errechnet: ${deducted.map((r) => `${r.team} −${r.pointDeduction}`).join(', ')}.` : '',
+    ]
+      .filter(Boolean)
+      .join(' ');
     blocks.tabelle = {
       key: 'tabelle',
       label: 'Aktuelle Tabelle',
       value: { snapshots: [{ source: s, rows }], primarySourceId: s.id },
-      provenance: { sources: [s], status: 'vorhanden', note: 'Punktabzüge werden von der Quelle nicht gesondert geliefert. Abweichungen zwischen Punkten und Bilanz werden als Widerspruch markiert.' },
+      provenance: { sources: [s], status: 'vorhanden', note: note || undefined },
     };
-    if (!rows.some((r) => r.team === team.name)) messages.push('Eigene Mannschaft in der Tabelle nicht eindeutig gefunden – bitte Namen prüfen.');
-    if (!rows.some((r) => r.team === match.opponent)) messages.push('Gegner in der Tabelle nicht eindeutig gefunden – Gegnername in der Begegnung an fussball.de angleichen.');
-  } else messages.push('Keine Tabelle gefunden (z. B. Pokal- oder Testspiel).');
+    if (!rows.some((r) => r.team === team.name)) messages.push('Eigene Mannschaft in der Tabelle nicht gefunden – bitte fussball.de-Link im Mannschaftsprofil prüfen.');
+    if (match.competitionType === 'liga' && !rows.some((r) => r.team === match.opponent)) messages.push('Gegner nicht in der Tabelle der eigenen Liga gefunden.');
+  } else messages.push('Keine Tabelle gefunden.');
 
-  // Direkte Duelle (nur aus den verfügbaren Ergebnislisten)
-  const h2h = headToHead(own.results, opp?.results ?? [], team.name, match.opponent);
+  // Spieltag
+  if (raw.matchday && raw.matchday.games.length) {
+    const nameFor = (n: string, id: string | null) => (id === raw.ownId ? team.name : opp && id === opp.id ? match.opponent : cleanName(n));
+    const pairings: FixturePairing[] = raw.matchday.games.map((g) => {
+      const dt = berlinDateTime(g.datetime_utc);
+      return { home: nameFor(g.home_team, g.home_team_id), away: nameFor(g.away_team, g.away_team_id), ...(dt ? { date: dt.date, kickoff: dt.time } : {}) };
+    });
+    blocks.spieltag = {
+      key: 'spieltag',
+      label: 'Spieltagspaarungen',
+      value: { matchday: raw.matchday.matchday, pairings },
+      provenance: { sources: [src('fd-spieltag', `${raw.matchday.matchday}. Spieltag`)], status: 'vorhanden' },
+    };
+  } else if (match.competitionType === 'liga') messages.push('Spieltag mit dieser Begegnung auf fussball.de nicht gefunden – Paarungen bleiben offen.');
+
+  // Ansetzung abgleichen
+  const mdGame = opp ? raw.matchday?.games.find((g) => [g.home_team_id, g.away_team_id].includes(raw.ownId) && [g.home_team_id, g.away_team_id].includes(opp.id)) : undefined;
+  const seasonCandidates = raw.ownSeason.filter((g) => isOpp(g.home_team, g.home_team_id) || isOpp(g.away_team, g.away_team_id));
+  const seasonFixture =
+    (mdGame ? seasonCandidates.find((g) => g.id === mdGame.game_id) : undefined) ??
+    seasonCandidates.find((g) => berlinDateTime(g.datetime_utc)?.date === match.date) ??
+    seasonCandidates.filter((g) => (berlinDateTime(g.datetime_utc)?.date ?? '') >= today).sort((a, b) => (a.datetime_utc < b.datetime_utc ? -1 : 1))[0];
+  const fixtureDt = berlinDateTime(mdGame?.datetime_utc ?? seasonFixture?.datetime_utc);
+  if (fixtureDt) {
+    blocks.begegnung = {
+      key: 'begegnung',
+      label: 'Begegnung, Termin, Wettbewerb, Spielort',
+      value: {
+        confirmedFromSource: fixtureDt.date === match.date && fixtureDt.time === match.kickoff,
+        sourceFixture: {
+          date: fixtureDt.date,
+          kickoff: fixtureDt.time,
+          venue: seasonFixture?.location ?? null,
+          sourceLabel: FD_SOURCE_LABEL,
+          matchday: mdGame ? raw.matchday!.matchday : null,
+          competition: raw.liga?.staffel_name && mdGame ? raw.liga.staffel_name : seasonFixture?.competition ?? null,
+        },
+      },
+      provenance: { sources: [{ id: 'trainer', label: 'Trainereingabe', kind: 'trainer' }, src('fd-ansetzung')], status: 'vorhanden' },
+    };
+  } else messages.push('Begegnung im Spielplan auf fussball.de nicht gefunden – Termin bitte selbst prüfen.');
+
+  // Direkte Duelle (laufende und frühere Saisons)
+  const h2h = headToHead([...raw.ownSeason, ...raw.history], isOwn, isOpp, team.name, match.opponent, today);
   if (h2h.length) {
     blocks.direkteDuelle = {
       key: 'direkteDuelle',
       label: 'Direkte Duelle',
       value: { games: h2h },
-      provenance: { sources: [src('fd-duelle')], status: 'vorhanden', note: 'Nur aus den von fussball.de gelieferten Ergebnislisten – ältere Saisons können fehlen.' },
+      provenance: {
+        sources: [src('fd-duelle', raw.historySeasons.length ? `Saisons ${raw.historySeasons.at(-1)} bis ${seasonOf(today)}` : undefined)],
+        status: 'vorhanden',
+        note: 'Aus den Spielplänen der eigenen Mannschaft auf fussball.de; Spiele gegen zweite Mannschaften zählen nicht.',
+      },
     };
   }
 
-  // Ansetzung abgleichen
-  const oppName = opp?.sourceName ?? null;
-  const isOpp = (n: string) => (oppName ? n === oppName : sameTeam(n, match.opponent));
-  const candidates = raw.ownNext.filter((g) => isOpp(g.home_team) || isOpp(g.away_team));
-  // Gleiches Datum bevorzugen (z. B. Liga- und Pokalspiel gegen denselben Gegner), sonst das nächste.
-  const fixture = candidates.find((g) => berlinDateTime(g.datetime_utc)?.date === match.date) ?? candidates[0];
-  if (fixture) {
-    const dt = berlinDateTime(fixture.datetime_utc);
-    blocks.begegnung = {
-      key: 'begegnung',
-      label: 'Begegnung, Termin, Wettbewerb, Spielort',
-      value: {
-        confirmedFromSource: Boolean(dt && dt.date === match.date && dt.time === match.kickoff),
-        sourceFixture: { date: dt?.date ?? null, kickoff: dt?.time ?? null, venue: fixture.location ?? null, sourceLabel: FD_SOURCE_LABEL },
+  // Gegenspieler
+  const pc = playerCandidates(raw, oppSource, 'fd-gegenspieler');
+  if (pc.candidates.length) {
+    blocks.gegenspieler = {
+      key: 'gegenspieler',
+      label: 'Gegenspieler (Kandidaten)',
+      value: { candidates: pc.candidates },
+      provenance: {
+        sources: [src('fd-gegenspieler', pc.games ? `Torjägerliste und Spielberichte der letzten ${pc.games} Ligaspiele` : 'Torjägerliste')],
+        status: 'vorhanden',
+        note: 'Belegt durch Torjägerliste und Aufstellungen auf fussball.de. Positionen außer Torwart liefert die Quelle nicht.',
       },
-      provenance: { sources: [{ id: 'trainer', label: 'Trainereingabe', kind: 'trainer' }, src('fd-ansetzung')], status: 'vorhanden' },
     };
-  } else messages.push('Begegnung in den kommenden Spielen auf fussball.de nicht gefunden – Termin bitte selbst prüfen.');
+  } else if (opp) messages.push('Keine Spielerdaten des Gegners gefunden (Torjägerliste/Spielberichte).');
 
-  messages.push('Spieltagspaarungen der ganzen Liga, Gegenspieler und Besonderheiten liefert diese Quelle nicht – bitte bei Bedarf manuell ergänzen.');
+  // Gegner-Fakten
+  if (opp && raw.liga) {
+    const facts: SourcedFact[] = [];
+    const sid = 'fd-gegner-fakten';
+    const oppAway = match.isHome;
+    const row = (oppAway ? raw.liga.away_table : raw.liga.home_table).find((r) => r.team_id === opp.id);
+    if (row && row.place !== null) {
+      facts.push({ id: 'fd-ha', sourceId: sid, text: `${oppAway ? 'Auswärtstabelle' : 'Heimtabelle'}: Platz ${row.place} (${row.won}S ${row.draw}U ${row.lost}N, ${row.goals_for}:${row.goals_against} Tore, ${row.points} Punkte).` });
+    }
+    const top = raw.liga.scorers.filter((s) => s.team_id === opp.id && s.goals !== null).sort((a, b) => (b.goals ?? 0) - (a.goals ?? 0))[0];
+    if (top) facts.push({ id: 'fd-top', sourceId: sid, text: `Bester Torschütze: ${top.name} mit ${top.goals} Toren${top.rank ? ` (Platz ${top.rank} der Liga)` : ''}.` });
+    const latest = raw.lineups.find((d) => d.lineup);
+    const side = latest?.lineup ? (isSourceTeam(latest.lineup.home.team, oppSource) ? 'home' : isSourceTeam(latest.lineup.away.team, oppSource) ? 'away' : null) : null;
+    const coach = side ? latest!.lineup![side].coaches[0] : undefined;
+    if (coach) facts.push({ id: 'fd-coach', sourceId: sid, text: `Trainer laut letztem Spielbericht: ${coach}.` });
+    if (facts.length) {
+      blocks.gegnerFakten = {
+        key: 'gegnerFakten',
+        label: 'Gegnerbezogene Fakten',
+        value: { facts },
+        provenance: { sources: [src(sid, fmtDate(today))], status: 'vorhanden' },
+      };
+    }
+  }
+
+  messages.push(opp ? `Gegner zugeordnet: „${oppSource ?? opp.name}“ (${opp.via}).` : 'Gegner auf fussball.de nicht gefunden – Gegnerdaten bleiben offen. Bitte fussball.de-Link des Gegners in der Begegnung eintragen.');
+  messages.push('Fahrzeit liefert fussball.de nicht – bitte im Datenbereich eintragen.');
   return { blocks, messages };
 }

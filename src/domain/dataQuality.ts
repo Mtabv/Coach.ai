@@ -158,6 +158,11 @@ export function evaluateBlocks(team: TeamProfile, match: Match, prep: Preparatio
         mismatch = true;
         issues.push(`Anstoß laut ${sf.sourceLabel}: ${sf.kickoff} – Spielanlage: ${match.kickoff}`);
       }
+      if (sf.matchday && match.matchday && sf.matchday !== match.matchday) {
+        mismatch = true;
+        issues.push(`Spieltag laut ${sf.sourceLabel}: ${sf.matchday}. – Spielanlage: ${match.matchday}.`);
+      }
+      if (sf.matchday && !match.matchday && match.competitionType === 'liga') issues.push(`Spieltag laut ${sf.sourceLabel}: ${sf.matchday}. – in der Spielanlage nicht eingetragen`);
     }
     out.push({
       key: 'begegnung',

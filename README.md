@@ -52,12 +52,12 @@ Echte Datenanbieter und KI gehören auf einen Server – keine Schlüssel im Fro
 ## Datenquellen
 
 - **Demo-Anbieter:** fiktive Beispieldaten, nur für den historischen Referenzfall.
-- **fussball.de (inoffiziell):** über einen lokal laufenden Crawler, nur auf Klick, gekennzeichnet. Einrichtung: `docs/fussballde-anbindung.md`.
+- **fussball.de (inoffiziell):** über einen lokal laufenden Crawler plus Coach.AI-Erweiterung (`tools/fussballde-dienst/`), nur auf Klick, gekennzeichnet. Liefert Tabelle (inkl. Punktabzüge), Spieltagspaarungen, Ergebnisse der ganzen Saison, direkte Duelle (5 Vorsaisons), Gegenspieler (Torjägerliste, Aufstellungen) und Gegnerfakten; der Gegner wird automatisch gefunden. Einrichtung: `docs/fussballde-anbindung.md`.
 - **Geplant:** offizieller Bezug über Sportmedia (`docs/anfrage-sportmedia.md`), Datenregeln in `docs/datenmatrix.md`.
 
 ## Bekannte Grenzen der Vorschau
 
-- fussball.de nur über den lokalen Crawler (inoffiziell); ohne ihn manuelle Ergänzung als Freitext. Keine FuPa-Anbindung.
+- fussball.de nur über den lokalen Dienst (inoffiziell); ohne ihn manuelle Ergänzung als Freitext. Keine FuPa-Anbindung. Fahrzeit, Spielerpositionen (außer Torwart) und Vorlagen liefert fussball.de nicht.
 - PDF entsteht über den Druckdialog des Browsers.
 - PPTX: Schrift Calibri, Layout an die HTML-Vorschau angelehnt; sehr lange Texte können in PowerPoint überlaufen.
 - Layoutwünsche (Frage 13) werden festgehalten; umgesetzt wird nur das Ein-/Ausblenden von Seiten in der Vorlage.
