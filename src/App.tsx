@@ -1,5 +1,6 @@
 import { href, useRoute } from './router';
 import { StoreProvider, useStore } from './state/store';
+import { ConfirmAction } from './ui/components';
 import { ArchiveDossierPage, ArchivePage } from './ui/pages/ArchivePage';
 import { MatchWorkspace } from './ui/pages/MatchWorkspace';
 import { NewMatchPage } from './ui/pages/NewMatchPage';
@@ -84,17 +85,15 @@ function Shell() {
       </main>
       <footer className="footer">
         <span>Coach.AI · Vorschau 0.1 · Daten bleiben in diesem Browser</span>
-        <button
+        <ConfirmAction
           className="link-btn"
-          onClick={() => {
-            if (confirm('Alle lokalen Daten löschen und Vorschau zurücksetzen? Auch bestätigte Dossiers werden gelöscht.')) {
-              resetAll();
-              window.location.hash = '#/';
-            }
+          label="Vorschau vollständig zurücksetzen"
+          confirmLabel="Alle Daten inkl. bestätigter Dossiers löschen? Erneut tippen"
+          onConfirm={() => {
+            resetAll();
+            window.location.hash = '#/';
           }}
-        >
-          Vorschau vollständig zurücksetzen
-        </button>
+        />
       </footer>
     </div>
   );

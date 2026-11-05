@@ -237,3 +237,43 @@ export function ProgressBar({ value, total, label }: { value: number; total: num
     </div>
   );
 }
+
+/**
+ * Zweistufige Bestätigung ohne Browser-Dialog: erster Klick fragt nach,
+ * zweiter Klick führt aus. Funktioniert auch in eingebetteten Ansichten.
+ */
+export function ConfirmAction({ label, confirmLabel, onConfirm, className = 'btn btn-danger-ghost', skip = false }: {
+  label: string;
+  confirmLabel: string;
+  onConfirm: () => void;
+  className?: string;
+  skip?: boolean;
+}) {
+  const [armed, setArmed] = useState(false);
+  useEffect(() => {
+    if (!armed) return;
+    const t = window.setTimeout(() => setArmed(false), 6000);
+    return () => window.clearTimeout(t);
+  }, [armed]);
+  return (
+    <span className="row gap wrap">
+      <button
+        type="button"
+        className={`${className} ${armed ? 'is-armed' : ''}`}
+        onClick={() => {
+          if (skip || armed) {
+            setArmed(false);
+            onConfirm();
+          } else setArmed(true);
+        }}
+      >
+        {armed ? confirmLabel : label}
+      </button>
+      {armed && (
+        <button type="button" className="btn btn-small btn-ghost" onClick={() => setArmed(false)}>
+          Abbrechen
+        </button>
+      )}
+    </span>
+  );
+}

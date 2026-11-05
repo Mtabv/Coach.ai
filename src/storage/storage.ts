@@ -26,10 +26,19 @@ export const localStorageAdapter: StorageAdapter = {
     }
   },
   save(state) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    } catch {
+      // Speicher nicht verfügbar (z. B. eingebettete Ansicht) – App läuft im Arbeitsspeicher weiter.
+      throw new Error('Lokaler Speicher nicht verfügbar');
+    }
   },
   clear() {
-    localStorage.removeItem(STORAGE_KEY);
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+    } catch {
+      /* ignorieren */
+    }
   },
 };
 

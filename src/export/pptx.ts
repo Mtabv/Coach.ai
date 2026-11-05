@@ -1,4 +1,5 @@
 import PptxGenJS from 'pptxgenjs';
+import { saveFile } from './hostBridge';
 import { FLAG_LABEL, type DossierContent, type FV, type Slide } from '../dossier/model';
 
 /**
@@ -298,17 +299,9 @@ export function pptxFileName(content: DossierContent, version?: number): string 
 
 export async function downloadPptx(content: DossierContent, version?: number): Promise<string> {
   const name = pptxFileName(content, version);
-  const blob = (await buildPptx(content).write({ outputType: 'blob' })) as Blob;
-  const url = URL.createObjectURL(new Blob([blob], { type: 'application/vnd.openxmlformats-officedocument.presentationml.presentation' }));
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = name;
-  a.style.display = 'none';
-  document.body.appendChild(a);
-  a.click();
-  window.setTimeout(() => {
-    URL.revokeObjectURL(url);
-    a.remove();
-  }, 2000);
+  const raw = (await buildPptx(content).write({ outputType: 'blob' })) as Blob;
+  const blob = new Blob([raw], { type: 'application/vnd.openxmlformats-officedocument.presentationml.presentation' });
+  const result = await saveFile(name, blob);
+  if (result === 'declined') throw new Error('Download abgelehnt');
   return name;
 }

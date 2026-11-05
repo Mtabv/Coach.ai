@@ -26,7 +26,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (first.current) {
       first.current = false;
-      localStorageAdapter.save(state);
+      try {
+        localStorageAdapter.save(state);
+      } catch {
+        setSaveStatus('fehler');
+      }
       return;
     }
     setSaveStatus('speichert');
@@ -44,7 +48,13 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   // Beim Verlassen der Seite sofort speichern
   useEffect(() => {
-    const flush = () => localStorageAdapter.save(stateRef.current);
+    const flush = () => {
+      try {
+        localStorageAdapter.save(stateRef.current);
+      } catch {
+        /* nicht verfügbar */
+      }
+    };
     window.addEventListener('beforeunload', flush);
     return () => window.removeEventListener('beforeunload', flush);
   }, []);

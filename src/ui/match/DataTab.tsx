@@ -8,7 +8,7 @@ import type { DataBlockKey, Match, SourceRef, TeamProfile } from '../../domain/t
 import { applyProviderResult, deleteMatch, resetReferenceCase, updatePrep } from '../../state/actions';
 import { useStore } from '../../state/store';
 import { navigate } from '../../router';
-import { Badge, Card, Field, Notice, Segmented, StatusBadge, TextArea, TextInput, useId } from '../components';
+import { Badge, Card, ConfirmAction, Field, Notice, Segmented, StatusBadge, TextArea, TextInput, useId } from '../components';
 
 const LEGEND: { s: Parameters<typeof StatusBadge>[0]['status']; t: string }[] = [
   { s: 'vorhanden', t: 'Daten liegen vor, noch nicht geprüft' },
@@ -85,29 +85,19 @@ export function DataTab({ match, team }: { match: Match; team: TeamProfile }) {
         {match.isHistoricalReference ? (
           <>
             <p className="muted">Setzt Daten, Antworten, Kader und Entwürfe des Referenzfalls zurück. Bestätigte Versionen im Archiv bleiben erhalten.</p>
-            <button
-              className="btn btn-danger-ghost"
-              onClick={() => {
-                if (confirm('Referenzfall zurücksetzen? Bestätigte Dossiers bleiben erhalten.')) update((s) => resetReferenceCase(s));
-              }}
-            >
-              Referenzfall zurücksetzen
-            </button>
+            <ConfirmAction label="Referenzfall zurücksetzen" confirmLabel="Wirklich zurücksetzen? Erneut tippen" onConfirm={() => update((s) => resetReferenceCase(s))} />
           </>
         ) : (
           <>
             <p className="muted">Löscht diese Begegnung und ihren Entwurf. Bestätigte Versionen bleiben im Archiv.</p>
-            <button
-              className="btn btn-danger-ghost"
-              onClick={() => {
-                if (confirm('Begegnung löschen? Bestätigte Dossiers bleiben im Archiv erhalten.')) {
-                  update((s) => deleteMatch(s, match.id));
-                  navigate({ name: 'start' });
-                }
+            <ConfirmAction
+              label="Begegnung löschen"
+              confirmLabel="Wirklich löschen? Erneut tippen"
+              onConfirm={() => {
+                update((s) => deleteMatch(s, match.id));
+                navigate({ name: 'start' });
               }}
-            >
-              Begegnung löschen
-            </button>
+            />
           </>
         )}
       </Card>

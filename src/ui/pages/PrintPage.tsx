@@ -3,6 +3,7 @@ import { contentForDossier } from '../../state/selectors';
 import { useStore } from '../../state/store';
 import { href } from '../../router';
 import { SlideCanvas } from '../dossier/SlideView';
+import { isEmbeddedHost } from '../../export/hostBridge';
 
 /** Druckansicht: jede Seite im Format 13,33 × 7,5 Zoll (16:9). „Als PDF speichern“ im Druckdialog. */
 export function PrintPage({ dossierId }: { dossierId: string }) {
@@ -19,10 +20,14 @@ export function PrintPage({ dossierId }: { dossierId: string }) {
       <div className="print-toolbar no-print">
         <div>
           <strong>Druckansicht</strong> · {content.meta.matchLabel} · {d.status === 'bestätigt' ? `bestätigte Version V${d.version}` : `Entwurf V${d.version}`}
-          <div className="small">Im Druckdialog „Als PDF speichern“ wählen, Querformat und Ränder „Keine“. Hintergrundgrafiken aktivieren.</div>
+          <div className="small">
+            {isEmbeddedHost()
+              ? 'In dieser eingebetteten Vorschau ist der Druckdialog gesperrt. PDF-Ausgabe: lokal gestartete Version verwenden oder die PPTX in PowerPoint als PDF speichern.'
+              : 'Im Druckdialog „Als PDF speichern“ wählen, Querformat und Ränder „Keine“. Hintergrundgrafiken aktivieren.'}
+          </div>
         </div>
         <div className="row gap">
-          <button className="btn btn-primary" onClick={() => window.print()}>
+          <button className="btn btn-primary" disabled={isEmbeddedHost()} onClick={() => window.print()}>
             Als PDF speichern / Drucken
           </button>
           <a className="btn" href={d.status === 'bestätigt' ? href({ name: 'archivDossier', dossierId: d.id }) : href({ name: 'spiel', matchId: d.matchId, tab: 'export' })}>

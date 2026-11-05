@@ -86,7 +86,7 @@ export function ExportTab({ match, team }: { match: Match; team: TeamProfile }) 
                 <button className="btn btn-primary" onClick={exportDraft} disabled={busy}>
                   {busy ? 'Erstellt …' : 'PPTX herunterladen'}
                 </button>
-                <a className="btn" href={href({ name: 'druck', dossierId: draft.id })} target="_blank" rel="noreferrer">
+                <a className="btn" href={href({ name: 'druck', dossierId: draft.id })}>
                   Druckansicht öffnen · Als PDF speichern
                 </a>
               </div>

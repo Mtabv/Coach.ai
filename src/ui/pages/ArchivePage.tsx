@@ -109,13 +109,17 @@ export function ArchiveDossierPage({ dossierId }: { dossierId: string }) {
           <button
             className="btn btn-primary"
             onClick={async () => {
-              const name = await (await import('../../export/pptx')).downloadPptx(content, d.version);
-              setToast(`PPTX erstellt: ${name}`);
+              try {
+                const name = await (await import('../../export/pptx')).downloadPptx(content, d.version);
+                setToast(`PPTX erstellt: ${name}`);
+              } catch (e) {
+                setToast(`PPTX: ${(e as Error).message}`);
+              }
             }}
           >
             PPTX herunterladen
           </button>
-          <a className="btn" href={href({ name: 'druck', dossierId: d.id })} target="_blank" rel="noreferrer">
+          <a className="btn" href={href({ name: 'druck', dossierId: d.id })}>
             Druckansicht · Als PDF speichern
           </a>
           {matchExists && (

@@ -7,7 +7,7 @@ import { computeAwaySchedule, computeHomeSchedule, isValidTime } from '../../dom
 import type { Answer, AnswerState, Match, Preparation, QuestionId, TeamProfile } from '../../domain/types';
 import { insertExampleAnswers, updatePrep } from '../../state/actions';
 import { useStore } from '../../state/store';
-import { Badge, Card, Field, Notice, ProgressBar, speechSupported, TextArea, TextInput } from '../components';
+import { Badge, Card, ConfirmAction, Field, Notice, ProgressBar, speechSupported, TextArea, TextInput } from '../components';
 import { SquadEditor } from '../SquadEditor';
 import { TravelInput } from './DataTab';
 
@@ -40,14 +40,13 @@ export function QuestionnaireTab({ match, team }: { match: Match; team: TeamProf
         {match.id === REFERENCE_MATCH_ID && (
           <Notice tone="demo" title="Historischer Referenzfall">
             Sie können fiktive Beispielantworten einsetzen, um den Ablauf schnell zu sehen. Sie werden als „Beispielangabe“ gekennzeichnet und gelten nur für diesen Fall.{' '}
-            <button
+            <ConfirmAction
               className="btn btn-small"
-              onClick={() => {
-                if (Object.keys(prep.answers).length === 0 || confirm('Vorhandene Antworten mit Beispielantworten überschreiben?')) update((s) => insertExampleAnswers(s, match.id));
-              }}
-            >
-              Beispielantworten einsetzen
-            </button>
+              label="Beispielantworten einsetzen"
+              confirmLabel="Vorhandene Antworten überschreiben? Erneut tippen"
+              skip={Object.keys(prep.answers).length === 0}
+              onConfirm={() => update((s) => insertExampleAnswers(s, match.id))}
+            />
           </Notice>
         )}
       </Card>
