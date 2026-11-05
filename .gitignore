@@ -4,3 +4,5 @@ dist
 test-results
 scripts/out
 Coach.ai-Vorschau.zip
+.env.local
+.env

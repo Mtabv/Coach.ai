@@ -19,6 +19,7 @@ export function NewMatchPage() {
   const [ha, setHa] = useState<'heim' | 'auswaerts'>('heim');
   const [venue, setVenue] = useState('');
   const [address, setAddress] = useState('');
+  const [oppLink, setOppLink] = useState('');
 
   if (!team) return null;
   const valid = opponent.trim().length > 0;
@@ -33,7 +34,8 @@ export function NewMatchPage() {
       date: isValidDate(date) ? date : null,
       kickoff: isValidTime(kickoff) ? kickoff : null,
       isHome: ha === 'heim',
-      venue: ha === 'heim' ? (venue.trim() ? { name: venue.trim(), address: address.trim() } : null) : venue.trim() ? { name: venue.trim(), address: address.trim() } : null,
+      venue: venue.trim() ? { name: venue.trim(), address: address.trim() } : null,
+      opponentFussballDe: oppLink.trim() || undefined,
     });
     update((s) => {
       addMatch(s, m);
@@ -75,6 +77,15 @@ export function NewMatchPage() {
           <TextInput label={ha === 'heim' ? 'Abweichender Spielort (leer = Heimspielort)' : 'Spielort'} value={venue} onChange={setVenue} placeholder={ha === 'heim' ? team.homeVenue.name : ''} />
           <TextInput label="Adresse" value={address} onChange={setAddress} />
         </div>
+        <TextInput
+          label="fussball.de-Link des Gegners (optional)"
+          type="url"
+          inputMode="url"
+          value={oppLink}
+          onChange={setOppLink}
+          placeholder="https://www.fussball.de/mannschaft/…/team-id/…"
+          hint="Für den Abruf der Gegnerergebnisse über den lokalen fussball.de-Dienst. Gegnername bitte wie auf fussball.de schreiben."
+        />
         {!date || !kickoff ? <Notice tone="warn">Datum und Anstoß können später ergänzt werden. Ohne sie bleibt der Zeitplan offen und das Dossier kann nicht bestätigt werden.</Notice> : null}
         <div className="row gap wrap">
           <button className="btn btn-primary" disabled={!valid} onClick={create}>

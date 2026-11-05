@@ -147,10 +147,22 @@ export function evaluateBlocks(team: TeamProfile, match: Match, prep: Preparatio
     if (!match.competition) issues.push('Wettbewerb fehlt');
     const venue = prep.organisation.venueOverride ?? match.venue ?? (match.isHome ? team.homeVenue : null);
     if (!venue?.name) issues.push('Spielort fehlt');
+    const sf = b.begegnung.value?.sourceFixture;
+    let mismatch = false;
+    if (sf) {
+      if (sf.date && match.date && sf.date !== match.date) {
+        mismatch = true;
+        issues.push(`Datum laut ${sf.sourceLabel}: ${sf.date.split('-').reverse().join('.')} – Spielanlage: ${match.date.split('-').reverse().join('.')}`);
+      }
+      if (sf.kickoff && match.kickoff && sf.kickoff !== match.kickoff) {
+        mismatch = true;
+        issues.push(`Anstoß laut ${sf.sourceLabel}: ${sf.kickoff} – Spielanlage: ${match.kickoff}`);
+      }
+    }
     out.push({
       key: 'begegnung',
       label: b.begegnung.label,
-      status: issues.length ? 'fehlend' : b.begegnung.confirmedAt ? 'bestätigt' : 'vorhanden',
+      status: issues.some((i) => /fehlt$/.test(i)) ? 'fehlend' : mismatch ? 'widersprüchlich' : b.begegnung.confirmedAt ? 'bestätigt' : 'vorhanden',
       issues,
       conflicts: [],
       required: true,
@@ -193,6 +205,10 @@ export function evaluateBlocks(team: TeamProfile, match: Match, prep: Preparatio
     if (league.length > 0 && expected !== null && maxMd > 0 && maxMd < expected) {
       status = 'veraltet';
       issues.push(`Letztes erfasstes Ligaspiel: ${maxMd}. Spieltag – erwartet: ${expected}. Spieltag.`);
+    }
+    const tRow = analyzeTable(b.tabelle, match).rows.find((r) => normalizeName(r.team) === normalizeName(teamName));
+    if (tRow && league.length > 0 && tRow.played > league.length) {
+      issues.push(`Ergebnisliste unvollständig: ${league.length} von ${tRow.played} Ligaspielen laut Tabelle. Saisonbilanz wird aus der Tabelle übernommen, Heim-/Auswärtsbilanz bleibt offen.`);
     }
     const other = teamResults(teamName, results, { before: match.date }).filter((r) => r.competitionType !== 'liga');
     if (other.length) issues.push(`${other.length} Pokal-/Testspiel(e) erkannt – nicht in „letzte fünf Ligaspiele“ enthalten.`);

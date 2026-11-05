@@ -98,4 +98,4 @@ export const demoProvider: MatchDataProvider = {
   },
 };
 
-export const providers: MatchDataProvider[] = [demoProvider];
+

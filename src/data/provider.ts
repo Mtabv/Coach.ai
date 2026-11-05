@@ -22,7 +22,7 @@ export interface MatchDataProvider {
   /** Beschriftung der Schaltfläche in der Oberfläche. */
   actionLabel: string;
   supports(team: TeamProfile, match: Match): boolean;
-  fetch(team: TeamProfile, match: Match): Promise<ProviderResult>;
+  fetch(team: TeamProfile, match: Match, fetchImpl?: typeof fetch): Promise<ProviderResult>;
 }
 
 /** Beispielinhalte, die nur im historischen Referenzfall angeboten werden. */

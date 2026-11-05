@@ -186,7 +186,7 @@ await page.getByLabel('Datum').fill('2026-10-30');
 await page.getByLabel('Anstoß').fill('15:00');
 await page.getByLabel('Spielort').fill('Sportplatz Grünau');
 await page.getByRole('button', { name: 'Begegnung anlegen' }).click();
-await page.waitForSelector('text=Keine automatische Recherche in der Vorschau');
+await page.waitForSelector('text=Keine automatische Datenquelle');
 check('Neue Begegnung ohne Demo-Button (keine Live-Recherche versprochen)', (await page.getByRole('button', { name: 'Beispieldaten laden' }).count()) === 0);
 check('Fehlende Fahrzeit erkannt', /Keine aktuelle Fahrzeit für diese Fahrt/.test(await page.locator('.main').innerText()));
 await page.locator('.stepper a', { hasText: 'Fragebogen' }).click();

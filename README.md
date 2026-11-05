@@ -49,9 +49,15 @@ Erweiterungen (Spielnachbereitung, Trainingsableitung, Halbserienanalyse, Spiele
 über `extensions` an Mannschaft, Spiel und Vorbereitung sowie über die Anbieter-Schnittstellen vorgesehen.
 Echte Datenanbieter und KI gehören auf einen Server – keine Schlüssel im Frontend.
 
+## Datenquellen
+
+- **Demo-Anbieter:** fiktive Beispieldaten, nur für den historischen Referenzfall.
+- **fussball.de (inoffiziell):** über einen lokal laufenden Crawler, nur auf Klick, gekennzeichnet. Einrichtung: `docs/fussballde-anbindung.md`.
+- **Geplant:** offizieller Bezug über Sportmedia (`docs/anfrage-sportmedia.md`), Datenregeln in `docs/datenmatrix.md`.
+
 ## Bekannte Grenzen der Vorschau
 
-- Keine Live-Recherche (fussball.de/FuPa); nur der Referenzfall hat Beispieldaten, sonst manuelle Ergänzung als Freitext.
+- fussball.de nur über den lokalen Crawler (inoffiziell); ohne ihn manuelle Ergänzung als Freitext. Keine FuPa-Anbindung.
 - PDF entsteht über den Druckdialog des Browsers.
 - PPTX: Schrift Calibri, Layout an die HTML-Vorschau angelehnt; sehr lange Texte können in PowerPoint überlaufen.
 - Layoutwünsche (Frage 13) werden festgehalten; umgesetzt wird nur das Ein-/Ausblenden von Seiten in der Vorlage.

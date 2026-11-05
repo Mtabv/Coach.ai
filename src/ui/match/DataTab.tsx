@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { providers } from '../../data/demoProvider';
+import { providers } from '../../data/registry';
 import { analyzeTable, evaluateBlocks, type BlockEvaluation } from '../../domain/dataQuality';
 import { now } from '../../domain/factory';
 import { lastLeagueGames, seasonSummary } from '../../domain/stats';
@@ -47,13 +47,20 @@ export function DataTab({ match, team }: { match: Match; team: TeamProfile }) {
           ) : null
         }
       >
-        {provider ? (
+        {provider?.kind === 'demo' && (
           <Notice tone="demo" title="Demo-Datenanbieter">
             Für den historischen Referenzfall stehen feste, fiktive Beispieldaten bereit. Es findet keine Online-Recherche statt. Die Daten enthalten absichtlich einen Widerspruch und eine veraltete Quelle, um die Prüfung zu zeigen.
           </Notice>
-        ) : (
-          <Notice tone="info" title="Keine automatische Recherche in der Vorschau">
-            Eine Anbindung an fussball.de oder FuPa ist in dieser Vorschau nicht vorhanden. Fehlende Angaben bleiben sichtbar offen; Sie können je Datenblock eine manuelle Ergänzung erfassen.
+        )}
+        {provider?.kind === 'live' && (
+          <Notice tone="info" title="fussball.de (inoffiziell ausgelesen)">
+            Abruf über Ihren lokal laufenden fussball.de-Dienst – nur auf Klick, keine Hintergrundabfragen. Die Daten werden mit Quelle und Datenstand gekennzeichnet; bitte Zuordnung prüfen.
+            {!match.opponentFussballDe && <> Für Gegnerergebnisse bitte unten bei der Begegnung den fussball.de-Link des Gegners eintragen.</>}
+          </Notice>
+        )}
+        {!provider && (
+          <Notice tone="info" title="Keine automatische Datenquelle">
+            Hinterlegen Sie unter „Mannschaft“ den fussball.de-Link Ihrer Mannschaft und hier bei der Begegnung den Link des Gegners, um Daten über den lokalen fussball.de-Dienst zu laden. Ohne Quelle bleiben fehlende Angaben sichtbar offen; je Datenblock ist eine manuelle Ergänzung möglich.
           </Notice>
         )}
         {messages.map((m) => (
@@ -139,6 +146,7 @@ function MatchBasics({ match, team, evaluation }: { match: Match; team: TeamProf
             <Segmented label="Heim oder auswärts" value={match.isHome ? 'h' : 'a'} onChange={(v) => setM((m) => (m.isHome = v === 'h'))} options={[{ value: 'h', label: 'Heim' }, { value: 'a', label: 'Auswärts' }]} />
           </div>
           <TextInput label="Spielort" value={match.venue?.name ?? ''} onChange={(v) => setM((m) => (m.venue = v ? { ...(m.venue ?? {}), name: v } : null))} placeholder={match.isHome ? team.homeVenue.name : ''} />
+          <TextInput label="fussball.de-Link des Gegners" type="url" inputMode="url" value={match.opponentFussballDe ?? ''} placeholder="https://www.fussball.de/mannschaft/…/team-id/…" onChange={(v) => setM((m) => (m.opponentFussballDe = v.trim() || undefined))} />
         </div>
       ) : (
         <dl className="kv">
@@ -172,6 +180,21 @@ function MatchBasics({ match, team, evaluation }: { match: Match; team: TeamProf
           {i}
         </p>
       ))}
+      {blk.value?.sourceFixture?.venue && <p className="small">Spielort laut {blk.value.sourceFixture.sourceLabel}: {blk.value.sourceFixture.venue}</p>}
+      {evaluation.status === 'widersprüchlich' && blk.value?.sourceFixture && !match.isHistoricalReference && (
+        <button
+          className="btn btn-small"
+          onClick={() =>
+            setM((m) => {
+              const sf = blk.value!.sourceFixture!;
+              if (sf.date) m.date = sf.date;
+              if (sf.kickoff) m.kickoff = sf.kickoff;
+            })
+          }
+        >
+          Termin von fussball.de übernehmen
+        </button>
+      )}
       <ConfirmButton blockKey="begegnung" match={match} disabled={evaluation.status === 'fehlend'} />
     </Card>
   );

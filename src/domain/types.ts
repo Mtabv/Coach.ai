@@ -161,6 +161,8 @@ export interface Match {
   isHistoricalReference: boolean;
   isDemo: boolean;
   createdAt: Timestamp;
+  /** Link oder ID der Gegnermannschaft auf fussball.de (für den Datenabruf). */
+  opponentFussballDe?: string;
   extensions?: Record<string, unknown>;
 }
 
@@ -280,7 +282,11 @@ export type DataBlockKey =
   | 'fahrzeit';
 
 export interface DataBlocks {
-  begegnung: DataBlock<{ confirmedFromSource: boolean }>;
+  begegnung: DataBlock<{
+    confirmedFromSource: boolean;
+    /** Ansetzung laut externer Quelle – wird mit der Spielanlage verglichen. */
+    sourceFixture?: { date: LocalDate | null; kickoff: LocalTime | null; venue: string | null; sourceLabel: string };
+  }>;
   tabelle: DataBlock<{ snapshots: TableSnapshot[]; primarySourceId: string | null }>;
   spieltag: DataBlock<{ matchday: number | null; pairings: FixturePairing[] }>;
   ergebnisseEigene: DataBlock<{ team: string; results: ResultEntry[] }>;

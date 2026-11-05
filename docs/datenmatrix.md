@@ -160,6 +160,8 @@ Ausschließlich Trainer: 3 Botschaften (Überschrift + Begleittext), Leitmotiv, 
 | **C1 – Amtliche Daten via Sportmedia** | Backend empfängt SFTP-Lieferungen (Ergebnisse, Tabellen, Spielberichte, Spielpläne), liest sie ein, stellt sie Coach.AI mit Datenstand bereit | hoch (Backend, Betrieb) | Vertrag Sportmedia, Kosten **[E11] [E12]** |
 | **C2 – Spielerdetails via FuPa** | Abruf nur mit Zustimmung von FuPa | mittel–hoch | Zustimmung FuPa |
 
+**Stand 05.11.2026:** Als Übergang ist ein inoffizieller fussball.de-Anbieter über einen lokal laufenden Crawler umgesetzt (`docs/fussballde-anbindung.md`), nur für die eigene Mannschaft, nur auf Klick.
+
 Empfehlung: **B als nächster Schritt** (sofort nutzbar, kein Vertrag nötig), parallel Anfrage bei Sportmedia. Das Datenmodell von B wird so gebaut, dass die Sportmedia-Lieferung später dieselben Datenblöcke befüllt.
 
 ---

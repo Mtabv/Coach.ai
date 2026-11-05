@@ -127,7 +127,7 @@ export function TeamPage() {
               value={l.url}
               placeholder="https://…"
               onChange={(v) => set((t) => (t.links[i].url = v))}
-              hint={i === 0 ? 'Wird später für die Recherche genutzt. In der Vorschau erfolgt kein Abruf.' : undefined}
+              hint={l.kind === 'fussball.de' ? 'Mannschaftsseite mit „team-id“ im Link. Wird für den Abruf über den lokalen fussball.de-Dienst genutzt.' : undefined}
             />
           ))}
           <TextInput label="Heimspielort" value={team.homeVenue.name} onChange={(v) => set((t) => (t.homeVenue.name = v))} />

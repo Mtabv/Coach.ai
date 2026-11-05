@@ -268,6 +268,8 @@ export function buildDossier(team: TeamProfile, match: Match, prep: Preparation)
     const leagueAll = teamResults(teamName, results, { type: 'liga', before: match.date });
     const maxMd = Math.max(0, ...leagueAll.map((r) => r.matchday ?? 0));
     const stale = expectedMd !== null && maxMd > 0 && maxMd < expectedMd;
+    // Liefert die Quelle weniger Ligaspiele als die Tabelle ausweist, ist die Ergebnisliste unvollständig.
+    const incomplete = Boolean(tableRow && tableRow.played > s.all.played);
     return {
       key,
       number,
@@ -278,8 +280,15 @@ export function buildDossier(team: TeamProfile, match: Match, prep: Preparation)
       last5Note: has ? (s.last5.length < 5 ? `Nur ${s.last5.length} Ligaspiele vorhanden.` : 'Nur Ligaspiele – Pokal- und Testspiele nicht berücksichtigt.') : 'Keine Ligaergebnisse vorhanden.',
       records: has
         ? [
-            { label: 'Saisonbilanz (Liga)', value: fv(formatRecord(s.all), stale ? 'veraltet' : 'ok') },
-            { label: relevant === 'home' ? 'Heimbilanz' : 'Auswärtsbilanz', value: fv(rel.played ? formatRecord(rel) : 'Noch keine Spiele', stale ? 'veraltet' : 'ok') },
+            incomplete && tableRow
+              ? { label: 'Saisonbilanz (Liga, laut Tabelle)', value: fv(`${tableRow.won}S ${tableRow.drawn}U ${tableRow.lost}N · ${tableRow.goalsFor}:${tableRow.goalsAgainst} Tore`, tableRow.unresolved.length ? 'widersprüchlich' : 'ok') }
+              : { label: 'Saisonbilanz (Liga)', value: fv(formatRecord(s.all), stale ? 'veraltet' : 'ok') },
+            {
+              label: relevant === 'home' ? 'Heimbilanz' : 'Auswärtsbilanz',
+              value: incomplete
+                ? fv(`unvollständig – nur ${s.all.played} von ${tableRow!.played} Ligaspielen vorhanden`, 'offen')
+                : fv(rel.played ? formatRecord(rel) : 'Noch keine Spiele', stale ? 'veraltet' : 'ok'),
+            },
             { label: 'Tabellenpunkte', value: tableRow ? (tableRow.unresolved.includes('points') ? fv('ungeklärt', 'widersprüchlich') : fv(`${tableRow.points}${tableRow.pointDeduction ? ` (−${tableRow.pointDeduction} Abzug)` : ''}`)) : fv('Tabelle fehlt', 'offen') },
           ]
         : [{ label: 'Saisonbilanz (Liga)', value: fv('Keine Daten', 'offen') }],
