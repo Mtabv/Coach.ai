@@ -84,8 +84,20 @@ export interface FormSlide<K extends 'gegnerForm' | 'unsereForm'> extends SlideB
 }
 
 export interface DangerSlide extends SlideBase<'gegnerGefahr'> {
-  players: { name: string; meta: string; reasons: string[]; coachNote: string }[];
+  players: {
+    name: string;
+    meta: string;
+    reasons: string[];
+    coachNote: string;
+    /** Initialen als Platzhalter, wenn kein Foto vorliegt. */
+    initials: string;
+    photo?: { url: string; credit: string };
+    /** FuPa-MVP-Wert in Prozent. */
+    mvp?: number;
+  }[];
   note: string;
+  /** Erklärung des MVP-Werts und Bildnachweise – auf der Folie sichtbar, nicht nur in der Fußzeile. */
+  legend: string;
 }
 
 export interface ProfileSlide extends SlideBase<'gegnerAuffaelligkeiten'> {

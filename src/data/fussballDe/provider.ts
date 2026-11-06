@@ -2,6 +2,8 @@ import { now } from '../../domain/factory';
 import type { Match, TeamProfile } from '../../domain/types';
 import type { MatchDataProvider, ProviderFetchOptions, ProviderResult } from '../provider';
 import { extractTeamId, fdApi, FdUnavailableError, type FdGame, type FdGameDetail, type FdLiga, type FdMatchday } from './api';
+import { fupaApi, parseFupaLink, type FupaTeam } from '../fupa/api';
+import { detailSlugs, findInFupaTable, fupaArt, fupaSeason, teamNumber, type FupaBundle } from '../fupa/mapping';
 import { berlinDateTime, categoryOf, cleanName, competitionTypeOf, findOpponentInTable, mapToBlocks, pickClubTeam, seasonOf, seasonRange, teamNameFromGames, type FdBundle } from './mapping';
 
 export function ownFussballDeTeamId(team: TeamProfile): string | null {
@@ -37,6 +39,68 @@ export async function resolveOpponent(match: Match, liga: FdLiga | null, ownId: 
   return null;
 }
 
+export function ownFupaLink(team: TeamProfile): string | null {
+  return team.links.find((l) => l.kind === 'FuPa')?.url ?? null;
+}
+
+/** Mannschaft auf FuPa über Link oder Vereinsnamen finden (Kennung wird von FuPa bestätigt, nicht geraten). */
+async function fupaTeamFor(link: string | null | undefined, names: (string | null | undefined)[], season: string, category: string | null, f?: typeof fetch): Promise<{ team: FupaTeam; via: string } | null> {
+  const parsed = parseFupaLink(link);
+  if (parsed?.team) return { team: await fupaApi.team(parsed.team, f), via: 'FuPa-Link' };
+  const art = fupaArt(category);
+  if (!art) return null;
+  const clean = names.filter((n): n is string => Boolean(n)).map((n) => cleanName(n));
+  const number = clean.length ? teamNumber(clean[0]) : 1;
+  const variants = [...(parsed?.club ? [parsed.club] : []), ...clean.map((n) => n.replace(/\s+(I{1,3}|IV|[2-9])$/i, ''))];
+  if (!variants.length) return null;
+  const hit = await fupaApi.findeTeam(variants, season, art.art, number, f);
+  return hit ? { team: hit, via: parsed?.club ? 'FuPa-Vereinslink' : 'Vereinsname' } : null;
+}
+
+/** FuPa-Ergänzung laden: eigene Mannschaft → Tabelle → Gegner → Kader → Spielerdetails. Fehler werden als Hinweis gemeldet. */
+export async function loadFupa(team: TeamProfile, match: Match, liga: FdLiga | null, oppFdName: string | null, refDate: string, notes: string[], f?: typeof fetch): Promise<FupaBundle | null> {
+  const season = fupaSeason(refDate);
+  const category = categoryOf(liga?.staffel_name ?? null);
+  const ownFdName = liga?.table.find((r) => r.team_id === ownFussballDeTeamId(team))?.team ?? null;
+  try {
+    const own = await fupaTeamFor(ownFupaLink(team), [team.name, ownFdName], season, category, f).catch(() => null);
+    if (!own) notes.push('FuPa: eigene Mannschaft nicht gefunden – bitte FuPa-Link im Mannschaftsprofil eintragen.');
+    const table = own?.team.competition_slug && own.team.season_slug ? await fupaApi.tabelle(own.team.competition_slug, own.team.season_slug, f).catch(() => null) : null;
+    let opp: FupaTeam | null = null;
+    let oppVia: string | null = null;
+    const oppLink = parseFupaLink(match.opponentFupa);
+    if (oppLink?.team) {
+      opp = await fupaApi.team(oppLink.team, f);
+      oppVia = 'FuPa-Link in der Begegnung';
+    } else {
+      const row = match.competitionType === 'liga' || !oppLink ? findInFupaTable(table, [match.opponent, oppFdName], own?.team.slug ?? null) : null;
+      if (row?.team_slug) {
+        opp = await fupaApi.team(row.team_slug, f);
+        oppVia = 'FuPa-Tabelle der eigenen Liga';
+      } else {
+        const hit = await fupaTeamFor(match.opponentFupa, [match.opponent, oppFdName], season, category, f).catch(() => null);
+        if (hit) {
+          opp = hit.team;
+          oppVia = `FuPa über ${hit.via}`;
+        }
+      }
+    }
+    let squad = null;
+    let details: FupaBundle['details'] = [];
+    if (opp) {
+      squad = await fupaApi.kader(opp.slug, f).catch((e) => (notes.push(`FuPa-Kader nicht abrufbar: ${(e as Error).message}`), null));
+      if (squad) {
+        const slugs = detailSlugs(squad);
+        if (slugs.length) details = await fupaApi.spieler(slugs, opp.slug, f).catch((e) => (notes.push(`FuPa-Spielerdetails nicht abrufbar: ${(e as Error).message}`), []));
+      }
+    }
+    return { own: own?.team ?? null, opp, oppVia, table, squad, details };
+  } catch (e) {
+    notes.push(`FuPa nicht abrufbar: ${(e as Error).message}${e instanceof FdUnavailableError ? ' (Dienst ggf. ohne FuPa-Teil gestartet)' : ''}`);
+    return null;
+  }
+}
+
 /** Sucht den Spieltag, an dem beide Mannschaften gegeneinander spielen (ab erwartetem Spieltag). */
 export async function findMatchday(staffel: string, ownId: string, oppId: string, guesses: (number | null | undefined)[], f?: typeof fetch): Promise<FdMatchday | null> {
   const tried = new Set<number>();
@@ -60,9 +124,9 @@ export async function findMatchday(staffel: string, ownId: string, oppId: string
  */
 export const fussballDeProvider: MatchDataProvider = {
   id: 'fussballde-inoffiziell',
-  label: 'fussball.de (inoffiziell, über lokalen Dienst)',
+  label: 'fussball.de und FuPa (inoffiziell, über lokalen Dienst)',
   kind: 'live',
-  actionLabel: 'Daten von fussball.de laden',
+  actionLabel: 'Daten von fussball.de und FuPa laden',
 
   supports(team: TeamProfile, match: Match) {
     return !match.isHistoricalReference && ownFussballDeTeamId(team) !== null;
@@ -87,10 +151,12 @@ export const fussballDeProvider: MatchDataProvider = {
       progress('Gegner wird auf fussball.de gesucht …');
       const opp = await resolveOpponent(match, liga, ownId, f);
 
-      progress('Spielpläne, Spieltag und frühere Saisons werden geladen …');
       const season = seasonRange(refDate);
       const ownRow = liga?.table.find((r) => r.team_id === ownId);
       const historyRanges = Array.from({ length: HISTORY_SEASONS }, (_, i) => seasonRange(refDate, i + 1));
+      const oppFdName = opp ? liga?.table.find((r) => r.team_id === opp.id)?.team ?? opp.name : null;
+      progress('Spielpläne, Spieltag, frühere Saisons und FuPa-Kader werden geladen …');
+      const fupaPromise = loadFupa(team, match, liga, oppFdName, refDate, notes, f);
       const [ownSeason, oppSeason, historyResults, matchday] = await Promise.all([
         fdApi.saison(ownId, season.von, season.bis, f),
         opp ? fdApi.saison(opp.id, season.von, season.bis, f).catch((e) => (notes.push(`Spielplan des Gegners nicht abrufbar: ${(e as Error).message}`), null)) : Promise.resolve(null),
@@ -125,9 +191,10 @@ export const fussballDeProvider: MatchDataProvider = {
         }
       }
 
-      const bundle: FdBundle = { liga, ownId, opp, ownSeason, oppSeason, history, historySeasons, matchday, lineups, retrievedAt };
+      const fupa = await fupaPromise;
+      const bundle: FdBundle = { liga, ownId, opp, ownSeason, oppSeason, history, historySeasons, matchday, lineups, fupa, retrievedAt };
       const { blocks, messages } = mapToBlocks(team, match, bundle);
-      return { blocks, messages: ['Daten von fussball.de geladen (inoffiziell ausgelesen). Bitte Datenstand und Zuordnung prüfen.', ...messages, ...notes] };
+      return { blocks, messages: [`Daten von fussball.de${fupa?.squad ? ' und FuPa' : ''} geladen (inoffiziell ausgelesen). Bitte Datenstand und Zuordnung prüfen.`, ...messages, ...notes] };
     } catch (e) {
       if (e instanceof FdUnavailableError) {
         return { blocks: {}, messages: [e.message, 'Anleitung: docs/fussballde-anbindung.md. Ohne den lokalen Dienst bleiben die Angaben offen.'] };

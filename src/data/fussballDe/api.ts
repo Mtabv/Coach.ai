@@ -115,7 +115,7 @@ export const FD_BASE = '/datenquelle/fussballde';
 
 export class FdUnavailableError extends Error {}
 
-async function getJson<T>(path: string, fetchImpl: typeof fetch = fetch): Promise<T> {
+export async function getJson<T>(path: string, fetchImpl: typeof fetch = fetch): Promise<T> {
   let res: Response;
   try {
     res = await fetchImpl(`${FD_BASE}${path}`, { headers: { Accept: 'application/json' } });

@@ -1722,10 +1722,55 @@ select:focus-visible {
   border-top: 8px solid var(--lime);
   border-radius: 10px;
   padding: 18px 20px;
-  min-height: 470px;
+  min-height: 420px;
   display: flex;
   flex-direction: column;
   gap: 10px;
+}
+.s-legend {
+  margin: 10px 2px 0;
+  font-size: 12.5px;
+  color: var(--muted);
+  line-height: 1.35;
+}
+.s-player-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 10px;
+}
+.s-player-photo {
+  width: 112px;
+  height: 112px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: var(--lime-soft);
+  border: 3px solid var(--lime);
+}
+.s-player-initials {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 38px;
+  font-weight: 800;
+  color: var(--green-900);
+}
+.s-player-mvp {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: var(--green-900);
+  color: #fff;
+  border-radius: 10px;
+  padding: 6px 10px;
+  line-height: 1.1;
+}
+.s-player-mvp strong {
+  font-size: 22px;
+}
+.s-player-mvp span {
+  font-size: 12px;
+  letter-spacing: 0.08em;
 }
 .s-player-name {
   font-size: 23px;

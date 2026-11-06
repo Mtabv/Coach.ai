@@ -184,12 +184,12 @@ Empfehlung: **B als nächster Schritt** (sofort nutzbar, kein Vertrag nötig), p
 | --- | --- | --- |
 | E1 | Amtliche Daten: fussball.de vor FuPa? | Ja |
 | E2 | Spielerdaten: FuPa vor fussball.de? | Ja |
-| E3 | Logos, Spieler- und Kleidungsfotos: übernehmen (Rechte?) oder nur eigene Uploads? | Vorerst nur eigene Uploads, Gegner mit Platzhalter |
+| E3 | Logos, Spieler- und Kleidungsfotos: übernehmen (Rechte?) oder nur eigene Uploads? | Vorerst nur eigene Uploads, Gegner mit Platzhalter. **Entschieden 06.11.2026:** Spielerfotos des Gegners von FuPa mit Bildnachweis; Rechteklärung beim Trainer. |
 | E4 | Darf ein Dossier ohne Tabelle bestätigt werden? | Ja, mit Markierung „offen“ |
 | E5 | Fahrzeit automatisch über Routendienst (z. B. OpenStreetMap-basiert) oder nur Trainerangabe? | Vorschlag anzeigen, Trainer bestätigt |
 | E6 | Wie weit zurück reichen direkte Duelle? | 2 Saisons, Pokal getrennt gekennzeichnet |
 | E7 | Ablauf-Bezeichnungen wie im Referenzdossier oder wie im Briefing? | Briefing-Zeiten, Bezeichnungen frei wählbar |
-| E8 | FuPa-MVP-Wert verwenden? | Ja, mit Datum und Definition |
+| E8 | FuPa-MVP-Wert verwenden? | Ja, mit Datum und Definition (**umgesetzt 06.11.2026**) |
 | E9 | Neue Trainerfelder „Sportliche Einordnung“ und „Merksatz zur Spielweise“ aufnehmen? | Ja (fehlen in der Vorschau) |
 | E10 | Trainer/Staff auf der Kaderfolie? | Ja, aus Profil |
 | E11 | Für welche Ligen/Regionen und Altersklassen soll Stufe C zuerst funktionieren? | Hessen, Herren, Gruppen-/Kreisoberliga |

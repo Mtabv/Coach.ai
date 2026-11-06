@@ -9,6 +9,7 @@ Datenbild braucht:
   GET /api/coachai/team/{team_id}/saison?von=&bis= Alle Spiele der Mannschaft im Zeitraum (Liga, Pokal, Test)
   GET /api/coachai/staffel/{staffel}/spieltag/{n}  Paarungen eines Spieltags mit Datum/Anstoß
   GET /api/coachai/spiele/aufstellungen?ids=a,b    Aufstellungen und Torschützen ausgewählter Spiele
+  GET /api/coachai/fupa/…                          FuPa: Kader, Spielerfotos, MVP-Wert, Tabelle (fupa_dienst.py)
 
 Start (im Ordner des Crawlers, dessen venv aktiv ist):
 
@@ -332,3 +333,7 @@ async def coachai_aufstellungen(ids: str = Query(..., max_length=400)):
         }
 
     return await asyncio.gather(*(one(g) for g in game_ids))
+
+
+# FuPa-Endpunkte (Kader, Spielerfotos, MVP-Wert) am selben Dienst anmelden.
+import fupa_dienst  # noqa: E402,F401

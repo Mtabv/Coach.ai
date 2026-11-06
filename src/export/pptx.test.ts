@@ -46,4 +46,25 @@ describe('PPTX-Export', () => {
     expect(s4).toContain('17:20');
     expect(pptxFileName(content)).toMatch(/\.pptx$/);
   });
+
+  it('bettet Spielerfotos der Gefahr-Folie ein und zeigt sonst Initialen', async () => {
+    const s = initialState();
+    applyProviderResult(s, REFERENCE_MATCH_ID, await demoProvider.fetch(s.teams[0], s.matches[0]));
+    insertExampleAnswers(s, REFERENCE_MATCH_ID);
+    const content = buildDossier(s.teams[0], s.matches[0], s.preparations[REFERENCE_MATCH_ID]);
+    const danger = content.slides.find((x) => x.key === 'gegnerGefahr');
+    if (!danger || danger.key !== 'gegnerGefahr' || danger.players.length < 2) throw new Error('Gefahr-Folie ohne Spieler');
+    danger.players[0] = { ...danger.players[0], photo: { url: 'https://image.fupa.net/player/abcdef/200x200.jpeg', credit: 'FuPa / Test' }, mvp: 87 };
+    // 1×1-Pixel-JPEG
+    const jpeg =
+      'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAP//////////////////////////////////////////////////////////////////////////////////////wgALCAABAAEBAREA/8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAgBAQABPxA=';
+    const buf = (await buildPptx(content, new Map([[danger.players[0].photo!.url, jpeg]])).write({ outputType: 'nodebuffer', compression: true })) as Buffer;
+    const files = unzip(buf);
+    const n = content.slides.indexOf(danger) + 1;
+    const xml = files.get(`ppt/slides/slide${n}.xml`)!;
+    expect(xml).toContain('<p:pic>');
+    expect(xml).toContain('87 %');
+    expect(xml).toContain(danger.players[1].initials);
+    expect([...files.keys()].some((f) => f.startsWith('ppt/media/'))).toBe(true);
+  });
 });

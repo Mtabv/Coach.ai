@@ -1,5 +1,6 @@
+import { FUPA_MVP_DEFINITION } from '../data/fupa/mapping';
 import { analyzeTable } from '../domain/dataQuality';
-import { selectKeyPlayers } from '../domain/players';
+import { selectKeyPlayers, type SelectedPlayer } from '../domain/players';
 import { kitLabel } from '../domain/questionnaire';
 import { formatRecord, normalizeName, opponentKpis, seasonSummary, teamResults, type TeamResult } from '../domain/stats';
 import { computeAwaySchedule, computeHomeSchedule, formatDate, isValidDate, isValidTime } from '../domain/time';
@@ -317,9 +318,12 @@ export function buildDossier(team: TeamProfile, match: Match, prep: Preparation)
     kicker: opp,
     players: selected.map((p) => ({
       name: p.name,
-      meta: [p.number ? `#${p.number}` : '', p.position ?? ''].filter(Boolean).join(' · '),
-      reasons: p.reasons,
+      meta: [p.number ? `#${p.number}` : '', p.position ?? '', p.heightCm ? `${(p.heightCm / 100).toFixed(2).replace('.', ',')} m` : '', p.isCaptain ? 'Kapitän' : ''].filter(Boolean).join(' · '),
+      reasons: p.reasons.filter((r) => !/^FuPa-MVP-Wert/.test(r)),
       coachNote: p.coachNote,
+      initials: initialsOf(p.name),
+      ...(p.photo ? { photo: p.photo } : {}),
+      ...(p.mvp ? { mvp: p.mvp.value } : {}),
     })),
     note:
       selected.length === 0
@@ -328,6 +332,12 @@ export function buildDossier(team: TeamProfile, match: Match, prep: Preparation)
           ? `Nur ${selected.length} Spieler mit belegten Angaben – bewusst keine vier erzwungen.`
           : '',
     sources: playerSources,
+    legend: [
+      selected.some((p) => p.mvp) ? `MVP: ${FUPA_MVP_DEFINITION}${mvpAsOf(selected) ? ` Stand ${mvpAsOf(selected)}.` : ''}` : '',
+      selected.some((p) => p.photo) ? `Fotos: ${[...new Set(selected.filter((p) => p.photo).map((p) => p.photo!.credit))].join('; ')}.` : '',
+    ]
+      .filter(Boolean)
+      .join(' '),
     footnote: 'Trainerhinweise haben Vorrang vor statistischer Vorauswahl.',
   });
 
@@ -439,4 +449,16 @@ export function buildDossier(team: TeamProfile, match: Match, prep: Preparation)
     },
     slides: slides.filter((s) => team.template.slides.includes(s.key)),
   };
+}
+
+function initialsOf(name: string): string {
+  const parts = name.replace(/[^\p{L}\s-]/gu, ' ').split(/[\s-]+/).filter(Boolean);
+  if (!parts.length) return '?';
+  return ((parts[0][0] ?? '') + (parts.length > 1 ? parts[parts.length - 1][0] : '')).toUpperCase();
+}
+
+function mvpAsOf(players: SelectedPlayer[]): string | null {
+  const iso = players.map((p) => p.mvp?.asOf).find(Boolean);
+  const m = iso ? /^(\d{4})-(\d{2})-(\d{2})/.exec(iso) : null;
+  return m ? `${m[3]}.${m[2]}.${m[1]}` : null;
 }

@@ -56,8 +56,8 @@ export function DataTab({ match, team }: { match: Match; team: TeamProfile }) {
           </Notice>
         )}
         {provider?.kind === 'live' && (
-          <Notice tone="info" title="fussball.de (inoffiziell ausgelesen)">
-            Abruf über Ihren lokal laufenden fussball.de-Dienst – nur auf Klick, keine Hintergrundabfragen. Geladen werden Tabelle, Spielpläne, Spieltag, direkte Duelle, Torjäger und Aufstellungen; der Gegner wird über die Tabelle oder die Vereinssuche gefunden. Die Daten werden mit Quelle und Datenstand gekennzeichnet; bitte Zuordnung prüfen.
+          <Notice tone="info" title="fussball.de und FuPa (inoffiziell ausgelesen)">
+            Abruf über Ihren lokal laufenden Dienst – nur auf Klick, keine Hintergrundabfragen. Von fussball.de: Tabelle, Spielpläne, Spieltag, direkte Duelle, Torjäger und Aufstellungen. Von FuPa: Kader mit Positionen, Einsätzen, Toren, Vorlagen, MVP-Wert und Spielerfotos sowie eine zweite Tabelle zum Abgleich. Der Gegner wird jeweils über die Tabelle (oder Vereinssuche) gefunden. Die Daten werden mit Quelle und Datenstand gekennzeichnet; bitte Zuordnung prüfen.
           </Notice>
         )}
         {!provider && (
@@ -175,6 +175,7 @@ function MatchBasics({ match, team, evaluation }: { match: Match; team: TeamProf
           </div>
           <TextInput label="Spielort" value={match.venue?.name ?? ''} onChange={(v) => setM((m) => (m.venue = v ? { ...(m.venue ?? {}), name: v } : null))} placeholder={match.isHome ? team.homeVenue.name : ''} />
           <TextInput label="fussball.de-Link des Gegners" type="url" inputMode="url" value={match.opponentFussballDe ?? ''} placeholder="https://www.fussball.de/mannschaft/…/team-id/…" onChange={(v) => setM((m) => (m.opponentFussballDe = v.trim() || undefined))} />
+          <TextInput label="FuPa-Link des Gegners (optional)" type="url" inputMode="url" value={match.opponentFupa ?? ''} placeholder="https://www.fupa.net/team/…" onChange={(v) => setM((m) => (m.opponentFupa = v.trim() || undefined))} />
         </div>
       ) : (
         <dl className="kv">

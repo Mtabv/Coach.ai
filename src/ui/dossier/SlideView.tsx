@@ -316,6 +316,21 @@ function renderBody(slide: Slide): ReactNode {
           <div className="s-players" style={{ gridTemplateColumns: `repeat(${Math.max(slide.players.length, 1)}, 1fr)` }}>
             {slide.players.map((p, i) => (
               <div key={i} className="s-player">
+                <div className="s-player-head">
+                  {p.photo ? (
+                    <img className="s-player-photo" src={p.photo.url} alt={`Foto ${p.name}`} title={`Foto: ${p.photo.credit}`} loading="eager" referrerPolicy="no-referrer" />
+                  ) : (
+                    <div className="s-player-photo s-player-initials" aria-hidden="true">
+                      {p.initials}
+                    </div>
+                  )}
+                  {p.mvp !== undefined && (
+                    <div className="s-player-mvp" title="FuPa-MVP-Wert">
+                      <strong>{p.mvp} %</strong>
+                      <span>MVP</span>
+                    </div>
+                  )}
+                </div>
                 <div className="s-player-name">{p.name}</div>
                 <div className="s-muted">{p.meta}</div>
                 <ul className="s-list">
@@ -332,6 +347,7 @@ function renderBody(slide: Slide): ReactNode {
             ))}
           </div>
           {slide.note && <p className="s-open">{slide.note}</p>}
+          {slide.legend && <p className="s-legend">{slide.legend}</p>}
         </div>
       );
     case 'gegnerAuffaelligkeiten':

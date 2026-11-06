@@ -163,6 +163,8 @@ export interface Match {
   createdAt: Timestamp;
   /** Link oder ID der Gegnermannschaft auf fussball.de (für den Datenabruf). */
   opponentFussballDe?: string;
+  /** FuPa-Link des Gegners (Mannschaft oder Verein), optional – sonst automatische Zuordnung. */
+  opponentFupa?: string;
   extensions?: Record<string, unknown>;
 }
 
@@ -250,6 +252,12 @@ export interface OpponentPlayerCandidate {
   /** Kennzahl für die deterministische Vorauswahl (z. B. Saisontore). */
   goals?: number;
   assists?: number;
+  /** Spielerfoto (Adresse) mit Bildnachweis, z. B. von FuPa. */
+  photo?: { url: string; credit: string };
+  /** FuPa-MVP-Wert in Prozent mit Stand (ISO-Zeitpunkt, falls von FuPa angegeben). */
+  mvp?: { value: number; asOf: string | null; sourceId: string };
+  heightCm?: number;
+  isCaptain?: boolean;
 }
 
 export interface SourcedFact {

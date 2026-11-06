@@ -28,12 +28,41 @@ function setup(overrides: Partial<Parameters<typeof createMatch>[1]> = {}) {
 }
 
 /** Nachgebauter lokaler Dienst: beantwortet die Pfade der Coach.AI-Erweiterung mit den Testdaten. */
-function fakeService(log: string[] = []): typeof fetch {
+const FUPA_OPP = { slug: 'gsv-eintracht-baunatal-m1-2026-27', name: 'GSV Eintracht Baunatal', club_slug: 'gsv-eintracht-baunatal', level: 1, age_group: 'Herren', competition_slug: 'kassel-gruppenliga-2', competition_name: 'Gruppenliga Kassel 2', season_slug: '2026-27', season_name: '26/27' };
+const FUPA_OWN = { ...FUPA_OPP, slug: 'tsg-wilhelmshoehe-m1-2026-27', name: 'TSG Wilhelmshöhe', club_slug: 'tsg-wilhelmshoehe' };
+const fupaPlayer = (slug: string, first: string, last: string, position: string, number: number, goals: number, assists: number, captain = false) => ({
+  slug, first_name: first, last_name: last, position, number, matches: 6, goals, assists, captain, vice_captain: false, age: 25,
+  photo_url: `https://image.fupa.net/player/${slug.slice(0, 8)}/200x200.jpeg`, photo_source: 'Fotograf X',
+});
+
+/** Fake-FuPa-Teil des Dienstes. Ohne `withFupa` antwortet er wie ein Dienst ohne FuPa-Teil (404). */
+function fupaRoute(path: string, url: URL): unknown | undefined {
+  if (path === '/api/coachai/fupa/finde-team') return url.searchParams.get('namen')?.includes('Wilhelmsh') ? FUPA_OWN : null;
+  if (path === '/api/coachai/fupa/tabelle')
+    return { competition: 'kassel-gruppenliga-2', season: '2026-27', rows: [
+      { rank: 1, team_slug: FUPA_OPP.slug, team: 'GSV Eintracht Baunatal', matches: 6, wins: 4, draws: 1, defeats: 1, goals_for: 12, goals_against: 5, points: 13, penalty_points: 0 },
+      { rank: 9, team_slug: FUPA_OWN.slug, team: 'TSG Wilhelmshöhe', matches: 6, wins: 1, draws: 1, defeats: 4, goals_for: 6, goals_against: 12, points: 4, penalty_points: 0 },
+    ] };
+  if (path === `/api/coachai/fupa/team/${FUPA_OPP.slug}`) return FUPA_OPP;
+  if (path === `/api/coachai/fupa/kader/${FUPA_OPP.slug}`)
+    return { team_slug: FUPA_OPP.slug, captain_slug: 'hendrik-bestmann-1', season_target: null,
+      coaches: [{ name: 'Andre Coach', role: 'Trainer' }, { name: 'Co Helfer', role: 'Co-Trainer' }],
+      players: [fupaPlayer('hendrik-bestmann-1', 'Hendrik', 'Bestmann', 'Angriff', 9, 6, 2, true), fupaPlayer('paul-laeufer-2', 'Paul', 'Läufer', 'Mittelfeld', 8, 1, 4), fupaPlayer('ohne-tore-3', 'Ohne', 'Tore', 'Abwehr', 4, 0, 0)] };
+  if (path === '/api/coachai/fupa/spieler')
+    return [{ slug: 'hendrik-bestmann-1', mvp: 100, mvp_updated_at: '2026-10-20T08:00:00+02:00', height_cm: 186, strong_foot: 'links', minutes: 500, top_eleven: 2 }];
+  return undefined;
+}
+
+function fakeService(log: string[] = [], withFupa = false): typeof fetch {
   const json = (body: unknown) => new Response(JSON.stringify(body), { status: 200, headers: { 'content-type': 'application/json' } });
   return (async (input: RequestInfo | URL) => {
     const url = new URL(String(input), 'http://localhost');
     const path = url.pathname.replace('/datenquelle/fussballde', '');
     log.push(path + url.search);
+    if (withFupa) {
+      const f = fupaRoute(path, url);
+      if (f !== undefined) return json(f);
+    }
     if (path === `/api/coachai/team/${OWN_ID}/liga`) return json(liga);
     if (path === `/api/coachai/team/${OWN_ID}/saison`) {
       const von = url.searchParams.get('von');
@@ -198,6 +227,45 @@ describe('fussball.de-Anbindung (inoffiziell)', () => {
     const res = await fussballDeProvider.fetch(team, match, { fetchImpl: failing });
     expect(res.blocks).toEqual({});
     expect(res.messages[0]).toMatch(/nicht erreichbar/);
+  });
+
+  it('ergänzt Gegenspieler von FuPa: Foto, Position, MVP-Wert, Vorlagen; Abweichung bei Toren sichtbar', async () => {
+    const { match, team } = setup();
+    const res = await fussballDeProvider.fetch(team, match, { fetchImpl: fakeService([], true) });
+    expect(res.messages.join(' ')).toMatch(/FuPa: Gegner zugeordnet „GSV Eintracht Baunatal“ \(FuPa-Tabelle der eigenen Liga\)/);
+    const c = res.blocks.gegenspieler!.value!.candidates;
+    const hb = c.find((x) => x.name === 'Hendrik Bestmann')!;
+    expect(hb.position).toBe('Angriff');
+    expect(hb.photo).toEqual({ url: 'https://image.fupa.net/player/hendrik-/200x200.jpeg', credit: 'FuPa / Fotograf X' });
+    expect(hb.mvp).toEqual({ value: 100, asOf: '2026-10-20T08:00:00+02:00', sourceId: 'fupa-kader' });
+    expect(hb.heightCm).toBe(186);
+    expect(hb.isCaptain).toBe(true);
+    expect(hb.assists).toBe(2);
+    // fussball.de-Torjägerliste nennt 5, FuPa 6 → sichtbar vermerkt, fussball.de-Startelf bleibt als Beleg
+    expect(hb.evidence.map((e) => e.text).join(' | ')).toMatch(/Abweichung: FuPa zählt 6 Tore, die Torjägerliste auf fussball.de 5 Ligatore/);
+    expect(hb.evidence.some((e) => /Startelf/.test(e.text))).toBe(true);
+    expect(c.some((x) => x.name === 'Ohne Tore')).toBe(false);
+    expect(res.blocks.gegenspieler!.provenance.sources.map((s) => s.id)).toEqual(['fupa-kader', 'fd-gegenspieler']);
+    // Zweite Tabelle von FuPa zum Abgleich; Trainer laut FuPa
+    expect(res.blocks.tabelle!.value!.snapshots.map((s) => s.source.id)).toEqual(['fd-tabelle', 'fupa-tabelle']);
+    expect(res.blocks.gegnerFakten!.value!.facts.map((f) => f.text)).toContain('Trainer laut FuPa: Andre Coach (Co-Trainer: Co Helfer).');
+    // Folie: Foto, MVP, Legende mit Definition und Bildnachweis
+    const prep = createPreparation(team, match);
+    Object.assign(prep.dataBlocks, res.blocks);
+    const slide = buildDossier(team, match, prep).slides.find((s) => s.key === 'gegnerGefahr');
+    if (slide?.key !== 'gegnerGefahr') throw new Error('keine Gefahr-Folie');
+    const p = slide.players.find((x) => x.name === 'Hendrik Bestmann')!;
+    expect(p.mvp).toBe(100);
+    expect(p.meta).toBe('#9 · Angriff · 1,86 m · Kapitän');
+    expect(slide.legend).toMatch(/MVP: Der FuPa-MVP-Wert .* Stand 20\.10\.2026\. Fotos: FuPa \/ Fotograf X\./);
+    expect(slide.players.find((x) => x.name === 'Paul Läufer')!.initials).toBe('PL');
+  });
+
+  it('läuft ohne FuPa-Teil des Dienstes weiter (nur fussball.de)', async () => {
+    const { match, team } = setup();
+    const res = await fussballDeProvider.fetch(team, match, { fetchImpl: fakeService() });
+    expect(res.blocks.gegenspieler!.provenance.sources.map((s) => s.id)).toEqual(['fd-gegenspieler']);
+    expect(res.messages.join(' ')).toMatch(/FuPa/);
   });
 
   it('nutzt den Anbieter nicht für den historischen Referenzfall', () => {

@@ -4,8 +4,11 @@ import { FLAG_LABEL, type DossierContent, type FV, type Slide } from '../dossier
 
 /**
  * Echter, editierbarer PPTX-Export. Texte und Tabellen sind native PowerPoint-Objekte
- * (Textfelder, Tabellen, Formen) – keine eingebetteten Bilder.
+ * (Textfelder, Tabellen, Formen). Einzige Bilder: Spielerfotos auf der Gefahr-Folie, sofern vorab geladen.
  */
+
+/** Spielerfotos als Data-URL (Adresse → Bild). Fehlt ein Foto, erscheinen Initialen. */
+export type PhotoMap = Map<string, string>;
 
 const C = {
   green: '0F3B2C',
@@ -71,7 +74,7 @@ function tableOpts(x: number, y: number, w: number, colW: number[], fontSize = 1
   return { x, y, w, colW, fontFace: FONT, fontSize, color: C.text, border: { type: 'solid', pt: 0.5, color: C.line }, fill: { color: C.white }, margin: 0.04, rowH: 0.26 };
 }
 
-function addSlide(p: PptxGenJS, slide: Slide, content: DossierContent) {
+function addSlide(p: PptxGenJS, slide: Slide, content: DossierContent, photos: PhotoMap) {
   const s = p.addSlide();
   if (slide.key !== 'titel') header(s, slide, content);
 
@@ -204,13 +207,25 @@ function addSlide(p: PptxGenJS, slide: Slide, content: DossierContent) {
         const x = 0.5 + i * (w + 0.25);
         card(s, x, 1.5, w, 5.3);
         s.addShape('rect', { x, y: 1.5, w, h: 0.12, fill: { color: C.lime }, line: { color: C.lime } });
-        s.addText(pl.name, { x: x + 0.2, y: 1.75, w: w - 0.4, h: 0.7, fontFace: FONT, fontSize: 18, bold: true, color: C.green, valign: 'top' });
-        s.addText(pl.meta, { x: x + 0.2, y: 2.45, w: w - 0.4, h: 0.35, fontFace: FONT, fontSize: 11, color: C.muted });
+        const ps = 1.0;
+        const data = pl.photo ? photos.get(pl.photo.url) : undefined;
+        if (data) s.addImage({ data, x: x + 0.2, y: 1.75, w: ps, h: ps, rounding: true, altText: `Foto ${pl.name} (${pl.photo!.credit})` });
+        else {
+          s.addShape('ellipse', { x: x + 0.2, y: 1.75, w: ps, h: ps, fill: { color: 'EEF9D4' }, line: { color: C.lime, width: 2 } });
+          s.addText(pl.initials, { x: x + 0.2, y: 1.75, w: ps, h: ps, fontFace: FONT, fontSize: 22, bold: true, color: C.green, align: 'center', valign: 'middle' });
+        }
+        if (pl.mvp !== undefined) {
+          s.addShape('roundRect', { x: x + w - 1.15, y: 2.1, w: 0.95, h: 0.62, rectRadius: 0.08, fill: { color: C.green }, line: { color: C.green } });
+          s.addText([{ text: `${pl.mvp} %`, options: { fontSize: 15, bold: true, breakLine: true } }, { text: 'MVP', options: { fontSize: 8 } }], { x: x + w - 1.15, y: 2.1, w: 0.95, h: 0.62, fontFace: FONT, color: C.white, align: 'center', valign: 'middle' });
+        }
+        s.addText(pl.name, { x: x + 0.2, y: 2.85, w: w - 0.4, h: 0.5, fontFace: FONT, fontSize: 17, bold: true, color: C.green, valign: 'top' });
+        s.addText(pl.meta, { x: x + 0.2, y: 3.3, w: w - 0.4, h: 0.3, fontFace: FONT, fontSize: 10.5, color: C.muted });
         const runs: TextRun[] = pl.reasons.map((r) => ({ text: r, options: { bullet: true, breakLine: true } }));
         if (pl.coachNote) runs.push({ text: `Trainerhinweis: ${pl.coachNote}`, options: { bold: true, color: C.green2, breakLine: true } });
-        s.addText(runs.length ? runs : [{ text: 'Keine Belege', options: { color: C.muted } }], { x: x + 0.2, y: 2.9, w: w - 0.4, h: 3.8, fontFace: FONT, fontSize: 12, color: C.text, valign: 'top', paraSpaceAfter: 4 });
+        s.addText(runs.length ? runs : [{ text: 'Keine Belege', options: { color: C.muted } }], { x: x + 0.2, y: 3.65, w: w - 0.4, h: 3.0, fontFace: FONT, fontSize: 11, color: C.text, valign: 'top', paraSpaceAfter: 3 });
       });
-      if (slide.note) s.addText(slide.note, { x: 0.5, y: slide.players.length ? 6.85 : 1.6, w: W - 1, h: 0.35, fontFace: FONT, fontSize: 11, color: C.warn, italic: true });
+      const below = [slide.note, slide.legend].filter(Boolean).join(' ');
+      if (below) s.addText(below, { x: 0.5, y: slide.players.length ? 6.82 : 1.6, w: W - 1, h: 0.2, fontFace: FONT, fontSize: 8.5, color: slide.note ? C.warn : C.muted, italic: Boolean(slide.note) });
       break;
     }
     case 'gegnerAuffaelligkeiten': {
@@ -275,14 +290,14 @@ function addSlide(p: PptxGenJS, slide: Slide, content: DossierContent) {
   }
 }
 
-export function buildPptx(content: DossierContent): PptxGenJS {
+export function buildPptx(content: DossierContent, photos: PhotoMap = new Map()): PptxGenJS {
   const p = new PptxGenJS();
   p.layout = 'LAYOUT_WIDE';
   p.author = content.meta.teamName;
   p.company = 'Coach.AI (Vorschau)';
   p.title = `Spieltagsdossier ${content.meta.matchLabel}`;
   p.subject = `${content.meta.competition} · ${content.meta.dateLabel}`;
-  for (const slide of content.slides) addSlide(p, slide, content);
+  for (const slide of content.slides) addSlide(p, slide, content, photos);
   return p;
 }
 
@@ -299,9 +314,38 @@ export function pptxFileName(content: DossierContent, version?: number): string 
 
 export async function downloadPptx(content: DossierContent, version?: number): Promise<string> {
   const name = pptxFileName(content, version);
-  const raw = (await buildPptx(content).write({ outputType: 'blob' })) as Blob;
+  const raw = (await buildPptx(content, await loadPhotos(content)).write({ outputType: 'blob' })) as Blob;
   const blob = new Blob([raw], { type: 'application/vnd.openxmlformats-officedocument.presentationml.presentation' });
   const result = await saveFile(name, blob);
   if (result === 'declined') throw new Error('Download abgelehnt');
   return name;
+}
+
+/**
+ * Lädt die Spielerfotos der Gefahr-Folie als Data-URL über den lokalen Dienst (FuPa erlaubt dem Browser
+ * kein direktes Auslesen). Ohne Dienst oder bei Fehlern bleibt es bei Initialen.
+ */
+export async function loadPhotos(content: DossierContent, fetchImpl: typeof fetch = fetch): Promise<PhotoMap> {
+  const urls = new Set<string>();
+  for (const sl of content.slides) if (sl.key === 'gegnerGefahr') for (const pl of sl.players) if (pl.photo) urls.add(pl.photo.url);
+  const out: PhotoMap = new Map();
+  await Promise.all(
+    [...urls].map(async (url) => {
+      try {
+        const res = await fetchImpl(`/datenquelle/fussballde/api/coachai/fupa/foto?url=${encodeURIComponent(url)}`);
+        if (!res.ok || !(res.headers.get('content-type') ?? '').startsWith('image/')) return;
+        const blob = await res.blob();
+        const data = await new Promise<string>((resolve, reject) => {
+          const r = new FileReader();
+          r.onload = () => resolve(String(r.result));
+          r.onerror = () => reject(r.error);
+          r.readAsDataURL(blob);
+        });
+        out.set(url, data);
+      } catch {
+        /* Initialen statt Foto */
+      }
+    }),
+  );
+  return out;
 }
