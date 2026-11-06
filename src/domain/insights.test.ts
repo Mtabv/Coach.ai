@@ -15,7 +15,7 @@ describe('Auswertungen für die Formfolien', () => {
     expect(p.map((x) => [x.goalsFor, x.goalsAgainst])).toEqual([[1, 0], [0, 0], [1, 0], [0, 0], [0, 0], [0, 1]]);
   });
 
-  it('nennt wichtige Statistiken: Phasen knapp, dann Gegnerstärke, Torschützen, Joker, Karten', () => {
+  it('nennt wichtige Statistiken: Phasen knapp, dann Torschützen, Joker, Karten', () => {
     const g = (opponent: string, goals: [number, boolean, string?, boolean?][], yellow = 1) => ({
       date: '2026-10-01', opponent, isHome: true, cards: { yellow, red: 0 },
       goals: goals.map(([minute, own, scorer, joker]) => ({ minute, own, ...(scorer ? { scorer } : {}), ...(joker ? { joker: true } : {}) })),
@@ -29,13 +29,11 @@ describe('Auswertungen für die Formfolien', () => {
         g('F', [[88, true, 'Wissling', true]], 2),
       ],
     };
-    const r = (opp: string, gh: number, ga: number): ResultEntry => ({ date: '2026-10-01', competitionType: 'liga', competitionLabel: 'Liga', home: 'A', away: opp, goalsHome: gh, goalsAway: ga });
-    const t = keyStats(log, { team: 'A', results: [r('B', 3, 1), r('C', 2, 0), r('E', 2, 1), r('F', 1, 0)], before: '2026-11-01', table });
+    const t = keyStats(log);
     expect(t).toEqual([
       'Stärkste Offensivphase: Minute 1–15 – 3 von 8 Toren.',
       'Anfälligste Phase: Minute 16–30 – 1 von 2 Gegentoren.',
       'Zur Pause geführt in 3 von 4 Spielen, nie zurückgelegen.',
-      'Gegen die obere Tabellenhälfte 2S 0U 0N, 5:1 – gegen die untere 2S 0U 0N, 3:1.',
       '8 Tore von 6 verschiedenen Torschützen – Billing trifft am häufigsten (3).',
       '3 Tore durch eingewechselte Spieler – auch die Bank sticht.',
       '5 Gelbe Karten, kein Platzverweis in 4 Ligaspielen.',

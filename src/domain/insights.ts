@@ -40,7 +40,7 @@ const n = (k: number, one: string, many: string) => `${k} ${k === 1 ? one : many
  * Gegner wissen? Spielphasen nur knapp (stärkste und anfälligste Phase, Pausenstand), dazu Gegnerstärke,
  * Torgefahr in der Breite, Joker-Tore und Karten. Alles gezählt, nichts geschätzt.
  */
-export function keyStats(log: GoalLog | undefined, opts: { team: string; results: ResultEntry[]; before: LocalDate | null; table: TableRow[] }): string[] {
+export function keyStats(log: GoalLog | undefined): string[] {
   const out: string[] = [];
   const games = log?.games ?? [];
   const N = games.length;
@@ -65,21 +65,6 @@ export function keyStats(log: GoalLog | undefined, opts: { team: string; results
       else if (f < a) behindHt++;
     }
     out.push(`Zur Pause geführt in ${leadHt} von ${N} Spielen${behindHt ? `, zurückgelegen in ${behindHt}` : ', nie zurückgelegen'}.`);
-  }
-
-  // Gegnerstärke: obere gegen untere Tabellenhälfte (Rang laut aktueller Tabelle).
-  const league = teamResults(opts.team, opts.results, { type: 'liga', before: opts.before });
-  if (opts.table.length >= 6 && league.length >= 4) {
-    const half = Math.floor(opts.table.length / 2);
-    const rankOf = (t: string) => opts.table.find((r) => normalizeName(r.team) === normalizeName(t))?.rank ?? null;
-    const part = (top: boolean) => record(league.filter((r) => {
-      const k = rankOf(r.opponent);
-      return k !== null && (top ? k <= half : k > half);
-    }));
-    const top = part(true);
-    const bottom = part(false);
-    const fmt = (r: ReturnType<typeof record>) => `${r.won}S ${r.drawn}U ${r.lost}N, ${r.goalsFor}:${r.goalsAgainst}`;
-    if (top.played && bottom.played) out.push(`Gegen die obere Tabellenhälfte ${fmt(top)} – gegen die untere ${fmt(bottom)}.`);
   }
 
   if (log && N >= 3) {

@@ -84,7 +84,13 @@ const Facts = ({ items }: { items: { label: string; value: FV }[] }) => (
       <div key={f.label}>
         <dt>{f.label}</dt>
         <dd>
-          <Flagged v={f.value} />
+          {f.value.href ? (
+            <a className="s-link" href={f.value.href} target="_blank" rel="noopener noreferrer">
+              <Flagged v={f.value} />
+            </a>
+          ) : (
+            <Flagged v={f.value} />
+          )}
         </dd>
       </div>
     ))}
@@ -108,7 +114,13 @@ export function SlideCanvas({ slide, content }: { slide: Slide; content: Dossier
             <Flagged v={slide.dateLabel} /> · <Flagged v={slide.timeLabel} />
           </div>
           <div>
-            <Flagged v={slide.venue} />
+            {slide.venue.href ? (
+              <a className="s-link" href={slide.venue.href} target="_blank" rel="noopener noreferrer">
+                <Flagged v={slide.venue} /> ↗
+              </a>
+            ) : (
+              <Flagged v={slide.venue} />
+            )}
           </div>
         </div>
         {content.meta.containsDemoData && <div className="st-demo">Enthält Beispieldaten (fiktiv)</div>}

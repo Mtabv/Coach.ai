@@ -38,7 +38,16 @@ function flagColor(f: FV['flag']): string {
 
 /** Wert mit sichtbarer Kennzeichnung, falls nicht gesichert. */
 function fvRuns(v: FV, base: PptxGenJS.TextPropsOptions = {}): TextRun[] {
-  const runs: TextRun[] = [{ text: v.text, options: { ...base, color: v.flag === 'offen' ? C.warn : v.flag === 'widersprüchlich' ? C.red : base.color } }];
+  const runs: TextRun[] = [
+    {
+      text: v.text,
+      options: {
+        ...base,
+        color: v.flag === 'offen' ? C.warn : v.flag === 'widersprüchlich' ? C.red : base.color,
+        ...(v.href ? { hyperlink: { url: v.href, tooltip: 'In Google Maps öffnen' }, underline: { style: 'sng' } } : {}),
+      },
+    },
+  ];
   if (v.flag !== 'ok' && v.flag !== 'trainer') {
     runs.push({ text: `  [${FLAG_LABEL[v.flag]}]`, options: { ...base, fontSize: Math.max(9, (base.fontSize ?? 14) - 4), color: flagColor(v.flag), bold: false, italic: true } });
   }

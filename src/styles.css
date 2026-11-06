@@ -2707,3 +2707,9 @@ select:focus-visible {
   font-size: 15px;
   line-height: 1.38;
 }
+.s-link {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}

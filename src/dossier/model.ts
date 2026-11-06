@@ -12,6 +12,8 @@ export interface FV {
   text: string;
   flag: Flag;
   note?: string;
+  /** Klickbarer Link (z. B. Spielort → Google Maps), in Vorschau, PDF und PowerPoint. */
+  href?: string;
 }
 
 export const fv = (text: string, flag: Flag = 'ok', note?: string): FV => ({ text, flag, note });

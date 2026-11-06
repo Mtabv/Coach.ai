@@ -135,8 +135,13 @@ export function buildDossier(team: TeamProfile, match: Match, prep: Preparation)
   const dateText = dateOk ? formatDate(match.date, { weekday: true }) : 'Datum offen';
   const timeText = timeOk ? `${match.kickoff} Uhr` : 'Uhrzeit offen';
   const venue = prep.organisation.venueOverride ?? match.venue ?? (match.isHome ? team.homeVenue : null);
+  const venueText = venue?.name ? [venue.name, venue.address].filter(Boolean).join(', ') : '';
   const venueFV: FV = venue?.name
-    ? fv([venue.name, venue.address].filter(Boolean).join(', '), /Beispiel/i.test(venue.name) ? 'beispiel' : 'ok')
+    ? {
+        ...fv(venueText, /Beispiel/i.test(venue.name) ? 'beispiel' : 'ok'),
+        // Immer als Link zu Google Maps, damit die Spieler direkt die Route öffnen können.
+        ...(/Beispiel/i.test(venue.name) ? {} : { href: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(venueText)}` }),
+      }
     : fv('Spielort offen', 'offen');
   const mdLabel = match.matchday ? `${match.matchday}. Spieltag` : match.competitionType === 'liga' ? 'Spieltag offen' : match.competitionType === 'pokal' ? 'Pokalspiel' : 'Testspiel';
   const containsDemo = Object.values(b).some((blk) => blk.provenance.sources.some((s: SourceRef) => s.kind === 'demo')) || team.isDemo || match.isDemo;
@@ -412,7 +417,7 @@ export function buildDossier(team: TeamProfile, match: Match, prep: Preparation)
     kpis: kpis.map((k) => ({ label: k.label, value: k.value, basis: k.basis })),
     phases: goalLog && goalLog.games.length >= 3 ? goalPhases(goalLog) : [],
     phasesBasis: goalLog ? `${goalLog.games.length} Ligaspiele mit Spielbericht` : '',
-    keyStats: keyStats(goalLog, { team: opp, results: oppResults, before: match.date, table: ta.rows }),
+    keyStats: keyStats(goalLog),
     sources: [...new Set(b.ergebnisseGegner.provenance.sources.map(srcShort).concat(ta.primary ? [srcShort(ta.primary.source)] : []))],
     footnote: '',
   });
