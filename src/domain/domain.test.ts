@@ -170,6 +170,22 @@ describe('Fragebogen und neue Begegnungen', () => {
     expect(sel.map((p) => p.name)).toEqual(['Z', 'A']);
   });
 
+  it('Gegenspieler: feste Regel – Trainerinterview zuerst, dann FuPa-MVP-Wert, dann Tore + Vorlagen', () => {
+    const ev = [{ text: 'x', sourceId: 's' }];
+    const mvp = (value: number) => ({ value, asOf: null, sourceId: 'fupa' });
+    const sel = selectKeyPlayers(
+      [
+        { id: 'torjaeger', name: 'Torjäger', evidence: ev, goals: 20, assists: 5, mvp: mvp(80) },
+        { id: 'mvp', name: 'MVP', evidence: ev, goals: 3, assists: 2, mvp: mvp(100) },
+        { id: 'ohne', name: 'Ohne MVP', evidence: ev, goals: 30 },
+        { id: 'mittel', name: 'Mittel', evidence: ev, goals: 1, mvp: mvp(90) },
+        { id: 'trainer', name: 'Trainerwahl', evidence: ev, goals: 0, mvp: mvp(10) },
+      ],
+      [{ candidateId: 'trainer', name: 'Trainerwahl', reason: 'Standards' }],
+    );
+    expect(sel.map((p) => p.name)).toEqual(['Trainerwahl', 'MVP', 'Mittel', 'Torjäger']);
+  });
+
   it('regelbasierte Übernahme erfindet keine Inhalte', () => {
     const r = splitMessage('Zweite Bälle gehören uns – wir sind als Erste da');
     expect(r.headline).toBe('Zweite Bälle gehören uns');

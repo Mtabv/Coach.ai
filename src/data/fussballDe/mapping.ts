@@ -15,6 +15,7 @@ import type {
   TeamProfile,
 } from '../../domain/types';
 import type { FdGame, FdGameDetail, FdLiga, FdMatchday, FdTableRow } from './api';
+import { pick, sourcePriorityOf } from '../../domain/sourcePriority';
 import { FUPA_SOURCE_LABEL, fupaCoachFact, fupaTableSnapshot, mergePlayerCandidates, type FupaBundle } from '../fupa/mapping';
 
 /**
@@ -329,6 +330,8 @@ export function playerCandidates(bundle: FdBundle, oppSource: string | null, sou
       position: a.gk ? 'Torwart' : undefined,
       evidence,
       goals: a.seasonGoals ?? a.recentGoals,
+      // Kapitän laut Spielberichten: nur wenn Spielberichte vorliegen (sonst „kein Wert“).
+      ...(games ? { isCaptain: a.captain > 0 && a.captain >= Math.ceil(a.starts / 2) } : {}),
     });
   }
   candidates.sort((x, y) => (y.goals ?? 0) - (x.goals ?? 0) || x.name.localeCompare(y.name));
@@ -381,13 +384,14 @@ export function mapToBlocks(team: TeamProfile, match: Match, raw: FdBundle): { b
     } else messages.push('Keine Ergebnisse des Gegners in dieser Saison gefunden.');
   }
 
-  // Tabelle
+  // Tabelle: gewählte Quelle (Mannschaftsprofil), die andere nur, wenn die gewählte keine Tabelle liefert.
+  const prio = sourcePriorityOf(team);
+  let fdTable: { snapshot: TableSnapshot; note: string } | null = null;
   if (raw.liga && raw.liga.table.length) {
     const renames = new Map<string, string>([[raw.ownId, team.name]]);
     if (opp) renames.set(opp.id, match.opponent);
     const rows = mapTable(raw.liga, renames);
     const maxGames = Math.max(...rows.map((r) => r.played));
-    const s = src('fd-tabelle', `nach ${maxGames} Spielen (laut Tabelle)`, maxGames);
     const deducted = rows.filter((r) => r.pointDeduction);
     const note = [
       raw.liga.staffel_name ? `Staffel: ${raw.liga.staffel_name}.` : '',
@@ -396,26 +400,35 @@ export function mapToBlocks(team: TeamProfile, match: Match, raw: FdBundle): { b
     ]
       .filter(Boolean)
       .join(' ');
-    const snapshots: TableSnapshot[] = [{ source: s, rows }];
-    if (raw.fupa?.table?.rows.length) {
-      const fr = new Map<string, string>();
-      if (raw.fupa.own) fr.set(raw.fupa.own.slug, team.name);
-      if (raw.fupa.opp) fr.set(raw.fupa.opp.slug, match.opponent);
-      const games = Math.max(...raw.fupa.table.rows.map((r) => r.matches ?? 0));
-      const fs: SourceRef = { id: 'fupa-tabelle', label: FUPA_SOURCE_LABEL, kind: 'extern', asOf: `nach ${games} Spielen (laut Tabelle)`, asOfRank: games, retrievedAt: raw.retrievedAt };
-      snapshots.push(fupaTableSnapshot(raw.fupa.table, rows, fr, fs));
-    }
+    fdTable = { snapshot: { source: src('fd-tabelle', `nach ${maxGames} Spielen (laut Tabelle)`, maxGames), rows }, note };
+  }
+  let fupaTable: { snapshot: TableSnapshot; note: string } | null = null;
+  if (raw.fupa?.table?.rows.length) {
+    const fr = new Map<string, string>();
+    if (raw.fupa.own) fr.set(raw.fupa.own.slug, team.name);
+    if (raw.fupa.opp) fr.set(raw.fupa.opp.slug, match.opponent);
+    const games = Math.max(...raw.fupa.table.rows.map((r) => r.matches ?? 0));
+    const fs: SourceRef = { id: 'fupa-tabelle', label: FUPA_SOURCE_LABEL, kind: 'extern', asOf: `nach ${games} Spielen (laut Tabelle)`, asOfRank: games, retrievedAt: raw.retrievedAt };
+    const snap = fupaTableSnapshot(raw.fupa.table, fdTable?.snapshot.rows ?? [], fr, fs);
+    const ded = snap.rows.filter((r) => r.pointDeduction);
+    fupaTable = { snapshot: snap, note: [raw.fupa.own?.competition_name ? `Wettbewerb laut FuPa: ${raw.fupa.own.competition_name}.` : '', ded.length ? `Punktabzug laut FuPa: ${ded.map((r) => `${r.team} −${r.pointDeduction}`).join(', ')}.` : ''].filter(Boolean).join(' ') };
+  }
+  const [firstT, secondT] = prio.tabelle === 'FuPa' ? [fupaTable, fdTable] : [fdTable, fupaTable];
+  const table = firstT ?? secondT;
+  if (table) {
+    const fallback = !firstT;
     blocks.tabelle = {
       key: 'tabelle',
       label: 'Aktuelle Tabelle',
-      value: { snapshots, primarySourceId: s.id },
+      value: { snapshots: [table.snapshot], primarySourceId: table.snapshot.source.id },
       provenance: {
-        sources: snapshots.map((x) => x.source),
+        sources: [table.snapshot.source],
         status: 'vorhanden',
-        note: [note, snapshots.length > 1 ? 'Zum Abgleich zusätzlich die Tabelle laut FuPa; Abweichungen werden markiert.' : ''].filter(Boolean).join(' ') || undefined,
+        note: [table.note, fallback ? `Gewählte Quelle (${prio.tabelle}) lieferte keine Tabelle – ersatzweise ${table.snapshot.source.label}.` : ''].filter(Boolean).join(' ') || undefined,
       },
     };
-    if (!rows.some((r) => r.team === team.name)) messages.push('Eigene Mannschaft in der Tabelle nicht gefunden – bitte fussball.de-Link im Mannschaftsprofil prüfen.');
+    const rows = table.snapshot.rows;
+    if (!rows.some((r) => r.team === team.name)) messages.push('Eigene Mannschaft in der Tabelle nicht gefunden – bitte Links im Mannschaftsprofil prüfen.');
     if (match.competitionType === 'liga' && !rows.some((r) => r.team === match.opponent)) messages.push('Gegner nicht in der Tabelle der eigenen Liga gefunden.');
   } else messages.push('Keine Tabelle gefunden.');
 
@@ -476,11 +489,11 @@ export function mapToBlocks(team: TeamProfile, match: Match, raw: FdBundle): { b
     };
   }
 
-  // Gegenspieler: FuPa vor fussball.de (Datenmodell E2), fussball.de ergänzt Spielberichte.
+  // Gegenspieler: Quelle je Angabe laut Mannschaftsprofil, die andere nur als Ersatz.
   const pc = playerCandidates(raw, oppSource, 'fd-gegenspieler');
-  const fdGoals = new Map<string, number>();
-  for (const sc of raw.liga?.scorers ?? []) if (opp && sc.team_id === opp.id && sc.goals !== null) fdGoals.set(cleanName(sc.name), sc.goals);
-  const merged = raw.fupa ? mergePlayerCandidates(pc.candidates, fdGoals, raw.fupa, 'fupa-kader') : null;
+  const fdGoals = new Map<string, { goals: number; rank: number | null }>();
+  for (const sc of raw.liga?.scorers ?? []) if (opp && sc.team_id === opp.id && sc.goals !== null) fdGoals.set(cleanName(sc.name), { goals: sc.goals, rank: sc.rank });
+  const merged = raw.fupa ? mergePlayerCandidates(pc.candidates, fdGoals, raw.fupa, 'fupa-kader', 'fd-gegenspieler', prio) : null;
   const candidates = merged?.candidates ?? pc.candidates;
   if (candidates.length) {
     const sources: SourceRef[] = [];
@@ -488,19 +501,15 @@ export function mapToBlocks(team: TeamProfile, match: Match, raw: FdBundle): { b
       const mvpAsOf = candidates.map((c) => c.mvp?.asOf).find(Boolean);
       sources.push({ id: 'fupa-kader', label: FUPA_SOURCE_LABEL, kind: 'extern', asOf: `Kader ${raw.fupa?.opp?.season_name ?? ''}${mvpAsOf ? `, MVP-Stand ${fmtDate(mvpAsOf.slice(0, 10))}` : ''}`.trim(), retrievedAt: raw.retrievedAt });
     }
-    if (pc.candidates.length) sources.push(src('fd-gegenspieler', pc.games ? `Torjägerliste und Spielberichte der letzten ${pc.games} Ligaspiele` : 'Torjägerliste'));
-    const noteParts = merged?.fromFupa
-      ? [
-          `Spielerdaten laut FuPa (Position, Einsätze, Tore, Vorlagen, MVP-Wert, Fotos: ${merged.withPhoto}), ergänzt um Spielberichte von fussball.de.`,
-          merged.conflicts ? `${merged.conflicts} Abweichung(en) bei Torzahlen zwischen FuPa und fussball.de – beim Spieler vermerkt.` : '',
-          'Bildrechte der Fotos liegen bei FuPa bzw. den genannten Fotografen.',
-        ]
-      : ['Belegt durch Torjägerliste und Aufstellungen auf fussball.de. Positionen außer Torwart liefert die Quelle nicht.'];
+    if (pc.candidates.length || fdGoals.size) sources.push(src('fd-gegenspieler', pc.games ? `Torjägerliste und Spielberichte der letzten ${pc.games} Ligaspiele` : 'Torjägerliste'));
+    const note = merged?.fromFupa
+      ? `Quellen je Angabe laut Mannschaftsprofil: Saisontore ${prio.saisontore}, Rückennummer ${prio.rueckennummer}, Kapitän ${prio.kapitaen} – die andere Quelle nur, wenn dort kein Wert steht. Nur FuPa: Position, Vorlagen, Einsätze, MVP-Wert, Größe, Fotos (${merged.withPhoto}). Nur fussball.de: Startelf und Tore der letzten Spiele. Bildrechte bei FuPa bzw. den genannten Fotografen.`
+      : 'Belegt durch Torjägerliste und Aufstellungen auf fussball.de. Positionen außer Torwart liefert die Quelle nicht.';
     blocks.gegenspieler = {
       key: 'gegenspieler',
       label: 'Gegenspieler (Kandidaten)',
       value: { candidates },
-      provenance: { sources, status: 'vorhanden', note: noteParts.filter(Boolean).join(' ') },
+      provenance: { sources, status: 'vorhanden', note },
     };
   } else if (opp) messages.push('Keine Spielerdaten des Gegners gefunden (FuPa-Kader, Torjägerliste, Spielberichte).');
 
@@ -514,20 +523,28 @@ export function mapToBlocks(team: TeamProfile, match: Match, raw: FdBundle): { b
       facts.push({ id: 'fd-ha', sourceId: sid, text: `${oppAway ? 'Auswärtstabelle' : 'Heimtabelle'}: Platz ${row.place} (${row.won}S ${row.draw}U ${row.lost}N, ${row.goals_for}:${row.goals_against} Tore, ${row.points} Punkte).` });
     }
     const top = raw.liga.scorers.filter((s) => s.team_id === opp.id && s.goals !== null).sort((a, b) => (b.goals ?? 0) - (a.goals ?? 0))[0];
-    if (top) facts.push({ id: 'fd-top', sourceId: sid, text: `Bester Torschütze: ${top.name} mit ${top.goals} Toren${top.rank ? ` (Platz ${top.rank} der Liga)` : ''}.` });
+    const fdTop = top ? { id: 'fd-top', sourceId: sid, text: `Bester Torschütze: ${top.name} mit ${top.goals} Toren${top.rank ? ` (Platz ${top.rank} der Liga)` : ''}.` } : null;
+    const fpTopP = [...(raw.fupa?.squad?.players ?? [])].filter((p) => (p.goals ?? 0) > 0).sort((a, b) => (b.goals ?? 0) - (a.goals ?? 0))[0];
+    const fpTop = fpTopP ? { id: 'fupa-top', sourceId: 'fupa-kader', text: `Bester Torschütze laut FuPa: ${[fpTopP.first_name, fpTopP.last_name].filter(Boolean).join(' ')} mit ${fpTopP.goals} Toren.` } : null;
+    const topFact = pick(prio.saisontore, fdTop, fpTop).value;
+    if (topFact) facts.push(topFact);
     const latest = raw.lineups.find((d) => d.lineup);
     const side = latest?.lineup ? (isSourceTeam(latest.lineup.home.team, oppSource) ? 'home' : isSourceTeam(latest.lineup.away.team, oppSource) ? 'away' : null) : null;
     const coach = side ? latest!.lineup![side].coaches[0] : undefined;
     const fupaCoach = fupaCoachFact(raw.fupa?.squad ?? null);
-    if (fupaCoach) facts.push({ id: 'fupa-coach', sourceId: 'fupa-kader', text: fupaCoach });
-    if (coach && !(fupaCoach && foldName(fupaCoach).includes(foldName(coach)))) facts.push({ id: 'fd-coach', sourceId: sid, text: `Trainer laut letztem Spielbericht: ${coach}.` });
+    const coachFact = pick(
+      prio.trainer,
+      coach ? { id: 'fd-coach', sourceId: sid, text: `Trainer laut letztem Spielbericht: ${coach}.` } : null,
+      fupaCoach ? { id: 'fupa-coach', sourceId: 'fupa-kader', text: fupaCoach } : null,
+    ).value;
+    if (coachFact) facts.push(coachFact);
     if (facts.length) {
       blocks.gegnerFakten = {
         key: 'gegnerFakten',
         label: 'Gegnerbezogene Fakten',
         value: { facts },
         provenance: {
-          sources: [src(sid, fmtDate(today)), ...(fupaCoach ? [{ id: 'fupa-kader', label: FUPA_SOURCE_LABEL, kind: 'extern' as const, asOf: fmtDate(today), retrievedAt: raw.retrievedAt }] : [])],
+          sources: [src(sid, fmtDate(today)), ...(facts.some((f) => f.sourceId === 'fupa-kader') ? [{ id: 'fupa-kader', label: FUPA_SOURCE_LABEL, kind: 'extern' as const, asOf: fmtDate(today), retrievedAt: raw.retrievedAt }] : [])],
           status: 'vorhanden',
         },
       };

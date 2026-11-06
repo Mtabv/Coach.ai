@@ -4,7 +4,8 @@ import { computeAwaySchedule, computeHomeSchedule, formatTimestamp } from '../..
 import type { KitCombination, TeamProfile, TimeBlockTemplate } from '../../domain/types';
 import { href, navigate } from '../../router';
 import { useStore } from '../../state/store';
-import { Badge, Card, DemoBadge, Field, Notice, TextArea, TextInput } from '../components';
+import { Badge, Card, DemoBadge, Field, Notice, Segmented, TextArea, TextInput } from '../components';
+import { SOURCE_PRIORITY_FIELDS, sourcePriorityOf } from '../../domain/sourcePriority';
 import { SquadEditor } from '../SquadEditor';
 
 const SLIDE_NAMES: Record<string, string> = {
@@ -127,13 +128,36 @@ export function TeamPage() {
               value={l.url}
               placeholder="https://…"
               onChange={(v) => set((t) => (t.links[i].url = v))}
-              hint={l.kind === 'fussball.de' ? 'Mannschaftsseite mit „team-id“ im Link. Wird für den Abruf über den lokalen fussball.de-Dienst genutzt.' : undefined}
+              hint={l.kind === 'fussball.de' ? 'Mannschaftsseite mit „team-id“ im Link. Wird für den Abruf über den lokalen Dienst genutzt.' : l.kind === 'FuPa' ? 'Optional, z. B. https://www.fupa.net/team/… – sonst findet Coach.AI die Mannschaft über den Vereinsnamen.' : undefined}
             />
           ))}
           <TextInput label="Heimspielort" value={team.homeVenue.name} onChange={(v) => set((t) => (t.homeVenue.name = v))} />
           <TextInput label="Adresse" value={team.homeVenue.address ?? ''} onChange={(v) => set((t) => (t.homeVenue.address = v))} />
         </Card>
       </div>
+
+      <Card title="Datenquellen bei doppelten Angaben">
+        <p className="muted small">
+          Liefern fussball.de und FuPa beide einen Wert, gilt die hier gewählte Quelle. Die andere wird nur genutzt, wenn die gewählte keinen Wert hat. Angaben aus dem Trainerinterview haben immer Vorrang.
+        </p>
+        <div className="source-prio">
+          {SOURCE_PRIORITY_FIELDS.map((f) => (
+            <div className="field" key={f.key}>
+              <span className="field-label">{f.label}</span>
+              <Segmented
+                label={`Quelle für ${f.label}`}
+                value={sourcePriorityOf(team)[f.key]}
+                onChange={(v) => set((t) => (t.sourcePriority = { ...sourcePriorityOf(t), [f.key]: v }))}
+                options={[
+                  { value: 'fussball.de', label: 'fussball.de' },
+                  { value: 'FuPa', label: 'FuPa' },
+                ]}
+              />
+              <span className="muted small">{f.hint}</span>
+            </div>
+          ))}
+        </div>
+      </Card>
 
       <div className="two-col">
         <ScheduleEditor

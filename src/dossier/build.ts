@@ -333,12 +333,13 @@ export function buildDossier(team: TeamProfile, match: Match, prep: Preparation)
           : '',
     sources: playerSources,
     legend: [
+      selected.length ? 'Auswahl: zuerst Spieler aus dem Trainerinterview, dann nach FuPa-MVP-Wert.' : '',
       selected.some((p) => p.mvp) ? `MVP: ${FUPA_MVP_DEFINITION}${mvpAsOf(selected) ? ` Stand ${mvpAsOf(selected)}.` : ''}` : '',
       selected.some((p) => p.photo) ? `Fotos: ${[...new Set(selected.filter((p) => p.photo).map((p) => p.photo!.credit))].join('; ')}.` : '',
     ]
       .filter(Boolean)
       .join(' '),
-    footnote: 'Trainerhinweise haben Vorrang vor statistischer Vorauswahl.',
+    footnote: '',
   });
 
   // 7 Auffälligkeiten

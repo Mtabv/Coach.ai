@@ -23,14 +23,18 @@ Ein Klick auf **„Daten von fussball.de und FuPa laden“** füllt alle Datenbl
 | Spieltagspaarungen | Spieltagsübersicht der Staffel | Spieltag wird automatisch gesucht (ausgehend von Ihrer Angabe bzw. den Spielen laut Tabelle). |
 | Ergebnisse eigene Mannschaft / Gegner | Spielplan der ganzen Saison | Liga, Pokal, Test; abgesagte/verlegte Spiele werden ausgelassen und gezählt. |
 | Direkte Duelle | Spielpläne der laufenden und fünf früheren Saisons | Spiele gegen zweite Mannschaften zählen nicht. |
-| Gegenspieler (Kandidaten) | **FuPa:** Kader mit Position, Einsätzen, Toren, Vorlagen, Kapitän, Foto; MVP-Wert mit Stand und Größe für die torgefährlichsten 8 Spieler. **fussball.de:** Torjägerliste und Spielberichte der letzten 5 Ligaspiele | FuPa vor fussball.de (Datenmodell E2). Weichen Torzahlen ab, steht das beim Spieler. Spieler, die nur fussball.de kennt, bleiben erhalten. |
-| Tabelle (Abgleich) | FuPa-Tabelle derselben Liga | Zweite Quelle; Abweichungen zu fussball.de werden zeilenweise markiert. |
+| Gegenspieler (Kandidaten) | **FuPa:** Kader mit Position, Einsätzen, Toren, Vorlagen, Kapitän, Foto; MVP-Wert mit Stand und Größe für die torgefährlichsten 8 Spieler. **fussball.de:** Torjägerliste und Spielberichte der letzten 5 Ligaspiele | Saisontore, Rückennummer, Kapitän nach der Quellenwahl im Mannschaftsprofil. Auswahl auf der Folie: Trainerinterview, dann FuPa-MVP-Wert. Spieler, die nur fussball.de kennt, bleiben erhalten. |
+| Tabelle | fussball.de oder FuPa | Nach Quellenwahl im Mannschaftsprofil (Voreinstellung fussball.de); die andere nur, wenn die gewählte keine Tabelle liefert. |
 | Gegnerbezogene Fakten | Heim-/Auswärtstabelle, Torjägerliste, Spielbericht; Trainerteam laut FuPa | Z. B. „Auswärtstabelle: Platz 1 …“, bester Torschütze, Trainer. |
 | Fahrzeit | – | Liefert fussball.de nicht; bitte selbst eintragen. |
 
 **Gegner finden:** Ein Gegner-Link ist nicht mehr nötig. Coach.AI sucht den Gegner in der Tabelle der eigenen Liga,
 sonst (z. B. im Pokal) über die Vereinssuche von fussball.de – jeweils die erste Mannschaft derselben Mannschaftsart
 (z. B. Herren). Ein eingetragener Gegner-Link hat Vorrang.
+
+**Quellenwahl:** Liefern beide Quellen dieselbe Angabe, gilt die unter **Mannschaft → Datenquellen bei doppelten
+Angaben** gewählte Quelle; die andere springt nur ein, wenn die gewählte keinen Wert hat. Voreinstellung: Tabelle und
+Saisontore → fussball.de; Rückennummer, Kapitän, Trainer → FuPa. Das Trainerinterview hat immer Vorrang.
 
 **FuPa finden:** Die eigene Mannschaft über einen FuPa-Link im Mannschaftsprofil (Mannschaft → Links, Art „FuPa“)
 oder automatisch über den Vereinsnamen (die abgeleitete Kennung wird bei FuPa geprüft, nicht geraten). Den Gegner

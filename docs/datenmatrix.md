@@ -63,6 +63,11 @@ Rechnung für **eine Staffel** (eigene Liga) zum Basispreis: Ergebnisse/Tabellen
 3. **Fehlendes wird markiert, nicht erfunden.** Keine Schätzungen, keine Übertragung aus anderen Spielen (z. B. Fahrzeiten).
 4. **Amtliche Spielbetriebsdaten** (Ansetzung, Ergebnis, Tabelle, Punktabzug): fussball.de vor FuPa, Trainerkorrektur vor beiden. **[E1]**
 5. **Spielerbezogene Daten** (Tore, Vorlagen, Einsätze, MVP, Fotos): FuPa vor fussball.de, Trainerhinweis vor beiden. **[E2]**
+6. **Festlegung 06.11.2026 – eine Quelle je Angabe statt Widerspruchsanzeige:** Das Trainerinterview ist immer erste Wahl.
+   Liefern fussball.de und FuPa beide einen Wert, gilt die im Mannschaftsprofil gewählte Quelle; die andere wird nur genutzt,
+   wenn die gewählte keinen Wert hat. Voreinstellung: Tabelle und Saisontore je Spieler → fussball.de; Rückennummer,
+   Kapitän, Trainer des Gegners → FuPa. Nur FuPa: Position, Vorlagen, Einsätze, MVP-Wert, Größe, Fotos. Nur fussball.de:
+   Ergebnisse, Spielplan, Spieltag, direkte Duelle, Heim-/Auswärtstabelle, Startelf und Tore der letzten Spiele.
 6. **Trainerbeobachtungen** und **Mannschaftsbotschaften** stammen ausschließlich vom Trainer und werden getrennt von Statistik ausgegeben.
 7. **Pflichtangaben** blockieren nur die *Bestätigung*, nie den Entwurf.
 
@@ -128,7 +133,7 @@ Abweichung im Referenzdossier: Dort heißt der erste Block „17:20–17:45 Anko
 | FuPa-MVP-Wert | nur FuPa (mit Datum, Definition in Fußnote) | Stand angeben | weglassen | – | nein **[E8]** |
 | Körpergröße, Rolle (z. B. Spielertrainer) | 1 FuPa · 2 Trainer | Saison | weglassen | – | nein |
 | Spielerfotos | FuPa – **Bildrechte klären** | Saison | Initialen-Platzhalter | – | nein **[E3]** |
-| Auswahl der bis zu 4 Spieler | 1 Trainerhinweis · 2 regelbasiert nach Torbeteiligungen | – | keine 4 erzwingen | – | – |
+| Auswahl der bis zu 4 Spieler | **Feste Regel (06.11.2026):** 1 Trainerinterview · 2 FuPa-MVP-Wert (höchster zuerst) · 3 ohne MVP-Wert nach Toren + Vorlagen | – | keine 4 erzwingen | – | – |
 | Gefahrenhinweis-Text | Trainer; optional später KI-Verdichtung **nur aus belegten Zahlen** | – | weglassen | – | nein |
 
 ### Folie 7 · Der Gegner · Auffälligkeiten

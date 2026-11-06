@@ -30,6 +30,17 @@ export interface TeamLink {
   url: string;
 }
 
+export type DataSourceChoice = 'fussball.de' | 'FuPa';
+
+/** Angaben, die fussball.de und FuPa beide liefern. Gewählte Quelle gilt, die andere springt nur bei fehlendem Wert ein. */
+export interface SourcePriority {
+  tabelle: DataSourceChoice;
+  saisontore: DataSourceChoice;
+  rueckennummer: DataSourceChoice;
+  kapitaen: DataSourceChoice;
+  trainer: DataSourceChoice;
+}
+
 export interface Venue {
   name: string;
   address?: string;
@@ -127,6 +138,8 @@ export interface TeamProfile {
   season: string;
   timezone: Timezone;
   links: TeamLink[];
+  /** Welche Quelle je Angabe gilt, wenn fussball.de und FuPa beide liefern (die andere nur als Ersatz). */
+  sourcePriority?: Partial<SourcePriority>;
   homeVenue: Venue;
   schedule: { home: HomeScheduleTemplate; away: AwayScheduleTemplate };
   kits: KitProfile;

@@ -1,4 +1,5 @@
-import type { LocalDate, OpponentPlayerCandidate, SourceRef, TableRow, TableSnapshot } from '../../domain/types';
+import type { LocalDate, OpponentPlayerCandidate, SourcePriority, SourceRef, TableRow, TableSnapshot } from '../../domain/types';
+import { pick } from '../../domain/sourcePriority';
 import { foldName, nameSimilarity, teamSuffix } from '../fussballDe/mapping';
 import type { FupaPlayerDetail, FupaSquad, FupaTable, FupaTableRow, FupaTeam } from './api';
 
@@ -117,68 +118,70 @@ export function detailSlugs(squad: FupaSquad): string[] {
 }
 
 /**
- * Gegenspieler-Kandidaten nach Datenmodell: Spielerdaten FuPa vor fussball.de (E2). FuPa liefert Position, Einsätze,
- * Tore, Vorlagen, MVP-Wert, Größe und Foto; fussball.de ergänzt Startelf-Einsätze und Tore der letzten Spiele.
- * Weichen die Torzahlen ab, wird das beim Spieler sichtbar vermerkt.
+ * Gegenspieler-Kandidaten aus FuPa-Kader und fussball.de. Wo beide Quellen einen Wert liefern (Saisontore,
+ * Rückennummer, Kapitän), gilt die im Mannschaftsprofil gewählte Quelle; die andere nur, wenn dort kein Wert steht.
+ * Nur FuPa liefert Position, Vorlagen, Einsätze, MVP-Wert, Größe und Foto; nur fussball.de die Startelf und Tore
+ * der letzten Spiele.
  */
 export function mergePlayerCandidates(
   fd: OpponentPlayerCandidate[],
-  fdSeasonGoals: Map<string, number>,
+  fdSeasonGoals: Map<string, { goals: number; rank: number | null }>,
   fupa: FupaBundle,
   fupaSourceId: string,
-): { candidates: OpponentPlayerCandidate[]; fromFupa: number; withPhoto: number; conflicts: number } {
-  if (!fupa.squad) return { candidates: fd, fromFupa: 0, withPhoto: 0, conflicts: 0 };
+  fdSourceId: string,
+  prio: Pick<SourcePriority, 'saisontore' | 'rueckennummer' | 'kapitaen'>,
+): { candidates: OpponentPlayerCandidate[]; fromFupa: number; withPhoto: number } {
+  if (!fupa.squad) return { candidates: fd, fromFupa: 0, withPhoto: 0 };
   const season = fupa.opp?.season_name ? ` (Saison ${fupa.opp.season_name})` : '';
   const details = new Map(fupa.details.map((d) => [d.slug, d]));
   const usedFd = new Set<string>();
   const out: OpponentPlayerCandidate[] = [];
-  let conflicts = 0;
   for (const p of fupa.squad.players) {
     const name = [p.first_name, p.last_name].filter(Boolean).join(' ').trim();
     if (!name) continue;
-    const goals = p.goals ?? 0;
-    const assists = p.assists ?? 0;
     const fdMatch = fd.find((c) => !usedFd.has(c.id) && samePerson(c.name, name));
     if (fdMatch) usedFd.add(fdMatch.id);
-    const relevant = goals + assists > 0 || p.captain || Boolean(fdMatch);
+    const fdKey = [...fdSeasonGoals.keys()].find((k) => samePerson(k, name));
+    const fdScorer = fdKey !== undefined ? fdSeasonGoals.get(fdKey)! : null;
+    const goals = pick(prio.saisontore, fdScorer?.goals, p.matches ? p.goals : null);
+    const assists = p.assists ?? 0;
+    const relevant = (goals.value ?? 0) + assists > 0 || p.captain || Boolean(fdMatch);
     if (!relevant) continue;
     const d = details.get(p.slug);
     const evidence: { text: string; sourceId: string }[] = [];
-    if (p.matches) {
-      evidence.push({ text: `${goals} ${goals === 1 ? 'Tor' : 'Tore'}, ${assists} ${assists === 1 ? 'Vorlage' : 'Vorlagen'} in ${p.matches} Einsätzen${season}`, sourceId: fupaSourceId });
+    if (goals.value !== null) {
+      evidence.push(
+        goals.from === 'fussball.de'
+          ? { text: `${goals.value} Saisontore in der Liga${fdScorer?.rank ? ` (Platz ${fdScorer.rank} der Torjägerliste)` : ''}`, sourceId: fdSourceId }
+          : { text: `${goals.value} ${goals.value === 1 ? 'Saisontor' : 'Saisontore'}${season}`, sourceId: fupaSourceId },
+      );
     }
+    if (p.matches) evidence.push({ text: `${assists} ${assists === 1 ? 'Vorlage' : 'Vorlagen'} in ${p.matches} Einsätzen${season}`, sourceId: fupaSourceId });
     if (d?.mvp) evidence.push({ text: `FuPa-MVP-Wert ${d.mvp} %${d.mvp_updated_at ? ` (Stand ${fmtDateTime(d.mvp_updated_at)})` : ''}`, sourceId: fupaSourceId });
-    // Belege von fussball.de: gleiche Saisontore nicht doppeln, Abweichung sichtbar machen.
-    const fdGoalsKey = [...fdSeasonGoals.keys()].find((k) => samePerson(k, name));
-    const fdGoals = fdGoalsKey !== undefined ? fdSeasonGoals.get(fdGoalsKey)! : null;
-    for (const e of fdMatch?.evidence ?? []) {
-      if (/Saisontore in der Liga/.test(e.text) && fdGoals !== null) continue;
-      evidence.push(e);
-    }
-    if (fdGoals !== null && fdGoals !== goals) {
-      conflicts++;
-      evidence.push({ text: `Abweichung: FuPa zählt ${goals} Tore, die Torjägerliste auf fussball.de ${fdGoals} Ligatore – bitte prüfen.`, sourceId: fdMatch?.evidence[0]?.sourceId ?? fupaSourceId });
-    }
+    // Belege aus Spielberichten (Startelf, Tore zuletzt); Saisontore sind oben schon nach Quellenwahl entschieden.
+    for (const e of fdMatch?.evidence ?? []) if (!/Saisontore in der Liga/.test(e.text)) evidence.push(e);
     if (!evidence.length) continue;
+    const number = pick(prio.rueckennummer, fdMatch?.number, p.number !== null ? String(p.number) : null);
+    const captain = pick(prio.kapitaen, fdMatch?.isCaptain, p.captain);
     out.push({
       id: `fupa:${p.slug}`,
       name,
-      number: p.number !== null ? String(p.number) : fdMatch?.number,
+      ...(number.value ? { number: number.value } : {}),
       position: p.position ?? fdMatch?.position,
       evidence,
-      goals,
+      goals: goals.value ?? 0,
       assists,
       ...(p.photo_url ? { photo: { url: p.photo_url, credit: p.photo_source ? `FuPa / ${p.photo_source}` : 'FuPa' } } : {}),
       ...(d?.mvp ? { mvp: { value: d.mvp, asOf: d.mvp_updated_at, sourceId: fupaSourceId } } : {}),
       ...(d?.height_cm ? { heightCm: d.height_cm } : {}),
-      ...(p.captain ? { isCaptain: true } : {}),
+      ...(captain.value ? { isCaptain: true } : {}),
     });
   }
   const fromFupa = out.length;
   // Spieler, die nur fussball.de kennt (z. B. nicht im FuPa-Kader gepflegt), bleiben erhalten.
   for (const c of fd) if (!usedFd.has(c.id)) out.push(c);
-  out.sort((x, y) => (y.goals ?? 0) + (y.assists ?? 0) - ((x.goals ?? 0) + (x.assists ?? 0)) || (y.mvp?.value ?? 0) - (x.mvp?.value ?? 0) || x.name.localeCompare(y.name));
-  return { candidates: out, fromFupa, withPhoto: out.filter((c) => c.photo).length, conflicts };
+  out.sort((x, y) => (y.mvp?.value ?? -1) - (x.mvp?.value ?? -1) || (y.goals ?? 0) + (y.assists ?? 0) - ((x.goals ?? 0) + (x.assists ?? 0)) || x.name.localeCompare(y.name));
+  return { candidates: out, fromFupa, withPhoto: out.filter((c) => c.photo).length };
 }
 
 /** Trainerteam laut FuPa als belegter Fakt. */

@@ -229,7 +229,7 @@ describe('fussball.de-Anbindung (inoffiziell)', () => {
     expect(res.messages[0]).toMatch(/nicht erreichbar/);
   });
 
-  it('ergänzt Gegenspieler von FuPa: Foto, Position, MVP-Wert, Vorlagen; Abweichung bei Toren sichtbar', async () => {
+  it('ergänzt Gegenspieler von FuPa: Foto, Position, MVP-Wert, Vorlagen; Saisontore nach gewählter Quelle', async () => {
     const { match, team } = setup();
     const res = await fussballDeProvider.fetch(team, match, { fetchImpl: fakeService([], true) });
     expect(res.messages.join(' ')).toMatch(/FuPa: Gegner zugeordnet „GSV Eintracht Baunatal“ \(FuPa-Tabelle der eigenen Liga\)/);
@@ -241,13 +241,18 @@ describe('fussball.de-Anbindung (inoffiziell)', () => {
     expect(hb.heightCm).toBe(186);
     expect(hb.isCaptain).toBe(true);
     expect(hb.assists).toBe(2);
-    // fussball.de-Torjägerliste nennt 5, FuPa 6 → sichtbar vermerkt, fussball.de-Startelf bleibt als Beleg
-    expect(hb.evidence.map((e) => e.text).join(' | ')).toMatch(/Abweichung: FuPa zählt 6 Tore, die Torjägerliste auf fussball.de 5 Ligatore/);
+    // Saisontore: Standard fussball.de (Torjägerliste 5, FuPa hätte 6) – kein Konflikthinweis, die andere Quelle nur als Ersatz
+    const texts = hb.evidence.map((e) => e.text).join(' | ');
+    expect(texts).toMatch(/^5 Saisontore in der Liga \(Platz 1 der Torjägerliste\)/);
+    expect(texts).not.toMatch(/Abweichung|6 Saisontore/);
     expect(hb.evidence.some((e) => /Startelf/.test(e.text))).toBe(true);
+    // Paul Läufer steht nicht in der Torjägerliste → Ersatzwert von FuPa
+    expect(c.find((x) => x.name === 'Paul Läufer')!.evidence[0].text).toBe('1 Saisontor (Saison 26/27)');
     expect(c.some((x) => x.name === 'Ohne Tore')).toBe(false);
     expect(res.blocks.gegenspieler!.provenance.sources.map((s) => s.id)).toEqual(['fupa-kader', 'fd-gegenspieler']);
-    // Zweite Tabelle von FuPa zum Abgleich; Trainer laut FuPa
-    expect(res.blocks.tabelle!.value!.snapshots.map((s) => s.source.id)).toEqual(['fd-tabelle', 'fupa-tabelle']);
+    // Tabelle nur aus der gewählten Quelle (Standard fussball.de); Trainer laut FuPa (Standard)
+    expect(res.blocks.tabelle!.value!.snapshots.map((s) => s.source.id)).toEqual(['fd-tabelle']);
+    expect(res.blocks.gegnerFakten!.value!.facts.map((f) => f.text).join(' ')).not.toMatch(/laut letztem Spielbericht/);
     expect(res.blocks.gegnerFakten!.value!.facts.map((f) => f.text)).toContain('Trainer laut FuPa: Andre Coach (Co-Trainer: Co Helfer).');
     // Folie: Foto, MVP, Legende mit Definition und Bildnachweis
     const prep = createPreparation(team, match);
@@ -257,8 +262,24 @@ describe('fussball.de-Anbindung (inoffiziell)', () => {
     const p = slide.players.find((x) => x.name === 'Hendrik Bestmann')!;
     expect(p.mvp).toBe(100);
     expect(p.meta).toBe('#9 · Angriff · 1,86 m · Kapitän');
-    expect(slide.legend).toMatch(/MVP: Der FuPa-MVP-Wert .* Stand 20\.10\.2026\. Fotos: FuPa \/ Fotograf X\./);
+    expect(slide.legend).toMatch(/^Auswahl: zuerst Spieler aus dem Trainerinterview, dann nach FuPa-MVP-Wert\. MVP: Der FuPa-MVP-Wert .* Stand 20\.10\.2026\. Fotos: FuPa \/ Fotograf X\./);
     expect(slide.players.find((x) => x.name === 'Paul Läufer')!.initials).toBe('PL');
+    expect(slide.players[0].name).toBe('Hendrik Bestmann'); // höchster MVP-Wert zuerst
+  });
+
+  it('folgt der im Mannschaftsprofil gewählten Quelle je Angabe', async () => {
+    const { match, team } = setup();
+    team.sourcePriority = { tabelle: 'FuPa', saisontore: 'FuPa', trainer: 'fussball.de' };
+    const res = await fussballDeProvider.fetch(team, match, { fetchImpl: fakeService([], true) });
+    const hb = res.blocks.gegenspieler!.value!.candidates.find((x) => x.name === 'Hendrik Bestmann')!;
+    expect(hb.evidence[0].text).toBe('6 Saisontore (Saison 26/27)');
+    expect(hb.goals).toBe(6);
+    const snaps = res.blocks.tabelle!.value!.snapshots;
+    expect(snaps.map((s) => s.source.id)).toEqual(['fupa-tabelle']);
+    expect(snaps[0].rows.find((r) => r.team === match.opponent)?.points).toBe(13);
+    const facts = res.blocks.gegnerFakten!.value!.facts.map((f) => f.text);
+    expect(facts).toContain('Trainer laut letztem Spielbericht: Andre Coach.');
+    expect(facts.join(' ')).toMatch(/Bester Torschütze laut FuPa: Hendrik Bestmann mit 6 Toren/);
   });
 
   it('läuft ohne FuPa-Teil des Dienstes weiter (nur fussball.de)', async () => {

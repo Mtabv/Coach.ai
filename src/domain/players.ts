@@ -24,10 +24,11 @@ function extras(c: OpponentPlayerCandidate | undefined): Pick<SelectedPlayer, 'p
 }
 
 /**
- * Wählt bis zu vier Gegenspieler aus.
- * 1. Trainerhinweise haben Vorrang.
- * 2. Danach nur Kandidaten mit Belegen, sortiert nach Toren + Vorlagen.
- * Bei dünner Datenlage werden keine vier Spieler erzwungen.
+ * Wählt bis zu vier Gegenspieler aus (feste Regel, mit dem Trainer festgelegt am 06.11.2026):
+ * 1. Das Trainerinterview ist erste Wahl – genannte Spieler stehen immer vorn.
+ * 2. Fehlen Plätze, wird nach dem FuPa-MVP-Wert aufgefüllt (höchster zuerst).
+ * 3. Erst für Spieler ohne MVP-Wert zählen Tore + Vorlagen.
+ * Nur Kandidaten mit Belegen; bei dünner Datenlage werden keine vier Spieler erzwungen.
  */
 export function selectKeyPlayers(candidates: OpponentPlayerCandidate[], hints: PlayerHint[], max = 4): SelectedPlayer[] {
   const out: SelectedPlayer[] = [];
@@ -50,7 +51,7 @@ export function selectKeyPlayers(candidates: OpponentPlayerCandidate[], hints: P
   }
   const ranked = candidates
     .filter((c) => c.evidence.length > 0 && !used.has(c.id))
-    .sort((a, b) => (b.goals ?? 0) + (b.assists ?? 0) - ((a.goals ?? 0) + (a.assists ?? 0)) || (b.mvp?.value ?? 0) - (a.mvp?.value ?? 0) || a.name.localeCompare(b.name));
+    .sort((a, b) => (b.mvp?.value ?? -1) - (a.mvp?.value ?? -1) || (b.goals ?? 0) + (b.assists ?? 0) - ((a.goals ?? 0) + (a.assists ?? 0)) || a.name.localeCompare(b.name));
   for (const c of ranked) {
     if (out.length >= max) break;
     out.push({ name: c.name, number: c.number, position: c.position, reasons: c.evidence.map((e) => e.text), coachNote: '', fromCoach: false, ...extras(c) });
