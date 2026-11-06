@@ -458,33 +458,68 @@ function renderBody(slide: Slide): ReactNode {
               )}
             </Box>
             <div className="s-facts-col">
-              <div className="s-box-title">Muster in den Torminuten</div>
-              {slide.patterns.length ? (
-                slide.patterns.map((t, i) => (
+              <div className="s-box-title">Wichtige Statistiken</div>
+              {slide.keyStats.length ? (
+                slide.keyStats.map((t, i) => (
                   <div key={i} className="s-fact">
                     {t}
                   </div>
                 ))
               ) : (
-                <p className="s-muted">Keine Auswertung möglich.</p>
+                <p className="s-muted">Keine Statistiken vorhanden.</p>
               )}
             </div>
           </div>
         </div>
       );
     }
-    case 'soSpieltGegner':
+    case 'soSpieltGegner': {
+      const ph = Object.fromEntries(slide.phases.map((p) => [p.key, p]));
+      const phase = (k: 'ballbesitz' | 'ballverlust' | 'gegnerBall' | 'ballgewinn') => {
+        const p = ph[k];
+        return (
+          <div className={`s-phase-box s-phase-${k}`}>
+            <div className="s-phase-title">{p.label}</div>
+            <div className="s-phase-sub">{p.sub}</div>
+            <p>
+              <Flagged v={p.value} />
+            </p>
+          </div>
+        );
+      };
       return (
-        <div className="s-obs">
-          {slide.phases.map((p) => (
-            <Box key={p.label} title={p.label}>
-              <p>
-                <Flagged v={p.value} />
-              </p>
-            </Box>
-          ))}
+        <div className="s-model">
+          <div className="s-model-top">
+            <span className="s-chip">
+              <strong>Grundordnung</strong> <Flagged v={slide.formation} />
+            </span>
+            {slide.absences && (
+              <span className="s-chip s-chip-muted">
+                <strong>Ausfälle</strong> <Flagged v={slide.absences} />
+              </span>
+            )}
+          </div>
+          <div className="s-model-cycle">
+            {phase('ballbesitz')}
+            {phase('ballverlust')}
+            {phase('ballgewinn')}
+            {phase('gegnerBall')}
+            <div className="s-model-hub" aria-hidden="true">
+              <span>Spiel&shy;phasen</span>
+            </div>
+          </div>
+          <div className="s-model-extras">
+            {slide.extras.map((x) => (
+              <Box key={x.label} title={x.label}>
+                <p>
+                  <Flagged v={x.value} />
+                </p>
+              </Box>
+            ))}
+          </div>
         </div>
       );
+    }
     case 'kader': {
       const card = (c: SquadCard, k: string) => (
         <div key={k} className="s-sq-card">
@@ -513,7 +548,7 @@ function renderBody(slide: Slide): ReactNode {
             <div className="s-box-title">Feldspieler</div>
             <div className="s-sq-field">
               {slide.players.map((c, i) => card(c, `p${i}`))}
-              {dummy(slide.placeholders.players, 'Spieler')}
+              {dummy(slide.placeholders.players, slide.placeholders.playerLabel)}
             </div>
           </div>
           <div className="s-sq-col s-sq-coaches">

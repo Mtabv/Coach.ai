@@ -363,10 +363,23 @@ export function goalLog(raw: FdBundle, isOpp: TeamMatcher, sourceId: string): Go
     const side = oppHome ? 'home' : 'away';
     const goalEvents = d.events.filter((e) => e.type === 'goal' && (e.team === 'home' || e.team === 'away'));
     if (goalEvents.length !== Number(g.home_score) + Number(g.away_score)) continue;
-    const goals = goalEvents.map((e) => ({ minute: eventMinute(e.time), own: e.team === side })).filter((x): x is { minute: number; own: boolean } => x.minute !== null);
+    const lineup = d.lineup?.[side];
+    const starters = new Set((lineup?.starting ?? []).map((p) => foldName(p.name)));
+    const bench = new Set((lineup?.substitutes ?? []).map((p) => foldName(p.name)));
+    const goals: GoalLog['games'][number]['goals'] = [];
+    for (const e of goalEvents) {
+      const minute = eventMinute(e.time);
+      if (minute === null) break;
+      const own = e.team === side;
+      const name = own && e.description && !/eigentor/i.test(e.description) ? cleanName(e.description) : undefined;
+      const key = name ? foldName(name) : '';
+      goals.push({ minute, own, ...(name ? { scorer: name } : {}), ...(name && lineup && bench.has(key) && !starters.has(key) ? { joker: true } : {}) });
+    }
     if (goals.length !== goalEvents.length) continue;
+    const mine = d.events.filter((e) => e.team === side);
+    const cards = { yellow: mine.filter((e) => e.type === 'yellow-card').length, red: mine.filter((e) => e.type === 'red-card' || e.type === 'yellow-red-card').length };
     const dt = berlinDateTime(g.datetime_utc);
-    games.push({ date: dt?.date ?? '', opponent: cleanName(oppHome ? g.away_team : g.home_team), isHome: oppHome, goals });
+    games.push({ date: dt?.date ?? '', opponent: cleanName(oppHome ? g.away_team : g.home_team), isHome: oppHome, goals, cards });
   }
   return { games: games.sort((a, b) => (a.date < b.date ? 1 : -1)), sourceId };
 }

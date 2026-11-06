@@ -388,6 +388,22 @@ function SquadAnswer({ team, prep, setPrep }: { team: TeamProfile; prep: Prepara
       </div>
       {squad && (
         <TextInput
+          label="Offene Kaderplätze (z. B. für Spieler aus der 2. Mannschaft)"
+          inputMode="numeric"
+          value={squad.openSlots?.count ? String(squad.openSlots.count) : ''}
+          placeholder="0"
+          onChange={(v) =>
+            setPrep((p) => {
+              if (!p.squad) return;
+              const count = Math.max(0, Math.min(6, Number(v.replace(/\D/g, '')) || 0));
+              if (count) p.squad.openSlots = { count, label: p.squad.openSlots?.label || 'Spieler 2. Mannschaft' };
+              else delete p.squad.openSlots;
+            })
+          }
+        />
+      )}
+      {squad && (
+        <TextInput
           label="Trainerteam (durch Komma getrennt)"
           value={(squad.coaches ?? []).join(', ')}
           placeholder="z. B. Manuel Viehmann, Thorsten Klemann"

@@ -2574,3 +2574,136 @@ select:focus-visible {
   padding-top: 10px;
   padding-bottom: 8px;
 }
+.s-table tr.zone-auf td {
+  background: #e5f4e6;
+}
+.s-table tr.zone-relegation td {
+  background: #f1f8e4;
+}
+.s-model {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  height: 100%;
+}
+.s-model-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+.s-chip {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 6px 16px;
+  font-size: 15px;
+}
+.s-chip strong {
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--green-700);
+  margin-right: 6px;
+}
+.s-chip-muted {
+  color: var(--muted);
+}
+.s-model-cycle {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  gap: 12px 16px;
+}
+.s-phase-box {
+  background: #fff;
+  border: 2px solid var(--green-900);
+  border-radius: 12px;
+  overflow: hidden;
+  min-height: 118px;
+}
+.s-phase-ballverlust,
+.s-phase-ballgewinn {
+  border-color: var(--lime);
+}
+.s-phase-title {
+  background: var(--green-900);
+  color: #fff;
+  font-weight: 800;
+  font-size: 15px;
+  padding: 6px 14px;
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+.s-phase-ballverlust .s-phase-title,
+.s-phase-ballgewinn .s-phase-title {
+  background: var(--lime);
+  color: var(--green-900);
+}
+.s-phase-sub {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--green-700);
+  padding: 6px 14px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.s-phase-box p {
+  margin: 4px 0 10px;
+  padding: 0 14px;
+  font-size: 15px;
+  line-height: 1.38;
+}
+.s-phase-ballverlust .s-phase-title,
+.s-phase-gegnerBall .s-phase-title,
+.s-phase-ballverlust .s-phase-sub,
+.s-phase-gegnerBall .s-phase-sub,
+.s-phase-ballverlust p,
+.s-phase-gegnerBall p {
+  padding-left: 70px;
+}
+.s-phase-ballbesitz .s-phase-title,
+.s-phase-ballgewinn .s-phase-title,
+.s-phase-ballbesitz .s-phase-sub,
+.s-phase-ballgewinn .s-phase-sub,
+.s-phase-ballbesitz p,
+.s-phase-ballgewinn p {
+  padding-right: 70px;
+}
+.s-model-hub {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 112px;
+  height: 112px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: var(--green-900);
+  border: 6px solid #f4f7f2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: var(--lime);
+  font-weight: 800;
+  font-size: 15px;
+  line-height: 1.1;
+}
+.s-model-hub::after {
+  content: '↻';
+  position: absolute;
+  bottom: 8px;
+  font-size: 18px;
+  color: #fff;
+}
+.s-model-extras {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+.s-model-extras p {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.38;
+}

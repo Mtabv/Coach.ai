@@ -1,6 +1,6 @@
 import { samePerson } from '../data/fupa/mapping';
 import { analyzeTable } from '../domain/dataQuality';
-import { formFacts, goalPhases, goalPatterns } from '../domain/insights';
+import { formFacts, goalPhases, keyStats } from '../domain/insights';
 import { selectKeyPlayers, type SelectedPlayer } from '../domain/players';
 import { kitLabel } from '../domain/questionnaire';
 import { normalizeName, opponentKpis, seasonSummary, teamResults, type TeamResult } from '../domain/stats';
@@ -45,6 +45,17 @@ function dayLabel(d: string | undefined): string {
   if (!d || !isValidDate(d)) return '';
   const [y, m, day] = d.split('-').map(Number);
   return `${WEEKDAY_SHORT[new Date(Date.UTC(y, m - 1, day)).getUTCDay()]} ${String(day).padStart(2, '0')}.${String(m).padStart(2, '0')}.`;
+}
+
+/**
+ * Gefahr-Folie: neben dem Trainerhinweis nur herausragende Saisonzahlen (Tore, Vorlagen). Nicht gezeigt werden
+ * Tore „in den letzten 5 Spielen“, Startelf-Einsätze, der Platz in der Torjägerliste und Nullwerte.
+ */
+export function standoutReasons(reasons: string[]): string[] {
+  return reasons
+    .filter((r) => !/^FuPa-MVP-Wert/.test(r) && !/in den letzten \d+ Ligaspiel/.test(r) && !/^In der Startelf/.test(r) && !/^\d+ Einsätze/.test(r))
+    .map((r) => r.replace(/\s*\(Platz \d+ der Torjägerliste\)/, '').replace(/ in der Liga$/, ''))
+    .slice(0, 3);
 }
 
 function crestFor(crests: Record<string, string> | undefined, team: string): string | undefined {
@@ -130,7 +141,8 @@ export function buildDossier(team: TeamProfile, match: Match, prep: Preparation)
   const mdLabel = match.matchday ? `${match.matchday}. Spieltag` : match.competitionType === 'liga' ? 'Spieltag offen' : match.competitionType === 'pokal' ? 'Pokalspiel' : 'Testspiel';
   const containsDemo = Object.values(b).some((blk) => blk.provenance.sources.some((s: SourceRef) => s.kind === 'demo')) || team.isDemo || match.isDemo;
 
-  const crests = b.tabelle.value?.crests;
+  // Eigenes Wappen aus dem Mannschaftsprofil hat Vorrang (FuPa-Wappen sind teils niedrig aufgelöst).
+  const crests = { ...(b.tabelle.value?.crests ?? {}), ...(team.crest ? { [ownName]: team.crest } : {}) };
   const slides: Slide[] = [];
   const blank = { sources: [] as string[], footnote: '' };
 
@@ -371,8 +383,7 @@ export function buildDossier(team: TeamProfile, match: Match, prep: Preparation)
     players: selected.map((p) => ({
       name: p.name,
       meta: [p.number ? `#${p.number}` : '', p.position ?? '', p.heightCm ? `${(p.heightCm / 100).toFixed(2).replace('.', ',')} m` : '', p.isCaptain ? 'Kapitän' : ''].filter(Boolean).join(' · '),
-      // Höchstens 3 Belege neben einem Trainerhinweis, sonst 4 – damit die Karte nicht überläuft.
-      reasons: p.reasons.filter((r) => !/^FuPa-MVP-Wert/.test(r)).slice(0, p.coachNote ? 3 : 4),
+      reasons: standoutReasons(p.reasons),
       coachNote: p.coachNote,
       initials: initialsOf(p.name),
       ...(p.photo ? { photo: p.photo } : {}),
@@ -401,27 +412,34 @@ export function buildDossier(team: TeamProfile, match: Match, prep: Preparation)
     kpis: kpis.map((k) => ({ label: k.label, value: k.value, basis: k.basis })),
     phases: goalLog && goalLog.games.length >= 3 ? goalPhases(goalLog) : [],
     phasesBasis: goalLog ? `${goalLog.games.length} Ligaspiele mit Spielbericht` : '',
-    patterns: goalLog ? goalPatterns(goalLog, opp) : [],
+    keyStats: keyStats(goalLog, { team: opp, results: oppResults, before: match.date, table: ta.rows }),
     sources: [...new Set(b.ergebnisseGegner.provenance.sources.map(srcShort).concat(ta.primary ? [srcShort(ta.primary.source)] : []))],
     footnote: '',
   });
 
   // 8 So spielt der Gegner – nur Trainerbeobachtungen
-  const obs: [string, QuestionId][] = [
-    ['Grundordnung', 'q1_grundordnung'],
-    ['Aufbau und Chancen', 'q2_aufbau'],
-    ['Verteidigen und Pressing', 'q3_verteidigung'],
-    ['Umschalten', 'q4_umschalten'],
-    ['Stärken und Standards', 'q5_staerken'],
-    ['Verwundbarkeit', 'q6_verwundbar'],
-    ['Ausfälle und Besonderheiten', 'q8_ausfaelle'],
-  ];
   slides.push({
     key: 'soSpieltGegner',
     number: 8,
     title: SLIDE_TITLES.soSpieltGegner,
     kicker: 'Beobachtungen des Trainerteams',
-    phases: obs.map(([label, id]) => ({ label, value: answerFV(prep.answers[id]) })),
+    formation: answerFV(prep.answers.q1_grundordnung),
+    absences: prep.answers.q8_ausfaelle?.state === 'beantwortet' && prep.answers.q8_ausfaelle.text.trim() ? answerFV(prep.answers.q8_ausfaelle) : null,
+    phases: (
+      [
+        ['ballbesitz', 'Eigener Ballbesitz', 'Aufbau und Chancen', 'q2_aufbau'],
+        ['ballverlust', 'Umschalten nach Ballverlust', 'Defensives Umschalten', 'q4b_ballverlust'],
+        ['gegnerBall', 'Gegnerischer Ballbesitz', 'Verteidigen und Pressing', 'q3_verteidigung'],
+        ['ballgewinn', 'Umschalten nach Ballgewinn', 'Offensives Umschalten', 'q4_umschalten'],
+      ] as const
+    ).map(([key, label, sub, id]) => ({ key, label, sub, value: answerFV(prep.answers[id as QuestionId]) })),
+    extras: (
+      [
+        ['Standards', 'q5b_standards'],
+        ['Stärken', 'q5_staerken'],
+        ['Verwundbarkeit', 'q6_verwundbar'],
+      ] as const
+    ).map(([label, id]) => ({ label, value: answerFV(prep.answers[id]) })),
     sources: ['Trainerteam'],
     footnote: '',
   });
@@ -457,15 +475,17 @@ export function buildDossier(team: TeamProfile, match: Match, prep: Preparation)
     key: 'kader',
     number: 10,
     title: SLIDE_TITLES.kader,
-    kicker: `${players.length} Spieler`,
+    kicker: `${players.length + (prep.squad?.openSlots?.count ?? 0)} Spieler`,
     goalkeepers: cards.filter((c) => c.gk).map(strip),
     players: cards
       .filter((c) => !c.gk)
       .sort((x, y) => (order.indexOf(x.pos) + 1 || 99) - (order.indexOf(y.pos) + 1 || 99) || x.name.localeCompare(y.name))
       .map(strip),
     coaches: coachCards,
-    placeholders: players.length ? { goalkeepers: 0, players: 0, coaches: 0 } : { goalkeepers: 2, players: 16, coaches: 2 },
-    count: players.length,
+    placeholders: players.length
+      ? { goalkeepers: 0, players: prep.squad?.openSlots?.count ?? 0, coaches: 0, playerLabel: prep.squad?.openSlots?.label || 'offen' }
+      : { goalkeepers: 2, players: 16, coaches: 2, playerLabel: 'Spieler' },
+    count: players.length + (prep.squad?.openSlots?.count ?? 0),
     note: prep.squad?.note ?? '',
     origin: !o ? 'Kein Kader erfasst' : o.kind === 'ersteingabe' ? 'Ersteingabe des Trainers' : o.label,
     sources: [],

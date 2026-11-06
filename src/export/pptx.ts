@@ -185,7 +185,7 @@ function addSlide(p: PptxGenJS, slide: Slide, content: DossierContent) {
       const zoneBar = { auf: '2E7D32', relegation: '8BC34A', ab: C.red } as const;
       const rows: PptxGenJS.TableRow[] = [[th('Pl.'), th('Mannschaft'), th('Sp.'), th('S-U-N'), th('Tore'), th('Diff.'), th('Pkt.')]];
       for (const r of slide.table) {
-        const fill = r.highlight === 'own' ? (r.zone === 'ab' ? 'F9D7D4' : 'E8F8C4') : r.zone === 'ab' ? zoneFill.ab : r.highlight === 'opp' ? 'E3ECE6' : C.white;
+        const fill = r.highlight === 'own' ? (r.zone === 'ab' ? 'F9D7D4' : 'E8F8C4') : r.zone ? zoneFill[r.zone] : r.highlight === 'opp' ? 'E3ECE6' : C.white;
         const o = { fill: { color: fill }, bold: Boolean(r.highlight), valign: 'middle' as const };
         rows.push([
           { text: r.rank, options: { ...o, align: 'center' } },
@@ -356,20 +356,40 @@ function addSlide(p: PptxGenJS, slide: Slide, content: DossierContent) {
         );
         s.addText(`Minuten · ${slide.phasesBasis}`, { x: 0.7, y: 6.45, w: 6.2, h: 0.3, fontFace: FONT, fontSize: 9, color: C.muted });
       } else s.addText('Keine Spielberichte mit Torminuten vorhanden.', { x: 0.7, y: 3.1, w: 6.2, h: 0.4, fontFace: FONT, fontSize: 11, color: C.muted });
-      label(s, 7.35, 2.6, 5.5, 'Muster in den Torminuten');
-      const pn = Math.max(slide.patterns.length, 1);
+      label(s, 7.35, 2.6, 5.5, 'Wichtige Statistiken');
+      const pn = Math.max(slide.keyStats.length, 1);
       const ph = Math.min(0.55, (3.85 - (pn - 1) * 0.07) / pn);
-      slide.patterns.forEach((t, i) => pill(s, 7.35, 2.95 + i * (ph + 0.07), 5.5, ph, t, 10.5));
+      slide.keyStats.forEach((t, i) => pill(s, 7.35, 2.95 + i * (ph + 0.07), 5.5, ph, t, 11));
       break;
     }
     case 'soSpieltGegner': {
-      slide.phases.forEach((ph, i) => {
-        const col = i % 2;
-        const row = Math.floor(i / 2);
-        const x = 0.5 + col * 6.25;
-        const y = 1.5 + row * 1.33;
-        card(s, x, y, 6.0, 1.2, ph.label);
-        s.addText(fvRuns(ph.value, { color: C.text }), { x: x + 0.2, y: y + 0.42, w: 5.6, h: 0.75, fontFace: FONT, fontSize: 11.5, valign: 'top', fit: 'shrink' });
+      // Spielphasenmodell: Kreislauf aus vier Phasen um einen Mittelpunkt.
+      s.addText([{ text: 'GRUNDORDNUNG  ', options: { bold: true, color: C.green2, fontSize: 9.5 } }, ...fvRuns(slide.formation, { color: C.text, fontSize: 12 })], { x: 0.5, y: 1.35, w: 7.5, h: 0.35, fontFace: FONT, valign: 'middle' });
+      if (slide.absences) s.addText([{ text: 'AUSFÄLLE  ', options: { bold: true, color: C.green2, fontSize: 9.5 } }, ...fvRuns(slide.absences, { color: C.muted, fontSize: 11 })], { x: 8.1, y: 1.35, w: 4.75, h: 0.35, fontFace: FONT, valign: 'middle', align: 'right' });
+      const order = ['ballbesitz', 'ballverlust', 'ballgewinn', 'gegnerBall'] as const;
+      const pw = (W - 1 - 0.2) / 2;
+      const phH = 1.55;
+      order.forEach((k, i) => {
+        const p = slide.phases.find((x) => x.key === k)!;
+        const x = 0.5 + (i % 2) * (pw + 0.2);
+        const y = 1.8 + Math.floor(i / 2) * (phH + 0.15);
+        const possession = k === 'ballbesitz' || k === 'gegnerBall';
+        s.addShape('roundRect', { x, y, w: pw, h: phH, rectRadius: 0.08, fill: { color: C.white }, line: { color: possession ? C.green : C.lime, width: 1.5 } });
+        s.addShape('rect', { x, y, w: pw, h: 0.38, fill: { color: possession ? C.green : C.lime }, line: { color: possession ? C.green : C.lime } });
+        const left = i % 2 === 0;
+        s.addText([{ text: p.label, options: { bold: true, fontSize: 12.5, color: possession ? C.white : C.green } }, { text: `   ${p.sub}`, options: { fontSize: 9.5, color: possession ? C.lime : C.green2 } }], { x: x + (left ? 0.15 : 0.75), y, w: pw - 0.9, h: 0.38, fontFace: FONT, valign: 'middle' });
+        s.addText(fvRuns(p.value, { color: C.text }), { x: x + (left ? 0.15 : 0.75), y: y + 0.42, w: pw - 0.9, h: phH - 0.48, fontFace: FONT, fontSize: 11.5, valign: 'top', fit: 'shrink' });
+      });
+      const cx = W / 2;
+      const cy = 1.8 + phH + 0.075;
+      s.addShape('ellipse', { x: cx - 0.6, y: cy - 0.6, w: 1.2, h: 1.2, fill: { color: C.green }, line: { color: C.light, width: 4 } });
+      s.addText('Spiel-\nphasen', { x: cx - 0.6, y: cy - 0.6, w: 1.2, h: 1.2, fontFace: FONT, fontSize: 11, bold: true, color: C.lime, align: 'center', valign: 'middle' });
+      const ey = 1.8 + 2 * phH + 0.3 + 0.1;
+      const ew = (W - 1 - 2 * 0.2) / 3;
+      slide.extras.forEach((e, i) => {
+        const x = 0.5 + i * (ew + 0.2);
+        card(s, x, ey, ew, H - 0.55 - ey, e.label);
+        s.addText(fvRuns(e.value, { color: C.text }), { x: x + 0.2, y: ey + 0.38, w: ew - 0.4, h: H - 0.55 - ey - 0.42, fontFace: FONT, fontSize: 11.5, valign: 'top', fit: 'shrink' });
       });
       break;
     }
@@ -407,7 +427,7 @@ function addSlide(p: PptxGenJS, slide: Slide, content: DossierContent) {
         const x = fieldX + (i % 3) * (fw + 0.12);
         const y = y0 + Math.floor(i / 3) * step;
         if (f.c) sq(f.c, x, y, fw);
-        else empty(x, y, fw, 'Spieler');
+        else empty(x, y, fw, slide.placeholders.playerLabel);
       });
       slide.coaches.forEach((c, i) => sq(c, coachX, y0 + i * step, coachW, true));
       for (let i = 0; i < slide.placeholders.coaches; i++) empty(coachX, y0 + (slide.coaches.length + i) * step, coachW, 'Trainer');

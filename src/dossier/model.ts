@@ -128,12 +128,18 @@ export interface ProfileSlide extends SlideBase<'gegnerAuffaelligkeiten'> {
   /** Tore und Gegentore je Spielphase (15-Minuten-Abschnitte) aus Spielberichten. */
   phases: { label: string; goalsFor: number; goalsAgainst: number }[];
   phasesBasis: string;
-  /** Gezählte Muster in den Torminuten. */
-  patterns: string[];
+  /** Wichtige Statistiken aus Spielberichten, Ergebnissen und Tabelle (gezählt). */
+  keyStats: string[];
 }
 
+/** Spielphasenmodell: vier Phasen im Kreislauf, dazu Grundordnung, Standards, Stärken, Verwundbarkeit. */
 export interface ObservationSlide extends SlideBase<'soSpieltGegner'> {
-  phases: { label: string; value: FV }[];
+  formation: FV;
+  /** Ausfälle/Besonderheiten – nur, wenn etwas eingetragen ist. */
+  absences: FV | null;
+  /** Reihenfolge im Kreislauf: Ballbesitz → Ballverlust → gegnerischer Ballbesitz → Ballgewinn. */
+  phases: { key: 'ballbesitz' | 'ballverlust' | 'gegnerBall' | 'ballgewinn'; label: string; sub: string; value: FV }[];
+  extras: { label: string; value: FV }[];
 }
 
 export interface SquadCard {
@@ -148,7 +154,7 @@ export interface SquadSlide extends SlideBase<'kader'> {
   players: SquadCard[];
   coaches: SquadCard[];
   /** Freie Plätze bis zur Kadergröße (Platzhalter, nur in der Vorschau ohne Kader). */
-  placeholders: { goalkeepers: number; players: number; coaches: number };
+  placeholders: { goalkeepers: number; players: number; coaches: number; playerLabel: string };
   count: number;
   note: string;
   origin: string;

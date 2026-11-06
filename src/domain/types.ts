@@ -113,6 +113,8 @@ export interface SquadSnapshot {
   note?: string;
   /** Trainerteam für dieses Spiel (Namen), getrennt von den Spielern dargestellt. */
   coaches?: string[];
+  /** Noch offene Kaderplätze, z. B. für Spieler aus der zweiten Mannschaft. */
+  openSlots?: { count: number; label: string };
   confirmedAt: Timestamp | null;
   /** Herkunft: aus welchem Dossier übernommen, oder Ersteingabe. */
   origin: { kind: 'dossier'; dossierId: ID; label: string } | { kind: 'ersteingabe' } | { kind: 'beispiel'; label: string };
@@ -154,6 +156,8 @@ export interface TeamProfile {
   sourcePriority?: Partial<SourcePriority>;
   /** Tabellenzonen der eigenen Liga (fussball.de liefert sie nicht mit): Aufsteiger, Relegation, Absteiger. */
   leagueZones?: LeagueZones;
+  /** Eigenes Wappen (Data-URL), hat Vorrang vor dem Wappen laut FuPa. */
+  crest?: string;
   homeVenue: Venue;
   schedule: { home: HomeScheduleTemplate; away: AwayScheduleTemplate };
   kits: KitProfile;
@@ -290,7 +294,15 @@ export interface OpponentPlayerCandidate {
 /** Tore aus Spielberichten (Ligaspiele), aus Sicht der betrachteten Mannschaft. */
 export interface GoalLog {
   /** Spiele, für die ein Spielbericht mit Torminuten vorliegt. */
-  games: { date: LocalDate; opponent: string; isHome: boolean; goals: { minute: number; own: boolean }[] }[];
+  games: {
+    date: LocalDate;
+    opponent: string;
+    isHome: boolean;
+    /** scorer: Torschütze laut Spielbericht; joker: Torschütze kam von der Bank (nur mit Aufstellung). */
+    goals: { minute: number; own: boolean; scorer?: string; joker?: boolean }[];
+    /** Karten der betrachteten Mannschaft (Gelb-Rot zählt als Rot). */
+    cards?: { yellow: number; red: number };
+  }[];
   sourceId: string;
 }
 
@@ -373,6 +385,8 @@ export type QuestionId =
   | 'q2_aufbau'
   | 'q3_verteidigung'
   | 'q4_umschalten'
+  | 'q4b_ballverlust'
+  | 'q5b_standards'
   | 'q5_staerken'
   | 'q6_verwundbar'
   | 'q7_schluesselspieler'

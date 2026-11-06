@@ -39,7 +39,6 @@ export function PrintPage({ dossierId }: { dossierId: string }) {
       {content.slides.map((s) => (
         <div key={s.key} className="print-page">
           <SlideCanvas slide={s} content={content} />
-          {d.status === 'entwurf' && <div className="draft-mark">Entwurf</div>}
         </div>
       ))}
     </div>

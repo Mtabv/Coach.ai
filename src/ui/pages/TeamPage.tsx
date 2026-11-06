@@ -154,6 +154,32 @@ export function TeamPage() {
               hint={l.kind === 'fussball.de' ? 'Mannschaftsseite mit „team-id“ im Link. Wird für den Abruf über den lokalen Dienst genutzt.' : l.kind === 'FuPa' ? 'Optional, z. B. https://www.fupa.net/team/… – sonst findet Coach.AI die Mannschaft über den Vereinsnamen.' : undefined}
             />
           ))}
+          <div className="field">
+            <span className="field-label">Vereinswappen (optional)</span>
+            <div className="row gap wrap kit-image">
+              {team.crest ? <img src={team.crest} alt="Wappen" /> : <span className="muted small">Kein eigenes Wappen – es wird das Wappen von FuPa verwendet.</span>}
+              <input
+                type="file"
+                accept="image/png,image/jpeg"
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (!file || file.size > 1_500_000) return;
+                  const data = await new Promise<string>((res) => {
+                    const r = new FileReader();
+                    r.onload = () => res(String(r.result));
+                    r.readAsDataURL(file);
+                  });
+                  set((t) => (t.crest = data));
+                }}
+              />
+              {team.crest && (
+                <button type="button" className="btn btn-ghost btn-small" onClick={() => set((t) => delete t.crest)}>
+                  Wappen entfernen
+                </button>
+              )}
+            </div>
+            <span className="muted small">Erscheint oben rechts auf jeder Folie. Am besten PNG mit transparentem Hintergrund.</span>
+          </div>
           <TextInput label="Heimspielort" value={team.homeVenue.name} onChange={(v) => set((t) => (t.homeVenue.name = v))} />
           <TextInput label="Adresse" value={team.homeVenue.address ?? ''} onChange={(v) => set((t) => (t.homeVenue.address = v))} />
         </Card>

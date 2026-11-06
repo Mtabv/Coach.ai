@@ -34,71 +34,75 @@ export function goalPhases(log: GoalLog): PhaseCount[] {
 }
 
 const n = (k: number, one: string, many: string) => `${k} ${k === 1 ? one : many}`;
-const pct = (a: number, b: number) => Math.round((a / b) * 100);
 
-function median(xs: number[]): number {
-  const s = [...xs].sort((a, b) => a - b);
-  const m = Math.floor(s.length / 2);
-  return s.length % 2 ? s[m] : Math.round((s[m - 1] + s[m]) / 2);
-}
-
-/** Muster in den Torminuten (aus Sicht der Mannschaft des Protokolls). */
-export function goalPatterns(log: GoalLog, team: string): string[] {
-  const games = log.games;
-  const N = games.length;
-  if (N < 3) return [];
+/**
+ * Wichtige Statistiken für die Folie „Auffälligkeiten“ – aus Trainersicht: Was sollte die Mannschaft über den
+ * Gegner wissen? Spielphasen nur knapp (stärkste und anfälligste Phase, Pausenstand), dazu Gegnerstärke,
+ * Torgefahr in der Breite, Joker-Tore und Karten. Alles gezählt, nichts geschätzt.
+ */
+export function keyStats(log: GoalLog | undefined, opts: { team: string; results: ResultEntry[]; before: LocalDate | null; table: TableRow[] }): string[] {
   const out: string[] = [];
-  const phases = goalPhases(log);
-  const totalFor = phases.reduce((a, p) => a + p.goalsFor, 0);
-  const totalAgainst = phases.reduce((a, p) => a + p.goalsAgainst, 0);
-
-  if (totalFor >= 6) {
-    const best = [...phases].sort((a, b) => b.goalsFor - a.goalsFor)[0];
-    if (pct(best.goalsFor, totalFor) >= 22) out.push(`Stärkste Phase: Minute ${best.label} mit ${best.goalsFor} von ${totalFor} Toren (${pct(best.goalsFor, totalFor)} %).`);
-    const firstHalf = phases.slice(0, 3).reduce((a, p) => a + p.goalsFor, 0);
-    out.push(`${firstHalf} Tore vor der Pause, ${totalFor - firstHalf} danach.`);
+  const games = log?.games ?? [];
+  const N = games.length;
+  if (log && N >= 3) {
+    const phases = goalPhases(log);
+    const totalFor = phases.reduce((a, p) => a + p.goalsFor, 0);
+    const totalAgainst = phases.reduce((a, p) => a + p.goalsAgainst, 0);
+    if (totalFor) {
+      const best = [...phases].sort((a, b) => b.goalsFor - a.goalsFor)[0];
+      out.push(`Stärkste Offensivphase: Minute ${best.label} – ${best.goalsFor} von ${totalFor} Toren.`);
+    }
+    if (totalAgainst) {
+      const worst = [...phases].sort((a, b) => b.goalsAgainst - a.goalsAgainst)[0];
+      out.push(`Anfälligste Phase: Minute ${worst.label} – ${worst.goalsAgainst} von ${n(totalAgainst, 'Gegentor', 'Gegentoren')}.`);
+    }
+    let leadHt = 0;
+    let behindHt = 0;
+    for (const g of games) {
+      const f = g.goals.filter((x) => x.own && x.minute <= 45).length;
+      const a = g.goals.filter((x) => !x.own && x.minute <= 45).length;
+      if (f > a) leadHt++;
+      else if (f < a) behindHt++;
+    }
+    out.push(`Zur Pause geführt in ${leadHt} von ${N} Spielen${behindHt ? `, zurückgelegen in ${behindHt}` : ', nie zurückgelegen'}.`);
   }
 
-  const firstGoals = games.map((g) => [...g.goals].sort((a, b) => a.minute - b.minute)[0]).filter(Boolean);
-  const scoredFirst = firstGoals.filter((g) => g.own);
-  if (scoredFirst.length) out.push(`In ${scoredFirst.length} von ${N} Spielen das erste Tor erzielt – im Mittel in Minute ${median(scoredFirst.map((g) => g.minute))}.`);
-
-  const early = games.filter((g) => g.goals.some((x) => x.own && x.minute <= 15)).length;
-  if (early >= 2) out.push(`In ${early} von ${N} Spielen schon in den ersten 15 Minuten getroffen.`);
-
-  const bursts = games.filter((g) => {
-    const own = g.goals.filter((x) => x.own).map((x) => x.minute).sort((a, b) => a - b);
-    return own.some((m, i) => i > 0 && m - own[i - 1] <= 10);
-  }).length;
-  if (bursts >= 2) out.push(`In ${bursts} von ${N} Spielen zwei oder mehr Tore innerhalb von 10 Minuten.`);
-
-  let conceded = 0;
-  let answered = 0;
-  for (const g of games) {
-    const seq = [...g.goals].sort((a, b) => a.minute - b.minute);
-    seq.forEach((x, i) => {
-      if (x.own || i === seq.length - 1) return;
-      conceded++;
-      if (seq[i + 1].own) answered++;
-    });
+  // Gegnerstärke: obere gegen untere Tabellenhälfte (Rang laut aktueller Tabelle).
+  const league = teamResults(opts.team, opts.results, { type: 'liga', before: opts.before });
+  if (opts.table.length >= 6 && league.length >= 4) {
+    const half = Math.floor(opts.table.length / 2);
+    const rankOf = (t: string) => opts.table.find((r) => normalizeName(r.team) === normalizeName(t))?.rank ?? null;
+    const part = (top: boolean) => record(league.filter((r) => {
+      const k = rankOf(r.opponent);
+      return k !== null && (top ? k <= half : k > half);
+    }));
+    const top = part(true);
+    const bottom = part(false);
+    const fmt = (r: ReturnType<typeof record>) => `${r.won}S ${r.drawn}U ${r.lost}N, ${r.goalsFor}:${r.goalsAgainst}`;
+    if (top.played && bottom.played) out.push(`Gegen die obere Tabellenhälfte ${fmt(top)} – gegen die untere ${fmt(bottom)}.`);
   }
-  if (conceded >= 3) out.push(`Nach einem Gegentor fiel das nächste Tor in ${answered} von ${conceded} Fällen für ${team}.`);
 
-  let leadHt = 0;
-  let behindHt = 0;
-  for (const g of games) {
-    const f = g.goals.filter((x) => x.own && x.minute <= 45).length;
-    const a = g.goals.filter((x) => !x.own && x.minute <= 45).length;
-    if (f > a) leadHt++;
-    else if (f < a) behindHt++;
+  if (log && N >= 3) {
+    const byScorer = new Map<string, number>();
+    let named = 0;
+    for (const g of games) for (const x of g.goals) if (x.own && x.scorer) {
+      named++;
+      byScorer.set(x.scorer, (byScorer.get(x.scorer) ?? 0) + 1);
+    }
+    if (byScorer.size >= 3) {
+      const [topName, topGoals] = [...byScorer.entries()].sort((a, b) => b[1] - a[1])[0];
+      out.push(`${named} Tore von ${byScorer.size} verschiedenen Torschützen – ${topName} trifft am häufigsten (${topGoals}).`);
+    }
+    const jokers = games.reduce((a, g) => a + g.goals.filter((x) => x.joker).length, 0);
+    if (jokers >= 3) out.push(`${jokers} Tore durch eingewechselte Spieler – auch die Bank sticht.`);
+    const withCards = games.filter((g) => g.cards);
+    if (withCards.length >= 3) {
+      const y = withCards.reduce((a, g) => a + g.cards!.yellow, 0);
+      const r = withCards.reduce((a, g) => a + g.cards!.red, 0);
+      out.push(`${n(y, 'Gelbe Karte', 'Gelbe Karten')}${r ? ` und ${n(r, 'Platzverweis', 'Platzverweise')}` : ', kein Platzverweis'} in ${withCards.length} Ligaspielen.`);
+    }
   }
-  out.push(`Zur Pause geführt in ${leadHt} von ${N} Spielen, ${behindHt ? `zurückgelegen in ${behindHt}` : 'nie zurückgelegen'}.`);
-
-  if (totalAgainst >= 4) {
-    const worst = [...phases].sort((a, b) => b.goalsAgainst - a.goalsAgainst)[0];
-    out.push(`Gegentore: ${worst.goalsAgainst} von ${totalAgainst} in Minute ${worst.label}.`);
-  } else if (totalAgainst > 0) out.push(`Nur ${n(totalAgainst, 'Gegentor', 'Gegentore')} in diesen ${N} Spielen.`);
-  return out;
+  return out.slice(0, 7);
 }
 
 /** Wo steht die Mannschaft relativ zu den Zonen? Liefert eine nüchterne Abstandsangabe. */
@@ -158,9 +162,9 @@ export function formFacts(opts: {
     const cupWins = cup.filter((r) => r.outcome === 'S').length;
     if (cupWins >= 2) out.push(`Im Pokal ${cupWins} von ${cup.length} Spielen gewonnen.`);
     const top = roster?.players.filter((p) => (p.goals ?? 0) > 0).sort((a, b) => (b.goals ?? 0) - (a.goals ?? 0))[0];
-    if (top) out.push(`Bester Torschütze: ${top.name} mit ${top.goals} Toren (laut FuPa).`);
+    if (top) out.push(`Bester Torschütze: ${top.name} mit ${top.goals} Toren.`);
     const ast = roster?.players.filter((p) => (p.assists ?? 0) > 0).sort((a, b) => (b.assists ?? 0) - (a.assists ?? 0))[0];
-    if (ast && ast.name !== top?.name) out.push(`Meiste Vorlagen: ${ast.name} mit ${ast.assists} (laut FuPa).`);
+    if (ast && ast.name !== top?.name) out.push(`Meiste Vorlagen: ${ast.name} mit ${ast.assists}.`);
   } else {
     if (best && best.goalsFor - best.goalsAgainst >= 3) out.push(`Höchster Ligasieg: ${best.goalsFor}:${best.goalsAgainst} ${vs(best)} (${formatDate(best.date).slice(0, 6)}).`);
     const noScore = rec.played - scored;

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formFacts, goalPatterns, goalPhases, tableGapFact } from './insights';
+import { formFacts, goalPhases, keyStats, tableGapFact } from './insights';
 import type { GoalLog, ResultEntry, TableRow } from './types';
 
 const row = (rank: number, team: string, points: number): TableRow => ({ rank, team, played: 15, won: 0, drawn: 0, lost: 0, goalsFor: 0, goalsAgainst: 0, points, pointDeduction: null });
@@ -15,23 +15,31 @@ describe('Auswertungen für die Formfolien', () => {
     expect(p.map((x) => [x.goalsFor, x.goalsAgainst])).toEqual([[1, 0], [0, 0], [1, 0], [0, 0], [0, 0], [0, 1]]);
   });
 
-  it('erkennt Muster nur aus gezählten Toren', () => {
-    const g = (goals: [number, boolean][]) => ({ date: '2026-10-01', opponent: 'X', isHome: true, goals: goals.map(([minute, own]) => ({ minute, own })) });
+  it('nennt wichtige Statistiken: Phasen knapp, dann Gegnerstärke, Torschützen, Joker, Karten', () => {
+    const g = (opponent: string, goals: [number, boolean, string?, boolean?][], yellow = 1) => ({
+      date: '2026-10-01', opponent, isHome: true, cards: { yellow, red: 0 },
+      goals: goals.map(([minute, own, scorer, joker]) => ({ minute, own, ...(scorer ? { scorer } : {}), ...(joker ? { joker: true } : {}) })),
+    });
     const log: GoalLog = {
       sourceId: 'x',
       games: [
-        g([[5, true], [12, true], [60, false], [70, true]]),
-        g([[10, true], [80, true]]),
-        g([[30, false], [35, true], [40, true]]),
-        g([[88, true]]),
+        g('B', [[5, true, 'Billing'], [12, true, 'Müller'], [60, false], [70, true, 'Billing']]),
+        g('C', [[10, true, 'Billing'], [80, true, 'Späth', true]]),
+        g('E', [[30, false], [35, true, 'Harder', true], [40, true, 'Plasczyk']]),
+        g('F', [[88, true, 'Wissling', true]], 2),
       ],
     };
-    const t = goalPatterns(log, 'TSG X');
-    expect(t).toContain('In 3 von 4 Spielen das erste Tor erzielt – im Mittel in Minute 10.');
-    expect(t).toContain('In 2 von 4 Spielen zwei oder mehr Tore innerhalb von 10 Minuten.');
-    // Erst ab drei Gegentoren mit Folgetor aussagekräftig – hier nur zwei.
-    expect(t.some((x) => x.startsWith('Nach einem Gegentor'))).toBe(false);
-    expect(t).toContain('Zur Pause geführt in 3 von 4 Spielen, nie zurückgelegen.');
+    const r = (opp: string, gh: number, ga: number): ResultEntry => ({ date: '2026-10-01', competitionType: 'liga', competitionLabel: 'Liga', home: 'A', away: opp, goalsHome: gh, goalsAway: ga });
+    const t = keyStats(log, { team: 'A', results: [r('B', 3, 1), r('C', 2, 0), r('E', 2, 1), r('F', 1, 0)], before: '2026-11-01', table });
+    expect(t).toEqual([
+      'Stärkste Offensivphase: Minute 1–15 – 3 von 8 Toren.',
+      'Anfälligste Phase: Minute 16–30 – 1 von 2 Gegentoren.',
+      'Zur Pause geführt in 3 von 4 Spielen, nie zurückgelegen.',
+      'Gegen die obere Tabellenhälfte 2S 0U 0N, 5:1 – gegen die untere 2S 0U 0N, 3:1.',
+      '8 Tore von 6 verschiedenen Torschützen – Billing trifft am häufigsten (3).',
+      '3 Tore durch eingewechselte Spieler – auch die Bank sticht.',
+      '5 Gelbe Karten, kein Platzverweis in 4 Ligaspielen.',
+    ]);
   });
 
   it('nennt den Abstand zum ersten Nichtabstiegsplatz nach den Zonen im Profil', () => {
@@ -49,8 +57,24 @@ describe('Auswertungen für die Formfolien', () => {
       'Letzter Ligasieg: 2:1 bei B (10.10.).',
       'In 2 von 3 Ligaspielen getroffen – 3 Tore insgesamt.',
       'Im Pokal 2 von 2 Spielen gewonnen.',
-      'Bester Torschütze: Lüer mit 9 Toren (laut FuPa).',
-      'Meiste Vorlagen: Palang mit 5 (laut FuPa).',
+      'Bester Torschütze: Lüer mit 9 Toren.',
+      'Meiste Vorlagen: Palang mit 5.',
     ]);
+  });
+});
+
+describe('Gefahr-Folie: nur herausragende Belege', () => {
+  it('lässt letzte Spiele, Startelf, Torjägerplatz und reine Einsätze weg', async () => {
+    const { standoutReasons } = await import('../dossier/build');
+    expect(
+      standoutReasons([
+        '18 Saisontore in der Liga (Platz 2 der Torjägerliste)',
+        '9 Vorlagen in 13 Einsätzen (Saison 26/27)',
+        '3 Tore in den letzten 5 Ligaspielen',
+        'In der Startelf in 5 der letzten 5 Ligaspiele',
+        '14 Einsätze (Saison 26/27)',
+        'FuPa-MVP-Wert 100 %',
+      ]),
+    ).toEqual(['18 Saisontore', '9 Vorlagen in 13 Einsätzen (Saison 26/27)']);
   });
 });
