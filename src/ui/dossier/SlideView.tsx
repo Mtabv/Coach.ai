@@ -210,7 +210,7 @@ function renderBody(slide: Slide): ReactNode {
           <div className="s-pair-col">
             <div className="s-box-title">Weitere Paarungen</div>
             {slide.pairings.length ? (
-              <div className="s-pair-list">
+              <div className={`s-pair-list ${slide.pairings.length > 8 ? "dense" : ""}`}>
                 {slide.pairings.map((p, i) => (
                   <div key={i} className={`s-pair ${p.highlight ? 'hl' : ''}`}>
                     <div className="s-pair-when">{[p.day, p.time].filter(Boolean).join(' · ')}</div>

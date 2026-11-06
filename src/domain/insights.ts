@@ -104,7 +104,14 @@ export function tableGapFact(team: string, rows: TableRow[], zones: LeagueZones 
   }
   if (me.rank === 1 && sorted[1]) return `Tabellenführer mit ${n(me.points - sorted[1].points, 'Punkt', 'Punkten')} Vorsprung auf Platz 2.`;
   const above = sorted[i - 1];
-  return above ? `Platz ${me.rank} – ${pts(above.points - me.points)} hinter Platz ${above.rank}.` : `Platz ${me.rank}.`;
+  if (!above) return `Platz ${me.rank}.`;
+  // Punktgleich: den ersten Platz mit mehr Punkten nennen, sonst „punktgleich“.
+  const higher = sorted.slice(0, i).reverse().find((r) => r.points > me.points);
+  const level = sorted.filter((r) => r !== me && r.points === me.points).map((r) => r.rank);
+  if (above.points === me.points) {
+    return `Platz ${me.rank}, punktgleich mit Platz ${level.join(' und ')}${higher ? ` – ${pts(higher.points - me.points)} hinter Platz ${higher.rank}` : ''}.`;
+  }
+  return `Platz ${me.rank} – ${pts(above.points - me.points)} hinter Platz ${above.rank}.`;
 }
 
 function shortDate(d: LocalDate): string {
@@ -148,7 +155,8 @@ export function formFacts(opts: {
     if (cupWins >= 2) out.push(`Im Pokal ${cupWins} von ${cup.length} Spielen gewonnen.`);
     const top = roster?.players.filter((p) => (p.goals ?? 0) > 0).sort((a, b) => (b.goals ?? 0) - (a.goals ?? 0))[0];
     if (top) out.push(`Bester Torschütze: ${top.name} mit ${top.goals} Toren.`);
-    const ast = roster?.players.filter((p) => (p.assists ?? 0) > 0).sort((a, b) => (b.assists ?? 0) - (a.assists ?? 0))[0];
+    // Vorlagen erst ab 3 als Fakt – „mit 1“ sagt nichts aus.
+    const ast = roster?.players.filter((p) => (p.assists ?? 0) >= 3).sort((a, b) => (b.assists ?? 0) - (a.assists ?? 0))[0];
     if (ast && ast.name !== top?.name) out.push(`Meiste Vorlagen: ${ast.name} mit ${ast.assists}.`);
   } else {
     if (best && best.goalsFor - best.goalsAgainst >= 3) out.push(`Höchster Ligasieg: ${best.goalsFor}:${best.goalsAgainst} ${vs(best)} (${formatDate(best.date).slice(0, 6)}).`);

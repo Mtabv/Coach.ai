@@ -287,6 +287,10 @@ async def coachai_spieltag(staffel: str, n: int):
             clubs = tr.select("td.column-club")
             if len(clubs) != 2:
                 continue
+            # Ligen mit ungerader Mannschaftszahl: Zeile „spielfrei“ ohne Gegner überspringen.
+            names = [c.select_one(".club-name") for c in clubs]
+            if not all(names):
+                continue
             date_cell = tr.select_one("td.column-date")
             date_text = await crawler._deobfuscate_all(date_cell) if date_cell else ""
             # Zeile enthält oft nur die Uhrzeit; das Datum steht in der Kopfzeile davor.
@@ -301,9 +305,9 @@ async def coachai_spieltag(staffel: str, n: int):
                     "game_id": gm.group(1) if gm else None,
                     "datetime_utc": _parse_date_time(combined),
                     "date_text": _clean(combined),
-                    "home_team": _clean(clubs[0].select_one(".club-name").get_text(" ", strip=True)),
+                    "home_team": _clean(names[0].get_text(" ", strip=True)),
                     "home_team_id": _team_id_from_href(clubs[0].select_one("a").get("href") if clubs[0].select_one("a") else None),
-                    "away_team": _clean(clubs[1].select_one(".club-name").get_text(" ", strip=True)),
+                    "away_team": _clean(names[1].get_text(" ", strip=True)),
                     "away_team_id": _team_id_from_href(clubs[1].select_one("a").get("href") if clubs[1].select_one("a") else None),
                     "home_score": hs,
                     "away_score": as_,

@@ -2720,3 +2720,15 @@ select:focus-visible {
   display: flex;
   align-items: flex-start;
 }
+.s-pair-list.dense {
+  gap: 5px;
+}
+.s-pair-list.dense .s-pair {
+  padding: 3px 12px;
+}
+.s-pair-list.dense .s-pair-teams {
+  font-size: 14px;
+}
+.s-pair-list.dense .s-pair-when {
+  font-size: 11px;
+}

@@ -134,7 +134,10 @@ export function buildDossier(team: TeamProfile, match: Match, prep: Preparation)
   const timeOk = isValidTime(match.kickoff);
   const dateText = dateOk ? formatDate(match.date, { weekday: true }) : 'Datum offen';
   const timeText = timeOk ? `${match.kickoff} Uhr` : 'Uhrzeit offen';
-  const venue = prep.organisation.venueOverride ?? match.venue ?? (match.isHome ? team.homeVenue : null);
+  const ownVenue = prep.organisation.venueOverride ?? match.venue ?? (match.isHome ? team.homeVenue : null);
+  // Ohne eigene Angabe: Spielort laut Ansetzung bei fussball.de (z. B. „Hartplatz …, 35239 Steffenberg“).
+  const fdVenue = b.begegnung.value?.sourceFixture?.venue;
+  const venue = ownVenue?.name ? ownVenue : fdVenue ? { name: fdVenue } : ownVenue;
   const venueText = venue?.name ? [venue.name, venue.address].filter(Boolean).join(', ') : '';
   const venueFV: FV = venue?.name
     ? {

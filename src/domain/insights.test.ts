@@ -44,6 +44,9 @@ describe('Auswertungen für die Formfolien', () => {
     expect(tableGapFact('F', table, { promotion: 1, promotionPlayoff: 1, relegation: 2 })).toBe('Platz 6 (Abstiegsplatz) – 6 Punkte Rückstand auf Platz 4, den ersten Nichtabstiegsplatz.');
     expect(tableGapFact('A', table, undefined)).toBe('Tabellenführer mit 6 Punkten Vorsprung auf Platz 2.');
     expect(tableGapFact('C', table, undefined)).toBe('Platz 3 – 12 Punkte hinter Platz 2.');
+    // Punktgleich: kein „0 Punkte hinter …“
+    const tied = [row(1, 'A', 20), row(2, 'B', 12), row(3, 'C', 12), row(4, 'D', 5)];
+    expect(tableGapFact('C', tied, undefined)).toBe('Platz 3, punktgleich mit Platz 2 – 8 Punkte hinter Platz 1.');
   });
 
   it('nennt für die eigene Mannschaft auch Ermutigendes – nur aus Daten', () => {
