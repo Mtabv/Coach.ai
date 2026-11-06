@@ -314,8 +314,9 @@ async def coachai_spieltag(staffel: str, n: int):
 
 
 @app.get("/api/coachai/spiele/aufstellungen", dependencies=[Depends(get_api_key)], tags=["Coach.AI"])
-async def coachai_aufstellungen(ids: str = Query(..., max_length=400)):
-    game_ids = [_check_id(i) for i in ids.split(",") if i][:8]
+async def coachai_aufstellungen(ids: str = Query(..., max_length=900)):
+    # Bis zu 17 Spiele: alle Ligaspiele einer Hinrunde (Torminuten für die Auswertung der Spielphasen).
+    game_ids = [_check_id(i) for i in ids.split(",") if i][:17]
 
     async def one(gid: str):
         async with _sem:

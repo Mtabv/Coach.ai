@@ -2,12 +2,14 @@ import type {
   CompetitionType,
   DataBlocks,
   FixturePairing,
+  GoalLog,
   HeadToHead,
   LocalDate,
   LocalTime,
   Match,
   OpponentPlayerCandidate,
   ResultEntry,
+  Roster,
   SourceRef,
   SourcedFact,
   TableRow,
@@ -16,7 +18,7 @@ import type {
 } from '../../domain/types';
 import type { FdGame, FdGameDetail, FdLiga, FdMatchday, FdTableRow } from './api';
 import { pick, sourcePriorityOf } from '../../domain/sourcePriority';
-import { FUPA_SOURCE_LABEL, fupaCoachFact, fupaTableSnapshot, mergePlayerCandidates, type FupaBundle } from '../fupa/mapping';
+import { FUPA_SOURCE_LABEL, fupaCoachFact, fupaCrests, fupaTableSnapshot, mergePlayerCandidates, type FupaBundle } from '../fupa/mapping';
 
 /**
  * Reine Umwandlung der Antworten des lokalen fussball.de-Dienstes in Coach.AI-Datenblöcke.
@@ -299,7 +301,8 @@ export function playerCandidates(bundle: FdBundle, oppSource: string | null, sou
     a.rank = s.rank;
   }
   let games = 0;
-  for (const d of bundle.lineups) {
+  // Spielerbelege nur aus den letzten 5 Spielberichten („zuletzt“); die übrigen dienen der Torminuten-Auswertung.
+  for (const d of bundle.lineups.slice(0, 5)) {
     if (!d.lineup) continue;
     const side = isSourceTeam(d.lineup.home.team, oppSource) ? 'home' : isSourceTeam(d.lineup.away.team, oppSource) ? 'away' : null;
     if (!side) continue;
@@ -338,6 +341,36 @@ export function playerCandidates(bundle: FdBundle, oppSource: string | null, sou
   return { candidates, games };
 }
 
+/** Minute aus „90+1’“ → 90 (Nachspielzeit zählt zur letzten Minute der Halbzeit). */
+function eventMinute(t: string | null): number | null {
+  const m = /^(\d{1,3})/.exec(t ?? '');
+  return m ? Math.min(Number(m[1]), 120) : null;
+}
+
+/**
+ * Torminuten aus den Spielberichten der Ligaspiele. Ein Spiel zählt nur, wenn die Zahl der Torereignisse zum
+ * Endergebnis passt (sonst ist der Spielbericht unvollständig und würde die Auswertung verfälschen).
+ */
+export function goalLog(raw: FdBundle, isOpp: TeamMatcher, sourceId: string): GoalLog {
+  const games: GoalLog['games'] = [];
+  const byId = new Map((raw.oppSeason ?? []).map((g) => [g.id, g]));
+  for (const d of raw.lineups) {
+    const g = byId.get(d.game_id);
+    if (!g || !/^\d+$/.test(String(g.home_score ?? '')) || !/^\d+$/.test(String(g.away_score ?? ''))) continue;
+    const oppHome = isOpp(g.home_team, g.home_team_id);
+    const oppAway = isOpp(g.away_team, g.away_team_id);
+    if (oppHome === oppAway) continue;
+    const side = oppHome ? 'home' : 'away';
+    const goalEvents = d.events.filter((e) => e.type === 'goal' && (e.team === 'home' || e.team === 'away'));
+    if (goalEvents.length !== Number(g.home_score) + Number(g.away_score)) continue;
+    const goals = goalEvents.map((e) => ({ minute: eventMinute(e.time), own: e.team === side })).filter((x): x is { minute: number; own: boolean } => x.minute !== null);
+    if (goals.length !== goalEvents.length) continue;
+    const dt = berlinDateTime(g.datetime_utc);
+    games.push({ date: dt?.date ?? '', opponent: cleanName(oppHome ? g.away_team : g.home_team), isHome: oppHome, goals });
+  }
+  return { games: games.sort((a, b) => (a.date < b.date ? 1 : -1)), sourceId };
+}
+
 export function mapToBlocks(team: TeamProfile, match: Match, raw: FdBundle): { blocks: Partial<DataBlocks>; messages: string[] } {
   const messages: string[] = [];
   const blocks: Partial<DataBlocks> = {};
@@ -368,15 +401,37 @@ export function mapToBlocks(team: TeamProfile, match: Match, raw: FdBundle): { b
     };
   } else messages.push('Keine Ergebnisse der eigenen Mannschaft in dieser Saison gefunden.');
 
+  if (raw.fupa?.ownSquad?.players.length) {
+    const sq = raw.fupa.ownSquad;
+    const roster: Roster = {
+      players: sq.players.map((p) => ({
+        name: [p.first_name, p.last_name].filter(Boolean).join(' ').trim(),
+        ...(p.position ? { position: p.position } : {}),
+        ...(p.number !== null ? { number: String(p.number) } : {}),
+        ...(p.photo_url ? { photo: p.photo_url } : {}),
+        goals: p.goals ?? 0,
+        assists: p.assists ?? 0,
+        matches: p.matches ?? 0,
+      })),
+      coaches: sq.coaches.map((c) => ({ name: c.name, ...(c.role ? { role: c.role } : {}), ...(c.photo_url ? { photo: c.photo_url } : {}) })),
+      sourceId: 'fupa-kader-eigene',
+    };
+    if (blocks.ergebnisseEigene?.value) {
+      blocks.ergebnisseEigene.value.roster = roster;
+      blocks.ergebnisseEigene.provenance.sources.push({ id: 'fupa-kader-eigene', label: FUPA_SOURCE_LABEL, kind: 'extern', asOf: `Kader ${raw.fupa.own?.season_name ?? ''}`.trim(), retrievedAt: raw.retrievedAt });
+    }
+  }
+
   if (raw.oppSeason) {
     const r = mapResults(raw.oppSeason, isOpp, match.opponent, today);
     if (r.results.length) {
+      const goals = goalLog(raw, isOpp, 'fd-spielberichte-gegner');
       blocks.ergebnisseGegner = {
         key: 'ergebnisseGegner',
         label: 'Ergebnisse Gegner (Liga, Pokal, Test)',
-        value: { team: match.opponent, results: r.results },
+        value: { team: match.opponent, results: r.results, ...(goals.games.length ? { goals } : {}) },
         provenance: {
-          sources: [src('fd-ergebnisse-gegner', `Spiele bis ${fmtDate(r.results[0].date)}`)],
+          sources: [src('fd-ergebnisse-gegner', `Spiele bis ${fmtDate(r.results[0].date)}`), ...(goals.games.length ? [src('fd-spielberichte-gegner', `${goals.games.length} Spielberichte mit Torminuten`)] : [])],
           status: 'vorhanden',
           note: `Spielplan der Saison laut fussball.de („${oppSource ?? 'Name nicht eindeutig'}“).${r.skipped ? ` ${r.skipped} Spiel(e) ohne gültiges Ergebnis (abgesagt/verlegt) ausgelassen.` : ''}`,
         },
@@ -420,7 +475,11 @@ export function mapToBlocks(team: TeamProfile, match: Match, raw: FdBundle): { b
     blocks.tabelle = {
       key: 'tabelle',
       label: 'Aktuelle Tabelle',
-      value: { snapshots: [table.snapshot], primarySourceId: table.snapshot.source.id },
+      value: {
+        snapshots: [table.snapshot],
+        primarySourceId: table.snapshot.source.id,
+        ...(raw.fupa?.table ? { crests: fupaCrests(raw.fupa.table, table.snapshot.rows, new Map([...(raw.fupa.own ? [[raw.fupa.own.slug, team.name] as [string, string]] : []), ...(raw.fupa.opp ? [[raw.fupa.opp.slug, match.opponent] as [string, string]] : [])])) } : {}),
+      },
       provenance: {
         sources: [table.snapshot.source],
         status: 'vorhanden',

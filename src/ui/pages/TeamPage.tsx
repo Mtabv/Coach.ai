@@ -116,6 +116,29 @@ export function TeamPage() {
             <TextInput label="Saison" value={team.season} onChange={(v) => set((t) => (t.season = v))} />
           </div>
           <p className="muted small">Zeitzone: Europe/Berlin (fest)</p>
+          <div className="form-grid three">
+            {(
+              [
+                ['promotion', 'Aufsteiger'],
+                ['promotionPlayoff', 'Aufstiegsrelegation'],
+                ['relegation', 'Absteiger'],
+              ] as const
+            ).map(([key, lbl]) => (
+              <TextInput
+                key={key}
+                label={lbl}
+                inputMode="numeric"
+                value={team.leagueZones ? String(team.leagueZones[key]) : ''}
+                onChange={(v) =>
+                  set((t) => {
+                    const n = Math.max(0, Math.min(9, Number(v.replace(/\D/g, '')) || 0));
+                    t.leagueZones = { ...(t.leagueZones ?? { promotion: 0, promotionPlayoff: 0, relegation: 0 }), [key]: n };
+                  })
+                }
+              />
+            ))}
+          </div>
+          <p className="muted small">Plätze für die farbige Markierung der Tabelle (liefert fussball.de nicht mit).</p>
         </Card>
 
         <Card title="Links und Heimspielort">
@@ -345,6 +368,36 @@ function KitEditor({ label, kit, onChange }: { label: string; kit: KitCombinatio
         <TextInput label="Hose" value={k.shorts} onChange={(v) => set({ shorts: v })} />
         <TextInput label="Stutzen" value={k.socks} onChange={(v) => set({ socks: v })} />
       </div>
+      <div className="form-grid three kit-images">
+        {(['shirt', 'shorts', 'socks'] as const).map((part) => {
+          const src = k.images?.[part];
+          return (
+            <label key={part} className="kit-image">
+              {src ? <img src={src} alt="" /> : <span className="muted small">Kein Bild</span>}
+              <input
+                type="file"
+                accept="image/png,image/jpeg"
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (!file || file.size > 1_500_000) return;
+                  const data = await new Promise<string>((res) => {
+                    const r = new FileReader();
+                    r.onload = () => res(String(r.result));
+                    r.readAsDataURL(file);
+                  });
+                  set({ images: { ...k.images, [part]: data } });
+                }}
+              />
+              {src && (
+                <button type="button" className="btn btn-ghost btn-small" onClick={() => set({ images: { ...k.images, [part]: undefined } })}>
+                  Bild entfernen
+                </button>
+              )}
+            </label>
+          );
+        })}
+      </div>
+      <p className="muted small">Bilder (PNG/JPEG, höchstens 1,5 MB) erscheinen auf der Folie „Unser Spiel“.</p>
     </fieldset>
   );
 }

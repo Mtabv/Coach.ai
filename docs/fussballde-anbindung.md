@@ -25,6 +25,9 @@ Ein Klick auf **„Daten von fussball.de und FuPa laden“** füllt alle Datenbl
 | Direkte Duelle | Spielpläne der laufenden und fünf früheren Saisons | Spiele gegen zweite Mannschaften zählen nicht. |
 | Gegenspieler (Kandidaten) | **FuPa:** Kader mit Position, Einsätzen, Toren, Vorlagen, Kapitän, Foto; MVP-Wert mit Stand und Größe für die torgefährlichsten 8 Spieler. **fussball.de:** Torjägerliste und Spielberichte der letzten 5 Ligaspiele | Saisontore, Rückennummer, Kapitän nach der Quellenwahl im Mannschaftsprofil. Auswahl auf der Folie: Trainerinterview, dann FuPa-MVP-Wert. Spieler, die nur fussball.de kennt, bleiben erhalten. |
 | Tabelle | fussball.de oder FuPa | Nach Quellenwahl im Mannschaftsprofil (Voreinstellung fussball.de); die andere nur, wenn die gewählte keine Tabelle liefert. |
+| Torminuten (Folie 7) | Spielberichte **aller** Ligaspiele des Gegners (höchstens 17) | Nur Spiele, deren Torereignisse zum Endergebnis passen. Daraus: Tore je Spielphase und Muster. |
+| Wappen | FuPa-Tabelle der eigenen Liga | Für Kopfzeile und Ergebnistabellen; SVG-Wappen rendert FuPa als PNG. |
+| Eigener Kader | FuPa-Kader der eigenen Mannschaft | Fotos, Positionen und Trainerteam für die Kaderfolie; Torschützen/Vorlagen für „Unsere Form“. |
 | Gegnerbezogene Fakten | Heim-/Auswärtstabelle, Torjägerliste, Spielbericht; Trainerteam laut FuPa | Z. B. „Auswärtstabelle: Platz 1 …“, bester Torschütze, Trainer. |
 | Fahrzeit | – | Liefert fussball.de nicht; bitte selbst eintragen. |
 
@@ -44,8 +47,8 @@ oder automatisch über den Vereinsnamen (die abgeleitete Kennung wird bei FuPa g
 PowerPoint-Export holt Coach.AI die Fotos über den lokalen Dienst und bettet sie ein. Bildrechte liegen bei FuPa bzw.
 den Fotografen (Entscheidung des Trainers, Fotos zu verwenden: 06.11.2026).
 
-**Ladezeit:** Der erste Abruf einer Begegnung dauert etwa **5–15 Sekunden** (eine Spielplanseite pro Saison,
-dazu Tabelle, Spieltag und bis zu 5 Spielberichte). Danach kommen die Daten für einige Stunden in rund 1,5 Sekunden
+**Ladezeit:** Der erste Abruf einer Begegnung dauert etwa **10–35 Sekunden** (eine Spielplanseite pro Saison,
+dazu Tabelle, Spieltag und die Spielberichte aller Ligaspiele des Gegners – Freigabe des Trainers vom 06.11.2026). Danach kommen die Daten für einige Stunden in rund 1,5 Sekunden
 aus dem Zwischenspeicher. Der Fortschritt wird beim Laden angezeigt.
 
 **Live geprüft am 05.11.2026** mit TSG Wilhelmshöhe (Herren, Gruppenliga Kassel Gr. 2) gegen TSG Sandershausen.
@@ -125,12 +128,12 @@ den Browser ausgeliefert.
 | `GET /api/coachai/team/{team_id}/liga` | Staffel, Tabelle mit Team-IDs, Heim-/Auswärtstabelle, Hinweis auf Punktabzüge, Torjägerliste |
 | `GET /api/coachai/team/{team_id}/saison?von=JJJJ-MM-TT&bis=JJJJ-MM-TT` | Alle Spiele im Zeitraum (höchstens 100) |
 | `GET /api/coachai/staffel/{staffel}/spieltag/{n}` | Paarungen eines Spieltags mit Datum, Anstoß, Team-IDs, ggf. Ergebnis |
-| `GET /api/coachai/spiele/aufstellungen?ids=a,b,…` | Aufstellungen, Trainer und Spielereignisse (höchstens 8 Spiele) |
+| `GET /api/coachai/spiele/aufstellungen?ids=a,b,…` | Aufstellungen, Trainer und Spielereignisse mit Minute (höchstens 17 Spiele) |
 | `GET /api/coachai/fupa/finde-team?namen=a\|b&saison=2026-27` | FuPa-Mannschaft über Vereinsnamen finden |
 | `GET /api/coachai/fupa/team/{slug}` · `/fupa/tabelle?wettbewerb=&saison=` | FuPa-Mannschaft bzw. Tabelle |
 | `GET /api/coachai/fupa/kader/{slug}` | Kader, Trainerteam, Kapitän, Fotoadressen |
 | `GET /api/coachai/fupa/spieler?slugs=a,b&team=…` | MVP-Wert mit Stand, Größe, starker Fuß (höchstens 10) |
-| `GET /api/coachai/fupa/foto?url=…` | Spielerfoto für den PowerPoint-Export (nur image.fupa.net) |
+| `GET /api/coachai/fupa/foto?url=…` | Spielerfoto oder Wappen für den PowerPoint-Export (nur image.fupa.net) |
 
 Alle Endpunkte verlangen den Header `X-API-Key`. Vereinslogos werden von der Erweiterung nicht heruntergeladen.
 

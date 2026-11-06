@@ -14,12 +14,15 @@ export interface FupaTeam {
   competition_name: string | null;
   season_slug: string | null;
   season_name: string | null;
+  /** Wappen bzw. Teambild (200×200-PNG). */
+  image_url?: string | null;
 }
 
 export interface FupaTableRow {
   rank: number | null;
   team_slug: string | null;
   team: string | null;
+  team_image?: string | null;
   matches: number | null;
   wins: number | null;
   draws: number | null;
@@ -55,7 +58,7 @@ export interface FupaPlayer {
 export interface FupaSquad {
   team_slug: string;
   players: FupaPlayer[];
-  coaches: { name: string; role: string | null }[];
+  coaches: { name: string; role: string | null; photo_url?: string | null }[];
   captain_slug: string | null;
   season_target: string | null;
 }

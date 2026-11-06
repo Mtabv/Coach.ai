@@ -193,8 +193,7 @@ describe('fussball.de-Anbindung (inoffiziell)', () => {
     // Dossier: Bilanz vollständig aus Ergebnissen, keine erfundenen Werte
     const d = buildDossier(team, match, prep);
     const form = d.slides.find((x) => x.key === 'gegnerForm') as Extract<(typeof d.slides)[number], { key: 'gegnerForm' }>;
-    expect(form.records[0].label).toBe('Saisonbilanz (Liga)');
-    expect(form.records[0].value.text).toMatch(/3S 0U 1N/);
+    expect(form.records[0]).toMatchObject({ label: 'Saison', won: '3', drawn: '0', lost: '1' });
     expect(form.facts.map((f) => f.text)).toContain('Trainer laut letztem Spielbericht: Andre Coach.');
   });
 
@@ -262,7 +261,10 @@ describe('fussball.de-Anbindung (inoffiziell)', () => {
     const p = slide.players.find((x) => x.name === 'Hendrik Bestmann')!;
     expect(p.mvp).toBe(100);
     expect(p.meta).toBe('#9 · Angriff · 1,86 m · Kapitän');
-    expect(slide.legend).toMatch(/^Auswahl: zuerst Spieler aus dem Trainerinterview, dann nach FuPa-MVP-Wert\. MVP: Der FuPa-MVP-Wert .* Stand 20\.10\.2026\. Fotos: FuPa \/ Fotograf X\./);
+    // Fußzeile nur mit Quellen und MVP-Stand (Trainerwunsch: keine Regieanweisungen auf der Folie)
+    expect(slide.legend).toBe('');
+    expect(slide.sources).toEqual(['FuPa', 'fussball.de']);
+    expect(slide.footnote).toBe('MVP-Wert laut FuPa, Stand 20.10.2026');
     expect(slide.players.find((x) => x.name === 'Paul Läufer')!.initials).toBe('PL');
     expect(slide.players[0].name).toBe('Hendrik Bestmann'); // höchster MVP-Wert zuerst
   });

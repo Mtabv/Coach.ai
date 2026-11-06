@@ -13,7 +13,8 @@ export function ownFussballDeTeamId(team: TeamProfile): string | null {
 /** Wie viele frühere Saisons für direkte Duelle durchsucht werden. */
 const HISTORY_SEASONS = 5;
 /** Wie viele letzte Ligaspiele des Gegners für Aufstellungen ausgewertet werden. */
-const LINEUP_GAMES = 5;
+/** Spielberichte: alle Ligaspiele der Saison (Torminuten), höchstens 17 Abrufe; Spielerbelege aus den letzten 5. */
+const LINEUP_GAMES = 17;
 
 type Opp = { id: string; name: string; via: string };
 
@@ -85,6 +86,7 @@ export async function loadFupa(team: TeamProfile, match: Match, liga: FdLiga | n
         }
       }
     }
+    const ownSquadP = own ? fupaApi.kader(own.team.slug, f).catch(() => null) : Promise.resolve(null);
     let squad = null;
     let details: FupaBundle['details'] = [];
     if (opp) {
@@ -94,7 +96,7 @@ export async function loadFupa(team: TeamProfile, match: Match, liga: FdLiga | n
         if (slugs.length) details = await fupaApi.spieler(slugs, opp.slug, f).catch((e) => (notes.push(`FuPa-Spielerdetails nicht abrufbar: ${(e as Error).message}`), []));
       }
     }
-    return { own: own?.team ?? null, opp, oppVia, table, squad, details };
+    return { own: own?.team ?? null, opp, oppVia, table, squad, details, ownSquad: await ownSquadP };
   } catch (e) {
     notes.push(`FuPa nicht abrufbar: ${(e as Error).message}${e instanceof FdUnavailableError ? ' (Dienst ggf. ohne FuPa-Teil gestartet)' : ''}`);
     return null;
@@ -177,7 +179,7 @@ export const fussballDeProvider: MatchDataProvider = {
 
       let lineups: FdGameDetail[] = [];
       if (opp && oppSeason) {
-        progress('Aufstellungen und Torschützen der letzten Gegnerspiele werden geladen …');
+        progress('Spielberichte der Gegnerspiele werden geladen (Aufstellungen, Torminuten) …');
         const oppName = cleanName(liga?.table.find((r) => r.team_id === opp.id)?.team ?? teamNameFromGames(oppSeason) ?? opp.name);
         const recent = oppSeason
           .filter((g) => competitionTypeOf(g.competition) === 'liga' && /^\d+$/.test(String(g.home_score ?? '')) && (berlinDateTime(g.datetime_utc)?.date ?? '') < refDate)

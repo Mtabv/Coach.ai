@@ -368,7 +368,7 @@ function SquadAnswer({ team, prep, setPrep }: { team: TeamProfile; prep: Prepara
           players={squad?.players ?? []}
           onChange={(players) =>
             setPrep((p) => {
-              p.squad = { players, note: p.squad?.note ?? '', confirmedAt: null, origin: p.squad?.origin ?? { kind: 'ersteingabe' } };
+              p.squad = { players, note: p.squad?.note ?? '', ...(p.squad?.coaches ? { coaches: p.squad.coaches } : {}), confirmedAt: null, origin: p.squad?.origin ?? { kind: 'ersteingabe' } };
               p.squadReviewed = true;
             })
           }
@@ -386,6 +386,15 @@ function SquadAnswer({ team, prep, setPrep }: { team: TeamProfile; prep: Prepara
           </button>
         )}
       </div>
+      {squad && (
+        <TextInput
+          label="Trainerteam (durch Komma getrennt)"
+          value={(squad.coaches ?? []).join(', ')}
+          placeholder="z. B. Manuel Viehmann, Thorsten Klemann"
+          hint="Fotos und Rollen kommen – soweit vorhanden – aus dem FuPa-Kader."
+          onChange={(v) => setPrep((p) => p.squad && (p.squad.coaches = v.split(',').map((x) => x.trimStart())))}
+        />
+      )}
       {squad && (
         <TextInput label="Hinweis zum Kader (optional)" value={squad.note ?? ''} onChange={(v) => setPrep((p) => p.squad && (p.squad.note = v))} />
       )}

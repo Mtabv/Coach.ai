@@ -41,6 +41,12 @@ export interface SourcePriority {
   trainer: DataSourceChoice;
 }
 
+export interface LeagueZones {
+  promotion: number;
+  promotionPlayoff: number;
+  relegation: number;
+}
+
 export interface Venue {
   name: string;
   address?: string;
@@ -73,6 +79,8 @@ export interface KitCombination {
   shirt: string;
   shorts: string;
   socks: string;
+  /** Bilder der Teile (Data-URL), z. B. aus der Dossiervorlage des Trainers. */
+  images?: { shirt?: string; shorts?: string; socks?: string };
 }
 
 export interface KitProfile {
@@ -95,12 +103,16 @@ export interface Player {
   number?: string;
   position?: string;
   note?: string;
+  /** Torwart (für die getrennte Darstellung auf der Kaderfolie). */
+  isGoalkeeper?: boolean;
 }
 
 export interface SquadSnapshot {
   players: Player[];
   /** Freitext für Kaderhinweise, z. B. „Ersatz: …“. */
   note?: string;
+  /** Trainerteam für dieses Spiel (Namen), getrennt von den Spielern dargestellt. */
+  coaches?: string[];
   confirmedAt: Timestamp | null;
   /** Herkunft: aus welchem Dossier übernommen, oder Ersteingabe. */
   origin: { kind: 'dossier'; dossierId: ID; label: string } | { kind: 'ersteingabe' } | { kind: 'beispiel'; label: string };
@@ -140,6 +152,8 @@ export interface TeamProfile {
   links: TeamLink[];
   /** Welche Quelle je Angabe gilt, wenn fussball.de und FuPa beide liefern (die andere nur als Ersatz). */
   sourcePriority?: Partial<SourcePriority>;
+  /** Tabellenzonen der eigenen Liga (fussball.de liefert sie nicht mit): Aufsteiger, Relegation, Absteiger. */
+  leagueZones?: LeagueZones;
   homeVenue: Venue;
   schedule: { home: HomeScheduleTemplate; away: AwayScheduleTemplate };
   kits: KitProfile;
@@ -273,6 +287,20 @@ export interface OpponentPlayerCandidate {
   isCaptain?: boolean;
 }
 
+/** Tore aus Spielberichten (Ligaspiele), aus Sicht der betrachteten Mannschaft. */
+export interface GoalLog {
+  /** Spiele, für die ein Spielbericht mit Torminuten vorliegt. */
+  games: { date: LocalDate; opponent: string; isHome: boolean; goals: { minute: number; own: boolean }[] }[];
+  sourceId: string;
+}
+
+/** Kader der eigenen Mannschaft laut FuPa (für Fotos und Positionen auf der Kaderfolie). */
+export interface Roster {
+  players: { name: string; position?: string; number?: string; photo?: string; goals?: number; assists?: number; matches?: number }[];
+  coaches: { name: string; role?: string; photo?: string }[];
+  sourceId: string;
+}
+
 export interface SourcedFact {
   id: ID;
   text: string;
@@ -308,10 +336,15 @@ export interface DataBlocks {
     /** Ansetzung laut externer Quelle – wird mit der Spielanlage verglichen. */
     sourceFixture?: { date: LocalDate | null; kickoff: LocalTime | null; venue: string | null; sourceLabel: string; matchday?: number | null; competition?: string | null };
   }>;
-  tabelle: DataBlock<{ snapshots: TableSnapshot[]; primarySourceId: string | null }>;
+  tabelle: DataBlock<{
+    snapshots: TableSnapshot[];
+    primarySourceId: string | null;
+    /** Wappen je Mannschaft (Name wie in der Haupttabelle → Bildadresse), laut FuPa. */
+    crests?: Record<string, string>;
+  }>;
   spieltag: DataBlock<{ matchday: number | null; pairings: FixturePairing[] }>;
-  ergebnisseEigene: DataBlock<{ team: string; results: ResultEntry[] }>;
-  ergebnisseGegner: DataBlock<{ team: string; results: ResultEntry[] }>;
+  ergebnisseEigene: DataBlock<{ team: string; results: ResultEntry[]; roster?: Roster }>;
+  ergebnisseGegner: DataBlock<{ team: string; results: ResultEntry[]; goals?: GoalLog }>;
   direkteDuelle: DataBlock<{ games: HeadToHead[] }>;
   gegenspieler: DataBlock<{ candidates: OpponentPlayerCandidate[] }>;
   gegnerFakten: DataBlock<{ facts: SourcedFact[] }>;

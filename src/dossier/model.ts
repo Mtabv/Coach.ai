@@ -57,18 +57,28 @@ export interface TableLine {
   goals: string;
   diff: string;
   points: FV;
-  deduction: string;
   highlight: 'own' | 'opp' | null;
+  /** Tabellenzone laut Mannschaftsprofil: Aufstieg, Aufstiegsrelegation, Abstieg. */
+  zone: 'auf' | 'relegation' | 'ab' | null;
 }
 
 export interface MatchdaySlide extends SlideBase<'spieltag'> {
   table: TableLine[];
   tableStatus: FV;
-  pairings: { home: string; away: string; when: string; highlight: boolean }[];
+  /** Legende der Tabellenzonen (nur vorhandene Zonen). */
+  zones: { zone: 'auf' | 'relegation' | 'ab'; label: string }[];
+  pairings: { home: string; away: string; day: string; time: string; highlight: boolean }[];
+}
+
+export interface KitView {
+  label: FV;
+  /** Bilder (Data-URL oder Adresse) von Trikot, Hose, Stutzen – sofern hinterlegt. */
+  images: { part: 'Trikot' | 'Hose' | 'Stutzen'; src: string; text: string }[];
 }
 
 export interface OurMatchSlide extends SlideBase<'unserSpiel'> {
   facts: { label: string; value: FV }[];
+  kit: KitView;
   h2h: { season: string; date: string; competition: string; match: string; result: string }[];
   h2hNote: string;
   schedule: { time: FV; label: string; note?: string }[];
@@ -77,10 +87,23 @@ export interface OurMatchSlide extends SlideBase<'unserSpiel'> {
 
 export interface FormSlide<K extends 'gegnerForm' | 'unsereForm'> extends SlideBase<K> {
   teamName: string;
-  last5: { date: string; opponent: string; ha: 'H' | 'A'; result: string; outcome: 'S' | 'U' | 'N' }[];
+  last5: { date: string; opponent: string; crest?: string; ha: 'H' | 'A'; result: string; outcome: 'S' | 'U' | 'N' }[];
   last5Note: string;
-  records: { label: string; value: FV }[];
+  /** Bilanztabelle: Saison und die für dieses Spiel relevante Heim- bzw. Auswärtsbilanz. */
+  records: RecordLine[];
+  recordsNote: FV | null;
   facts: FV[];
+}
+
+export interface RecordLine {
+  label: string;
+  played: string;
+  won: string;
+  drawn: string;
+  lost: string;
+  goals: string;
+  diff: string;
+  flag: FV['flag'];
 }
 
 export interface DangerSlide extends SlideBase<'gegnerGefahr'> {
@@ -102,16 +125,30 @@ export interface DangerSlide extends SlideBase<'gegnerGefahr'> {
 
 export interface ProfileSlide extends SlideBase<'gegnerAuffaelligkeiten'> {
   kpis: { label: string; value: string; basis: string }[];
-  profile: FV[];
-  facts: FV[];
+  /** Tore und Gegentore je Spielphase (15-Minuten-Abschnitte) aus Spielberichten. */
+  phases: { label: string; goalsFor: number; goalsAgainst: number }[];
+  phasesBasis: string;
+  /** Gezählte Muster in den Torminuten. */
+  patterns: string[];
 }
 
 export interface ObservationSlide extends SlideBase<'soSpieltGegner'> {
   phases: { label: string; value: FV }[];
 }
 
+export interface SquadCard {
+  name: string;
+  meta: string;
+  initials: string;
+  photo?: string;
+}
+
 export interface SquadSlide extends SlideBase<'kader'> {
-  groups: { label: string; players: string[] }[];
+  goalkeepers: SquadCard[];
+  players: SquadCard[];
+  coaches: SquadCard[];
+  /** Freie Plätze bis zur Kadergröße (Platzhalter, nur in der Vorschau ohne Kader). */
+  placeholders: { goalkeepers: number; players: number; coaches: number };
   count: number;
   note: string;
   origin: string;
@@ -149,6 +186,8 @@ export interface DossierContent {
     containsDemoData: boolean;
     generatedAt: string;
     templateName: string;
+    /** Wappen der Spielpaarung (Heim, Gast) für die Kopfzeile. */
+    crests: { home?: string; away?: string };
   };
   slides: Slide[];
 }

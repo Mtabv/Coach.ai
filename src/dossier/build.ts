@@ -1,11 +1,12 @@
-import { FUPA_MVP_DEFINITION } from '../data/fupa/mapping';
+import { samePerson } from '../data/fupa/mapping';
 import { analyzeTable } from '../domain/dataQuality';
+import { formFacts, goalPhases, goalPatterns } from '../domain/insights';
 import { selectKeyPlayers, type SelectedPlayer } from '../domain/players';
 import { kitLabel } from '../domain/questionnaire';
-import { formatRecord, normalizeName, opponentKpis, seasonSummary, teamResults, type TeamResult } from '../domain/stats';
+import { normalizeName, opponentKpis, seasonSummary, teamResults, type TeamResult } from '../domain/stats';
 import { computeAwaySchedule, computeHomeSchedule, formatDate, isValidDate, isValidTime } from '../domain/time';
-import type { Answer, Match, Preparation, QuestionId, SourceRef, TeamProfile } from '../domain/types';
-import { fv, type DossierContent, type FV, type FormSlide, type Slide } from './model';
+import type { Answer, KitCombination, Match, Preparation, QuestionId, SourceRef, TeamProfile } from '../domain/types';
+import { fv, type DossierContent, type FV, type FormSlide, type KitView, type RecordLine, type Slide, type SquadCard } from './model';
 
 /**
  * Baut den Dossierinhalt deterministisch aus Profil, Spiel und Vorbereitung.
@@ -29,6 +30,38 @@ const SLIDE_TITLES = {
 
 function srcLabel(s: SourceRef): string {
   return s.asOf ? `${s.label}, Stand ${s.asOf}` : s.label;
+}
+
+/** Kurze Quellenangabe für die Fußzeile: nur der Name der Quelle („fussball.de“, „FuPa“). */
+function srcShort(s: SourceRef): string {
+  if (s.kind === 'demo') return 'Beispieldaten';
+  if (/fussball\.de/i.test(s.label)) return 'fussball.de';
+  if (/fupa/i.test(s.label)) return 'FuPa';
+  return s.label.replace(/\s*\(.*?\)/g, '').replace(/,.*$/, '').trim();
+}
+
+const WEEKDAY_SHORT = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
+function dayLabel(d: string | undefined): string {
+  if (!d || !isValidDate(d)) return '';
+  const [y, m, day] = d.split('-').map(Number);
+  return `${WEEKDAY_SHORT[new Date(Date.UTC(y, m - 1, day)).getUTCDay()]} ${String(day).padStart(2, '0')}.${String(m).padStart(2, '0')}.`;
+}
+
+function crestFor(crests: Record<string, string> | undefined, team: string): string | undefined {
+  if (!crests) return undefined;
+  const key = Object.keys(crests).find((k) => normalizeName(k) === normalizeName(team));
+  return key ? crests[key] : undefined;
+}
+
+function kitView(kit: KitCombination | null, team: TeamProfile): KitView {
+  if (!kit || !(kit.shirt || kit.shorts || kit.socks)) return { label: fv('Spielkleidung offen', 'offen'), images: [] };
+  const same = (k: KitCombination | null) => k && k.shirt === kit.shirt && k.shorts === kit.shorts && k.socks === kit.socks;
+  const imgs = kit.images ?? (same(team.kits.home) ? team.kits.home?.images : same(team.kits.away) ? team.kits.away?.images : undefined) ?? {};
+  const images: KitView['images'] = [];
+  if (imgs.shirt) images.push({ part: 'Trikot', src: imgs.shirt, text: kit.shirt });
+  if (imgs.shorts) images.push({ part: 'Hose', src: imgs.shorts, text: kit.shorts });
+  if (imgs.socks) images.push({ part: 'Stutzen', src: imgs.socks, text: kit.socks });
+  return { label: fv(kitLabel(kit), /Beispiel/i.test(kitLabel(kit)) ? 'beispiel' : 'ok'), images };
 }
 
 function sourceById(prep: Preparation, id: string): SourceRef | undefined {
@@ -97,6 +130,7 @@ export function buildDossier(team: TeamProfile, match: Match, prep: Preparation)
   const mdLabel = match.matchday ? `${match.matchday}. Spieltag` : match.competitionType === 'liga' ? 'Spieltag offen' : match.competitionType === 'pokal' ? 'Pokalspiel' : 'Testspiel';
   const containsDemo = Object.values(b).some((blk) => blk.provenance.sources.some((s: SourceRef) => s.kind === 'demo')) || team.isDemo || match.isDemo;
 
+  const crests = b.tabelle.value?.crests;
   const slides: Slide[] = [];
   const blank = { sources: [] as string[], footnote: '' };
 
@@ -117,7 +151,7 @@ export function buildDossier(team: TeamProfile, match: Match, prep: Preparation)
   });
 
   // 2 Inhalt
-  const ownFormTitle = `${team.shortName} ${SLIDE_TITLES.unsereForm}`;
+  const ownFormTitle = 'Unsere Form';
   const contentItems: [string, string][] = [
     [SLIDE_TITLES.spieltag, 'Tabelle und Spieltagspaarungen'],
     [SLIDE_TITLES.unserSpiel, 'Spielort, Treffpunkt, Kleidung, direkte Duelle und Zeitplan'],
@@ -140,7 +174,6 @@ export function buildDossier(team: TeamProfile, match: Match, prep: Preparation)
 
   // 3 Spieltag
   const ta = analyzeTable(b.tabelle, match);
-  const tableSources = ta.primary ? [srcLabel(ta.primary.source)] : [];
   let tableStatus = fv('Tabelle liegt nicht vor', 'offen');
   if (ta.primary) {
     const unresolved = ta.conflicts.filter((c) => !c.resolution).length;
@@ -149,6 +182,19 @@ export function buildDossier(team: TeamProfile, match: Match, prep: Preparation)
     else tableStatus = fv(`Stand ${ta.primary.source.asOf ?? 'unbekannt'}`, ta.primary.source.kind === 'demo' ? 'beispiel' : 'ok');
   }
   const pairings = b.spieltag.value?.pairings ?? [];
+  const zones = team.leagueZones;
+  const nRows = ta.rows.length;
+  const zoneOf = (rank: number): 'auf' | 'relegation' | 'ab' | null => {
+    if (!zones || !nRows) return null;
+    if (rank <= zones.promotion) return 'auf';
+    if (rank <= zones.promotion + zones.promotionPlayoff) return 'relegation';
+    if (rank > nRows - zones.relegation) return 'ab';
+    return null;
+  };
+  const zoneLegend: { zone: 'auf' | 'relegation' | 'ab'; label: string }[] = [];
+  if (zones?.promotion) zoneLegend.push({ zone: 'auf', label: 'Aufstieg' });
+  if (zones?.promotionPlayoff) zoneLegend.push({ zone: 'relegation', label: 'Aufstiegsrelegation' });
+  if (zones?.relegation) zoneLegend.push({ zone: 'ab', label: 'Abstieg' });
   slides.push({
     key: 'spieltag',
     number: 3,
@@ -167,19 +213,24 @@ export function buildDossier(team: TeamProfile, match: Match, prep: Preparation)
         points: conflicted
           ? fv(alt ? [...new Set(alt.values.map((v) => v.value))].join(' / ') : String(r.points), 'widersprüchlich', alt?.label)
           : fv(String(r.points)),
-        deduction: r.pointDeduction ? `−${r.pointDeduction}` : '',
+        zone: zoneOf(r.rank),
         highlight: normalizeName(r.team) === normalizeName(ownName) ? 'own' : normalizeName(r.team) === normalizeName(opp) ? 'opp' : null,
       };
     }),
     tableStatus,
+    zones: zoneLegend,
     pairings: pairings.map((p) => ({
       home: p.home,
       away: p.away,
-      when: [p.date ? formatDate(p.date).slice(0, 6) : '', p.kickoff ?? ''].filter(Boolean).join(' '),
+      day: dayLabel(p.date),
+      time: p.kickoff ? `${p.kickoff} Uhr` : '',
       highlight: [p.home, p.away].some((t) => normalizeName(t) === normalizeName(ownName)),
     })),
-    sources: [...tableSources, ...(b.spieltag.provenance.sources.map(srcLabel))],
-    footnote: ta.rows.some((r) => r.pointDeduction) ? 'Punktabzüge sind als eigene Angabe ausgewiesen.' : '',
+    sources: [...(ta.primary ? [srcShort(ta.primary.source)] : []), ...b.spieltag.provenance.sources.map(srcShort)],
+    footnote: ta.rows
+      .filter((r) => r.pointDeduction)
+      .map((r) => `${r.team}: ${r.pointDeduction} ${r.pointDeduction === 1 ? 'Punkt' : 'Punkte'} Abzug`)
+      .join(' · '),
   });
 
   // 4 Unser Spiel
@@ -188,8 +239,6 @@ export function buildDossier(team: TeamProfile, match: Match, prep: Preparation)
       ? computeHomeSchedule(match.kickoff!, team.schedule.home, venue?.name ?? null, prep.organisation)
       : computeAwaySchedule(match.kickoff!, team.schedule.away, prep.organisation.travelMinutes, prep.organisation)
     : null;
-  const kit = prep.organisation.kit;
-  const kitFV = kit && (kit.shirt || kit.shorts || kit.socks) ? fv(kitLabel(kit), /Beispiel/i.test(kitLabel(kit)) ? 'beispiel' : 'ok') : fv('Spielkleidung offen', 'offen');
   const meetingFV = sched?.meetingTime
     ? fv(`${sched.meetingTime} Uhr${sched.meetingPlace ? ` · ${sched.meetingPlace}` : ''}`)
     : fv(match.isHome ? 'Treffpunkt offen' : 'Offen – Fahrzeit für diese Fahrt fehlt', 'offen');
@@ -205,7 +254,6 @@ export function buildDossier(team: TeamProfile, match: Match, prep: Preparation)
       value: sched?.departureTime ? fv(`${sched.departureTime} Uhr ab ${team.schedule.away.departurePoint || 'Treffpunkt'} (Fahrzeit ${prep.organisation.travelMinutes} Min.)`, prep.organisation.travelSource === 'verifiziert' ? 'ok' : 'trainer') : fv('Offen – Fahrzeit fehlt', 'offen'),
     });
   }
-  facts.push({ label: 'Spielkleidung', value: kitFV });
   if (prep.organisation.notes.trim()) facts.push({ label: 'Besonderheiten', value: fv(prep.organisation.notes.trim(), 'trainer') });
 
   const h2h = (b.direkteDuelle.value?.games ?? []).slice().sort((x, y) => (x.date < y.date ? 1 : -1));
@@ -215,12 +263,14 @@ export function buildDossier(team: TeamProfile, match: Match, prep: Preparation)
     title: SLIDE_TITLES.unserSpiel,
     kicker: match.isHome ? 'Heimspiel' : 'Auswärtsspiel',
     facts,
+    kit: kitView(prep.organisation.kit, team),
     h2h: h2h.map((g) => ({
       season: g.season,
       date: formatDate(g.date),
       competition: g.competitionLabel,
-      match: `${g.home} – ${g.away}`,
-      result: `${g.goalsHome}:${g.goalsAway}`,
+      // Aus unserer Sicht: Spielort und Ergebnis mit unseren Toren zuerst (kompakter als beide Vereinsnamen).
+      match: normalizeName(g.home) === normalizeName(ownName) ? 'Heim' : 'Auswärts',
+      result: normalizeName(g.home) === normalizeName(ownName) ? `${g.goalsHome}:${g.goalsAway}` : `${g.goalsAway}:${g.goalsHome}`,
     })),
     h2hNote: h2h.length ? '' : 'Keine direkten Duelle erfasst.',
     schedule: sched
@@ -231,8 +281,8 @@ export function buildDossier(team: TeamProfile, match: Match, prep: Preparation)
         }))
       : [],
     scheduleOpen: sched ? sched.open : ['Anstoßzeit fehlt – Zeitplan kann nicht berechnet werden.'],
-    sources: [...(h2h.length ? b.direkteDuelle.provenance.sources.map(srcLabel) : []), 'Zeitplan: berechnet aus gespeichertem Zeitmuster'],
-    footnote: 'Traineransprache = organisatorischer Zeitblock.',
+    sources: h2h.length ? b.direkteDuelle.provenance.sources.map(srcShort) : [],
+    footnote: '',
   });
 
   // 5 Gegner Form / 9 Unsere Form
@@ -260,16 +310,16 @@ export function buildDossier(team: TeamProfile, match: Match, prep: Preparation)
       streak(ub, 'Ligaspielen ungeschlagen', Boolean(tableRow && tableRow.lost === 0), `In dieser Saison noch ungeschlagen: ${tableRow?.played} Ligaspiele`);
       streak(wl, 'Ligaspielen ohne Sieg', Boolean(tableRow && tableRow.won === 0), `In dieser Saison noch ohne Sieg: ${tableRow?.played} Ligaspiele`);
       if (!incomplete && rel.played > 0 && rel.lost === 0) facts.push(fv(`${relevant === 'home' ? 'Zu Hause' : 'Auswärts'} in dieser Saison ohne Niederlage.`));
-      if (tableRow) {
-        facts.push(tableRow.unresolved.length ? fv(`Tabellenplatz ${tableRow.rank} – Punktzahl ungeklärt`, 'widersprüchlich') : fv(`Tabellenplatz ${tableRow.rank} mit ${tableRow.points} Punkten${tableRow.pointDeduction ? ` (nach ${tableRow.pointDeduction} Punkten Abzug)` : ''}.`));
-      }
-      if (s.otherCompetitions.length) {
+      const own = key === 'unsereForm';
+      for (const t of formFacts({ team: teamName, results, before: match.date, table: ta.rows, zones: team.leagueZones, own, roster: own ? b.ergebnisseEigene.value?.roster : undefined })) facts.push(fv(t));
+      if (!own && s.otherCompetitions.length) {
         const o = s.otherCompetitions[0];
         facts.push(fv(`Nicht in der Ligaform enthalten: ${o.competitionLabel} am ${formatDate(o.date)} gegen ${o.opponent} (${o.goalsFor}:${o.goalsAgainst}).`));
       }
     }
     if (key === 'gegnerForm') {
-      for (const f of b.gegnerFakten.value?.facts ?? []) {
+      // Heim-/Auswärtstabelle steht schon in der Bilanztabelle.
+      for (const f of (b.gegnerFakten.value?.facts ?? []).filter((x) => x.id !== 'fd-ha')) {
         const src = sourceById(prep, f.sourceId);
         facts.push(fv(f.text, src?.kind === 'demo' ? 'beispiel' : 'ok', src ? srcLabel(src) : undefined));
       }
@@ -284,25 +334,27 @@ export function buildDossier(team: TeamProfile, match: Match, prep: Preparation)
       title,
       kicker: teamName,
       teamName,
-      last5: last5Rows(s.last5),
+      last5: last5Rows(s.last5).map((r) => {
+        const c = crestFor(crests, r.opponent);
+        return c ? { ...r, crest: c } : r;
+      }),
       last5Note: has ? (s.last5.length < 5 ? `Nur ${s.last5.length} Ligaspiele vorhanden.` : 'Nur Ligaspiele – Pokal- und Testspiele nicht berücksichtigt.') : 'Keine Ligaergebnisse vorhanden.',
       records: has
         ? [
             incomplete && tableRow
-              ? { label: 'Saisonbilanz (Liga, laut Tabelle)', value: fv(`${tableRow.won}S ${tableRow.drawn}U ${tableRow.lost}N · ${tableRow.goalsFor}:${tableRow.goalsAgainst} Tore`, tableRow.unresolved.length ? 'widersprüchlich' : 'ok') }
-              : { label: 'Saisonbilanz (Liga)', value: fv(formatRecord(s.all), stale ? 'veraltet' : 'ok') },
-            {
-              label: relevant === 'home' ? 'Heimbilanz' : 'Auswärtsbilanz',
-              value: incomplete
-                ? fv(`unvollständig – nur ${s.all.played} von ${tableRow!.played} Ligaspielen vorhanden`, 'offen')
-                : fv(rel.played ? formatRecord(rel) : 'Noch keine Spiele', stale ? 'veraltet' : 'ok'),
-            },
-            { label: 'Tabellenpunkte', value: tableRow ? (tableRow.unresolved.includes('points') ? fv('ungeklärt', 'widersprüchlich') : fv(`${tableRow.points}${tableRow.pointDeduction ? ` (−${tableRow.pointDeduction} Abzug)` : ''}`)) : fv('Tabelle fehlt', 'offen') },
+              ? recordLine('Saison (laut Tabelle)', { played: tableRow.played, won: tableRow.won, drawn: tableRow.drawn, lost: tableRow.lost, goalsFor: tableRow.goalsFor, goalsAgainst: tableRow.goalsAgainst }, tableRow.unresolved.length ? 'widersprüchlich' : 'ok')
+              : recordLine('Saison', s.all, stale ? 'veraltet' : 'ok'),
+            ...(incomplete ? [] : [recordLine(relevant === 'home' ? 'Heim' : 'Auswärts', rel, stale ? 'veraltet' : 'ok')]),
           ]
-        : [{ label: 'Saisonbilanz (Liga)', value: fv('Keine Daten', 'offen') }],
-      facts,
-      sources: blk.provenance.sources.map(srcLabel).concat(key === 'gegnerForm' ? b.gegnerFakten.provenance.sources.map(srcLabel) : []),
-      footnote: 'Bilanzen berechnet aus Ligaergebnissen; Tabellenpunkte laut Tabelle.',
+        : [],
+      recordsNote: !has
+        ? fv('Keine Ligaergebnisse vorhanden', 'offen')
+        : incomplete
+          ? fv(`${relevant === 'home' ? 'Heim' : 'Auswärts'}bilanz unvollständig – nur ${s.all.played} von ${tableRow!.played} Ligaspielen vorhanden`, 'offen')
+          : null,
+      facts: facts.slice(0, 7),
+      sources: [...new Set(blk.provenance.sources.map(srcShort).concat(key === 'gegnerForm' ? b.gegnerFakten.provenance.sources.map(srcShort) : []))],
+      footnote: 'Bilanzen berechnet aus Ligaergebnissen.',
     };
   };
 
@@ -310,7 +362,7 @@ export function buildDossier(team: TeamProfile, match: Match, prep: Preparation)
 
   // 6 Gefahr
   const selected = selectKeyPlayers(b.gegenspieler.value?.candidates ?? [], prep.playerHints);
-  const playerSources = b.gegenspieler.provenance.sources.map(srcLabel);
+  const playerSources = [...new Set(b.gegenspieler.provenance.sources.map(srcShort))];
   slides.push({
     key: 'gegnerGefahr',
     number: 6,
@@ -319,7 +371,8 @@ export function buildDossier(team: TeamProfile, match: Match, prep: Preparation)
     players: selected.map((p) => ({
       name: p.name,
       meta: [p.number ? `#${p.number}` : '', p.position ?? '', p.heightCm ? `${(p.heightCm / 100).toFixed(2).replace('.', ',')} m` : '', p.isCaptain ? 'Kapitän' : ''].filter(Boolean).join(' · '),
-      reasons: p.reasons.filter((r) => !/^FuPa-MVP-Wert/.test(r)),
+      // Höchstens 3 Belege neben einem Trainerhinweis, sonst 4 – damit die Karte nicht überläuft.
+      reasons: p.reasons.filter((r) => !/^FuPa-MVP-Wert/.test(r)).slice(0, p.coachNote ? 3 : 4),
       coachNote: p.coachNote,
       initials: initialsOf(p.name),
       ...(p.photo ? { photo: p.photo } : {}),
@@ -332,41 +385,25 @@ export function buildDossier(team: TeamProfile, match: Match, prep: Preparation)
           ? `Nur ${selected.length} Spieler mit belegten Angaben – bewusst keine vier erzwungen.`
           : '',
     sources: playerSources,
-    legend: [
-      selected.length ? 'Auswahl: zuerst Spieler aus dem Trainerinterview, dann nach FuPa-MVP-Wert.' : '',
-      selected.some((p) => p.mvp) ? `MVP: ${FUPA_MVP_DEFINITION}${mvpAsOf(selected) ? ` Stand ${mvpAsOf(selected)}.` : ''}` : '',
-      selected.some((p) => p.photo) ? `Fotos: ${[...new Set(selected.filter((p) => p.photo).map((p) => p.photo!.credit))].join('; ')}.` : '',
-    ]
-      .filter(Boolean)
-      .join(' '),
-    footnote: '',
+    legend: '',
+    footnote: selected.some((p) => p.mvp) && mvpAsOf(selected) ? `MVP-Wert laut FuPa, Stand ${mvpAsOf(selected)}` : '',
   });
 
   // 7 Auffälligkeiten
   const oppResults = b.ergebnisseGegner.value?.results ?? [];
   const kpis = opponentKpis(opp, oppResults, match.date, ta.rows.length ? ta.rows : null);
-  const oppSummary = seasonSummary(opp, oppResults, match.date);
-  const profile: FV[] = [];
-  if (oppSummary.all.played) {
-    profile.push(fv(`Heim: ${formatRecord(oppSummary.home)}`));
-    profile.push(fv(`Auswärts: ${formatRecord(oppSummary.away)}`));
-    const firstHalf = kpis.find((k) => k.id === 'offrang');
-    const def = kpis.find((k) => k.id === 'defrang');
-    if (firstHalf && def) profile.push(fv(`Offensive auf Rang ${firstHalf.value.replace('.', '')}, Defensive auf Rang ${def.value.replace('.', '')} der Liga.`));
-  }
+  const goalLog = b.ergebnisseGegner.value?.goals;
   slides.push({
     key: 'gegnerAuffaelligkeiten',
     number: 7,
     title: SLIDE_TITLES.gegnerAuffaelligkeiten,
     kicker: opp,
     kpis: kpis.map((k) => ({ label: k.label, value: k.value, basis: k.basis })),
-    profile: profile.length ? profile : [fv('Keine Ergebnisdaten vorhanden.', 'offen')],
-    facts: (b.gegnerFakten.value?.facts ?? []).map((f) => {
-      const src = sourceById(prep, f.sourceId);
-      return fv(f.text, src?.kind === 'demo' ? 'beispiel' : 'ok', src ? srcLabel(src) : undefined);
-    }),
-    sources: b.ergebnisseGegner.provenance.sources.map(srcLabel).concat(ta.primary ? [srcLabel(ta.primary.source)] : []),
-    footnote: 'Kennzahlen deterministisch aus Ergebnissen und Tabelle – keine taktischen Ableitungen.',
+    phases: goalLog && goalLog.games.length >= 3 ? goalPhases(goalLog) : [],
+    phasesBasis: goalLog ? `${goalLog.games.length} Ligaspiele mit Spielbericht` : '',
+    patterns: goalLog ? goalPatterns(goalLog, opp) : [],
+    sources: [...new Set(b.ergebnisseGegner.provenance.sources.map(srcShort).concat(ta.primary ? [srcShort(ta.primary.source)] : []))],
+    footnote: '',
   });
 
   // 8 So spielt der Gegner – nur Trainerbeobachtungen
@@ -385,8 +422,8 @@ export function buildDossier(team: TeamProfile, match: Match, prep: Preparation)
     title: SLIDE_TITLES.soSpieltGegner,
     kicker: 'Beobachtungen des Trainerteams',
     phases: obs.map(([label, id]) => ({ label, value: answerFV(prep.answers[id]) })),
-    sources: ['Trainerbeobachtungen'],
-    footnote: 'Subjektive Beobachtungen – getrennt von statistischen Angaben.',
+    sources: ['Trainerteam'],
+    footnote: '',
   });
 
   // 9 Unsere Form
@@ -394,26 +431,45 @@ export function buildDossier(team: TeamProfile, match: Match, prep: Preparation)
 
   // 10 Kader
   const players = prep.squad?.players ?? [];
-  const groups = new Map<string, string[]>();
-  for (const p of players) {
-    const g = p.position?.trim() || 'Ohne Position';
-    if (!groups.has(g)) groups.set(g, []);
-    groups.get(g)!.push(`${p.number ? `${p.number} ` : ''}${p.name}`);
-  }
-  const order = ['Tor', 'Abwehr', 'Mittelfeld', 'Angriff'];
-  const groupList = [...groups.entries()].sort((a, b) => (order.indexOf(a[0]) + 1 || 99) - (order.indexOf(b[0]) + 1 || 99)).map(([label, ps]) => ({ label, players: ps }));
+  const roster = b.ergebnisseEigene.value?.roster;
+  const order = ['Torwart', 'Abwehr', 'Mittelfeld', 'Angriff'];
+  const cards = players.map((p) => {
+    const r = roster?.players.find((x) => samePerson(x.name, p.name));
+    const position = p.position?.trim() || r?.position || '';
+    const number = p.number || r?.number || '';
+    const card: SquadCard & { gk: boolean; pos: string } = {
+      name: p.name,
+      meta: [number ? `#${number}` : '', position].filter(Boolean).join(' · '),
+      initials: initialsOf(p.name),
+      ...(r?.photo ? { photo: r.photo } : {}),
+      gk: Boolean(p.isGoalkeeper) || /^tor/i.test(position),
+      pos: position,
+    };
+    return card;
+  });
+  const strip = ({ name, meta, initials, photo }: SquadCard): SquadCard => ({ name, meta, initials, ...(photo ? { photo } : {}) });
+  const coachCards: SquadCard[] = (prep.squad?.coaches ?? []).map((x) => x.trim()).filter(Boolean).map((name) => {
+    const r = roster?.coaches.find((x) => samePerson(x.name, name));
+    return { name, meta: r?.role ?? 'Trainer', initials: initialsOf(name), ...(r?.photo ? { photo: r.photo } : {}) };
+  });
   const o = prep.squad?.origin;
   slides.push({
     key: 'kader',
     number: 10,
     title: SLIDE_TITLES.kader,
     kicker: `${players.length} Spieler`,
-    groups: groupList,
+    goalkeepers: cards.filter((c) => c.gk).map(strip),
+    players: cards
+      .filter((c) => !c.gk)
+      .sort((x, y) => (order.indexOf(x.pos) + 1 || 99) - (order.indexOf(y.pos) + 1 || 99) || x.name.localeCompare(y.name))
+      .map(strip),
+    coaches: coachCards,
+    placeholders: players.length ? { goalkeepers: 0, players: 0, coaches: 0 } : { goalkeepers: 2, players: 16, coaches: 2 },
     count: players.length,
     note: prep.squad?.note ?? '',
     origin: !o ? 'Kein Kader erfasst' : o.kind === 'ersteingabe' ? 'Ersteingabe des Trainers' : o.label,
     sources: [],
-    footnote: prep.squadReviewed ? 'Kader vom Trainer geprüft.' : 'Kader übernommen – noch nicht ausdrücklich geprüft.',
+    footnote: prep.squadReviewed || !players.length ? '' : 'Kader übernommen – noch nicht ausdrücklich geprüft.',
   });
 
   // 11 Auftrag – ausschließlich Trainerbotschaften
@@ -423,7 +479,7 @@ export function buildDossier(team: TeamProfile, match: Match, prep: Preparation)
     key: 'auftrag',
     number: 11,
     title: SLIDE_TITLES.auftrag,
-    kicker: `${team.shortName} gegen ${opp}`,
+    kicker: `${ownName} gegen ${opp}`,
     messages: m.messages.map((msg, i) => ({
       headline: msg.headline.trim() ? fv(msg.headline.trim(), ex ? 'beispiel' : 'ok') : fv(`Botschaft ${i + 1} offen`, 'offen'),
       text: msg.text.trim(),
@@ -447,9 +503,18 @@ export function buildDossier(team: TeamProfile, match: Match, prep: Preparation)
       containsDemoData: containsDemo,
       generatedAt: new Date().toISOString(),
       templateName: team.template.name,
+      crests: {
+        ...(crestFor(crests, homeName) ? { home: crestFor(crests, homeName) } : {}),
+        ...(crestFor(crests, awayName) ? { away: crestFor(crests, awayName) } : {}),
+      },
     },
     slides: slides.filter((s) => team.template.slides.includes(s.key)),
   };
+}
+
+function recordLine(label: string, r: { played: number; won: number; drawn: number; lost: number; goalsFor: number; goalsAgainst: number }, flag: FV['flag']): RecordLine {
+  const d = r.goalsFor - r.goalsAgainst;
+  return { label, played: String(r.played), won: String(r.won), drawn: String(r.drawn), lost: String(r.lost), goals: `${r.goalsFor}:${r.goalsAgainst}`, diff: `${d > 0 ? '+' : ''}${d}`, flag };
 }
 
 function initialsOf(name: string): string {

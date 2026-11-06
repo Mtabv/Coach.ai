@@ -10,6 +10,7 @@ Kapitän, Spielerfotos (Adresse + Bildnachweis), MVP-Wert mit Stand, Körpergrö
   GET /api/coachai/fupa/tabelle?wettbewerb=…&saison=…   Tabelle des Wettbewerbs mit FuPa-Mannschaftskennungen
   GET /api/coachai/fupa/kader/{slug}                    Kader, Trainerteam, Kapitän
   GET /api/coachai/fupa/spieler?slugs=a,b&team=…        MVP-Wert (mit Stand), Größe, starker Fuß
+  GET /api/coachai/fupa/foto?url=…                      Spielerfoto oder Wappen (für den PowerPoint-Export)
 
 Alle Antworten werden 6 Stunden zwischengespeichert; höchstens drei gleichzeitige Abrufe.
 """
@@ -77,6 +78,13 @@ def _photo(img: Optional[dict]) -> Dict[str, Optional[str]]:
     return {"photo_url": f"{img['path']}{PHOTO_SIZE}", "photo_source": img.get("source") or None}
 
 
+def _image(img: Optional[dict]) -> Optional[str]:
+    """Wappen/Teambild als 200×200-PNG (FuPa rendert es in beliebiger Größe, auch SVG-Wappen)."""
+    if not img or not img.get("path"):
+        return None
+    return f"{img['path']}200x200.png"
+
+
 def _team(d: dict) -> Dict[str, Any]:
     comp = d.get("competition") or {}
     season = (comp.get("season") or {})
@@ -90,6 +98,7 @@ def _team(d: dict) -> Dict[str, Any]:
         "competition_name": comp.get("name"),
         "season_slug": season.get("slug"),
         "season_name": season.get("name"),
+        "image_url": _image(d.get("image")),
     }
 
 
@@ -142,6 +151,7 @@ async def fupa_tabelle(wettbewerb: str, saison: str = Query(..., pattern=SEASON_
             "rank": r.get("rank"),
             "team_slug": t.get("slug"),
             "team": (t.get("name") or {}).get("full"),
+            "team_image": _image(t.get("image")),
             "matches": r.get("matches"),
             "wins": r.get("wins"),
             "draws": r.get("draws"),
@@ -179,7 +189,7 @@ async def fupa_kader(slug: str):
             **_photo(p.get("image")),
         })
     coaches = [
-        {"name": f"{c.get('firstName', '')} {c.get('lastName', '')}".strip(), "role": c.get("role")}
+        {"name": f"{c.get('firstName', '')} {c.get('lastName', '')}".strip(), "role": c.get("role"), "photo_url": _photo(c.get("image"))["photo_url"]}
         for c in d.get("coaches", [])
         if not c.get("isDeactivated")
     ]
@@ -219,17 +229,17 @@ async def fupa_spieler(slugs: str = Query(..., max_length=1500), team: str = Que
 
 
 _photo_cache: Dict[str, tuple] = {}
-PHOTO_RE = re.compile(r"^https://image\.fupa\.net/player/[A-Za-z0-9]{6,20}/\d{2,3}x\d{2,3}\.jpeg$")
+PHOTO_RE = re.compile(r"^https://image\.fupa\.net/(player|club|team)/[A-Za-z0-9]{6,20}/\d{2,3}x\d{2,3}\.(jpeg|png)$")
 
 
 @app.get("/api/coachai/fupa/foto", dependencies=[Depends(get_api_key)], tags=["Coach.AI · FuPa"])
 async def fupa_foto(url: str = Query(..., max_length=200)):
-    """Spielerfoto für den PowerPoint-Export (der Browser darf es wegen fehlender CORS-Freigabe nicht direkt lesen).
-    Nur Adressen von image.fupa.net/player/…"""
+    """Spielerfoto oder Wappen für den PowerPoint-Export (der Browser darf es wegen fehlender CORS-Freigabe nicht
+    direkt lesen). Nur Adressen von image.fupa.net/player|club|team/…"""
     from fastapi import Response
 
     if not PHOTO_RE.match(url):
-        raise HTTPException(status_code=400, detail="Nur FuPa-Spielerfotos")
+        raise HTTPException(status_code=400, detail="Nur FuPa-Spielerfotos und -Wappen")
     hit = _photo_cache.get(url)
     if not hit or time.time() - hit[0] > TTL:
         async with _sem:
@@ -239,6 +249,6 @@ async def fupa_foto(url: str = Query(..., max_length=200)):
                 raise HTTPException(status_code=502, detail=f"Foto nicht abrufbar: {e}") from e
         if res.status_code != 200 or not res.headers.get("content-type", "").startswith("image/"):
             raise HTTPException(status_code=502, detail="Foto nicht abrufbar")
-        hit = (time.time(), res.content)
+        hit = (time.time(), res.content, res.headers.get("content-type", "image/jpeg").split(";")[0])
         _photo_cache[url] = hit
-    return Response(content=hit[1], media_type="image/jpeg", headers={"Cache-Control": "max-age=86400"})
+    return Response(content=hit[1], media_type=hit[2], headers={"Cache-Control": "max-age=86400"})

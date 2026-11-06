@@ -17,6 +17,8 @@ export interface FupaBundle {
   table: FupaTable | null;
   squad: FupaSquad | null;
   details: FupaPlayerDetail[];
+  /** Kader der eigenen Mannschaft (Fotos und Positionen für die Kaderfolie). */
+  ownSquad?: FupaSquad | null;
 }
 
 /** FuPa-Saisonkennung, z. B. „2026-27“. */
@@ -60,18 +62,33 @@ export function findInFupaTable(table: FupaTable | null, names: (string | null |
  * Tabelle laut FuPa als zweite Quelle. Mannschaftsnamen werden auf die Namen der Haupttabelle (fussball.de)
  * abgebildet, damit Abweichungen zeilenweise erkannt werden; nicht eindeutig zuordenbare Zeilen behalten ihren Namen.
  */
+function rowName(r: FupaTableRow, primaryRows: TableRow[], renames: Map<string, string>): string {
+  const named = r.team_slug && renames.get(r.team_slug);
+  if (named) return named;
+  const best = primaryRows
+    .map((p) => ({ p, s: nameSimilarity(r.team!, p.team) }))
+    .filter((x) => x.s >= 0.5)
+    .sort((a, b) => b.s - a.s);
+  if (best.length && !(best[1] && best[1].s === best[0].s)) return best[0].p.team;
+  // Namen zu verschieden (z. B. „Eintracht Baunatal“ / „GSV Eintr.Baunatal“): eindeutig gleiche Bilanz in der Haupttabelle.
+  const same = primaryRows.filter(
+    (p) => p.played === r.matches && p.won === r.wins && p.drawn === r.draws && p.lost === r.defeats && p.goalsFor === r.goals_for && p.goalsAgainst === r.goals_against,
+  );
+  return same.length === 1 ? same[0].team : r.team!.trim();
+}
+
+/** Wappen der Ligamannschaften laut FuPa, unter den Namen der Haupttabelle. */
+export function fupaCrests(table: FupaTable, primaryRows: TableRow[], renames: Map<string, string>): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const r of table.rows) if (r.team && r.team_image) out[rowName(r, primaryRows, renames)] = r.team_image;
+  return out;
+}
+
 export function fupaTableSnapshot(table: FupaTable, primaryRows: TableRow[], renames: Map<string, string>, source: SourceRef): TableSnapshot {
   const rows: TableRow[] = [];
   for (const r of table.rows) {
     if (r.rank === null || r.points === null || !r.team) continue;
-    let name = (r.team_slug && renames.get(r.team_slug)) || null;
-    if (!name) {
-      const best = primaryRows
-        .map((p) => ({ p, s: nameSimilarity(r.team!, p.team) }))
-        .filter((x) => x.s >= 0.5)
-        .sort((a, b) => b.s - a.s);
-      name = best.length && !(best[1] && best[1].s === best[0].s) ? best[0].p.team : r.team.trim();
-    }
+    const name = rowName(r, primaryRows, renames);
     rows.push({
       rank: r.rank,
       team: name,
@@ -93,7 +110,7 @@ function personKey(name: string): string {
   return foldName(name).split(' ').filter(Boolean).sort().join(' ');
 }
 
-function samePerson(a: string, b: string): boolean {
+export function samePerson(a: string, b: string): boolean {
   if (personKey(a) === personKey(b)) return true;
   // „Y. Billing“ / „Billing“ (nur Nachname) gegen „Yannick Billing“
   const ta = foldName(a).split(' ').filter(Boolean);
@@ -156,7 +173,8 @@ export function mergePlayerCandidates(
           : { text: `${goals.value} ${goals.value === 1 ? 'Saisontor' : 'Saisontore'}${season}`, sourceId: fupaSourceId },
       );
     }
-    if (p.matches) evidence.push({ text: `${assists} ${assists === 1 ? 'Vorlage' : 'Vorlagen'} in ${p.matches} Einsätzen${season}`, sourceId: fupaSourceId });
+    // Nullwerte nicht als Beleg zeigen („0 Vorlagen“ wirkt wie eine Schwäche): dann nur die Einsätze.
+    if (p.matches) evidence.push({ text: assists ? `${assists} ${assists === 1 ? 'Vorlage' : 'Vorlagen'} in ${p.matches} Einsätzen${season}` : `${p.matches} Einsätze${season}`, sourceId: fupaSourceId });
     if (d?.mvp) evidence.push({ text: `FuPa-MVP-Wert ${d.mvp} %${d.mvp_updated_at ? ` (Stand ${fmtDateTime(d.mvp_updated_at)})` : ''}`, sourceId: fupaSourceId });
     // Belege aus Spielberichten (Startelf, Tore zuletzt); Saisontore sind oben schon nach Quellenwahl entschieden.
     for (const e of fdMatch?.evidence ?? []) if (!/Saisontore in der Liga/.test(e.text)) evidence.push(e);

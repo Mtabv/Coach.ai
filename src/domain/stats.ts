@@ -116,8 +116,8 @@ export function opponentKpis(team: string, results: ResultEntry[], before: Local
   const kpis: Kpi[] = [
     { id: 'tore', label: 'Tore pro Spiel', value: ratio(rec.goalsFor, rec.played), basis },
     { id: 'gegentore', label: 'Gegentore pro Spiel', value: ratio(rec.goalsAgainst, rec.played), basis },
-    { id: 'punkteschnitt', label: 'Punkte pro Spiel (aus Ergebnissen)', value: ratio(rec.pointsFromResults, rec.played, 2), basis },
-    { id: 'zunull', label: 'Spiele ohne Gegentor', value: String(cleanSheets), basis },
+    { id: 'punkteschnitt', label: 'Punkte pro Spiel', value: ratio(rec.pointsFromResults, rec.played, 2), basis },
+    { id: 'zunull', label: 'Spiele zu null', value: String(cleanSheets), basis },
     { id: 'ohnetor', label: 'Spiele ohne eigenes Tor', value: String(noGoal), basis },
   ];
   if (table && table.length) {
@@ -126,8 +126,8 @@ export function opponentKpis(team: string, results: ResultEntry[], before: Local
     const t = normalizeName(team);
     const offRank = byFor.findIndex((r) => normalizeName(r.team) === t) + 1;
     const defRank = byAgainst.findIndex((r) => normalizeName(r.team) === t) + 1;
-    if (offRank > 0) kpis.push({ id: 'offrang', label: 'Rang Offensive (Tore) in der Liga', value: `${offRank}.`, basis: 'Tabelle' });
-    if (defRank > 0) kpis.push({ id: 'defrang', label: 'Rang Defensive (Gegentore) in der Liga', value: `${defRank}.`, basis: 'Tabelle' });
+    if (offRank > 0) kpis.push({ id: 'offrang', label: 'Rang Offensive (Liga)', value: `${offRank}.`, basis: 'Tabelle' });
+    if (defRank > 0) kpis.push({ id: 'defrang', label: 'Rang Defensive (Liga)', value: `${defRank}.`, basis: 'Tabelle' });
   }
   return kpis;
 }
