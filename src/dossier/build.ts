@@ -473,7 +473,8 @@ export function buildDossier(team: TeamProfile, match: Match, prep: Preparation)
   const strip = ({ name, meta, initials, photo }: SquadCard): SquadCard => ({ name, meta, initials, ...(photo ? { photo } : {}) });
   const coachCards: SquadCard[] = (prep.squad?.coaches ?? []).map((x) => x.trim()).filter(Boolean).map((name) => {
     const r = roster?.coaches.find((x) => samePerson(x.name, name));
-    return { name, meta: r?.role ?? 'Trainer', initials: initialsOf(name), ...(r?.photo ? { photo: r.photo } : {}) };
+    // Nur der Name – Rollen wie „Spielertrainer“ stehen nicht auf der Folie (Trainerwunsch).
+    return { name, meta: '', initials: initialsOf(name), ...(r?.photo ? { photo: r.photo } : {}) };
   });
   const o = prep.squad?.origin;
   slides.push({
