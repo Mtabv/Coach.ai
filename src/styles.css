@@ -2732,3 +2732,12 @@ select:focus-visible {
 .s-pair-list.dense .s-pair-when {
   font-size: 11px;
 }
+.s-model-extras p,
+.s-phase-box p {
+  font-size: 14px;
+  line-height: 1.33;
+}
+.s-model-top .s-chip {
+  font-size: 14px;
+  padding: 5px 14px;
+}

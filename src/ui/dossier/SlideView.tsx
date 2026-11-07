@@ -503,11 +503,11 @@ function renderBody(slide: Slide): ReactNode {
         <div className="s-model">
           <div className="s-model-top">
             <span className="s-chip">
-              <strong>Grundordnung</strong> <Flagged v={slide.formation} />
+              <strong>{slide.formationLabel}</strong> <Flagged v={slide.formation} />
             </span>
             {slide.absences && (
               <span className="s-chip s-chip-muted">
-                <strong>Ausfälle</strong> <Flagged v={slide.absences} />
+                <strong>{slide.absencesLabel}</strong> <Flagged v={slide.absences} />
               </span>
             )}
           </div>

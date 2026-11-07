@@ -58,6 +58,8 @@ export interface TimeBlockTemplate {
   label: string;
   startOffsetMin: number;
   endOffsetMin: number;
+  /** Ohne feste Uhrzeit („danach“): Offsets dienen nur der Reihenfolge. Keine erfundenen Zeiten. */
+  untimed?: boolean;
   /** Traineransprache ist ausschließlich ein organisatorischer Zeitblock. */
   kind?: 'puffer' | 'ankommen' | 'umziehen' | 'ansprache' | 'warmmachen' | 'kabine' | 'sonstiges';
 }
@@ -156,6 +158,11 @@ export interface TeamProfile {
   sourcePriority?: Partial<SourcePriority>;
   /** Tabellenzonen der eigenen Liga (fussball.de liefert sie nicht mit): Aufsteiger, Relegation, Absteiger. */
   leagueZones?: LeagueZones;
+  /**
+   * Blickwinkel der Folie „Spielphasen“: 'gegner' = So spielt der Gegner (Standard),
+   * 'eigene' = So spielen wir (eigenes Verhalten je Spielphase, Gegner kurz zusammengefasst).
+   */
+  phaseModel?: 'gegner' | 'eigene';
   /** Eigenes Wappen (Data-URL), hat Vorrang vor dem Wappen laut FuPa. */
   crest?: string;
   homeVenue: Venue;

@@ -170,6 +170,9 @@ export function buildDossier(team: TeamProfile, match: Match, prep: Preparation)
     ...blank,
   });
 
+  // Spielphasenmodell aus eigener Sicht (Mannschaftsprofil): „So spielen wir“ statt „So spielt der Gegner“.
+  const ownPerspective = team.phaseModel === 'eigene';
+
   // 2 Inhalt
   const ownFormTitle = 'Unsere Form';
   const contentItems: [string, string][] = [
@@ -178,7 +181,7 @@ export function buildDossier(team: TeamProfile, match: Match, prep: Preparation)
     [SLIDE_TITLES.gegnerForm, 'Letzte fünf Ligaspiele und Bilanzen'],
     [SLIDE_TITLES.gegnerGefahr, 'Gegenspieler, auf die wir achten'],
     [SLIDE_TITLES.gegnerAuffaelligkeiten, 'Kennzahlen und belegte Besonderheiten'],
-    [SLIDE_TITLES.soSpieltGegner, 'Beobachtungen des Trainerteams'],
+    ownPerspective ? ['So spielen wir', 'Unser Plan nach Spielphasen'] : [SLIDE_TITLES.soSpieltGegner, 'Beobachtungen des Trainerteams'],
     [ownFormTitle, 'Unsere letzten fünf Ligaspiele und Bilanzen'],
     [SLIDE_TITLES.kader, 'Spieltagskader'],
     [SLIDE_TITLES.auftrag, 'Drei Botschaften und unser Leitmotiv'],
@@ -260,7 +263,7 @@ export function buildDossier(team: TeamProfile, match: Match, prep: Preparation)
       : computeAwaySchedule(match.kickoff!, team.schedule.away, prep.organisation.travelMinutes, prep.organisation)
     : null;
   const meetingFV = sched?.meetingTime
-    ? fv(`${sched.meetingTime} Uhr${sched.meetingPlace ? ` · ${sched.meetingPlace}` : ''}`)
+    ? fv(`${sched.meetingTime} Uhr${sched.meetingPlace ? ` · ${sched.meetingPlace === venue?.name && sched.meetingPlace.length > 32 ? 'am Spielort' : sched.meetingPlace}` : ''}`)
     : fv(match.isHome ? 'Treffpunkt offen' : 'Offen – Fahrzeit für diese Fahrt fehlt', 'offen');
   const facts: { label: string; value: FV }[] = [
     { label: 'Spielort', value: venueFV },
@@ -295,7 +298,7 @@ export function buildDossier(team: TeamProfile, match: Match, prep: Preparation)
     h2hNote: h2h.length ? '' : 'Keine direkten Duelle erfasst.',
     schedule: sched
       ? sched.items.map((it) => ({
-          time: it.start ? fv(it.end ? `${it.start}–${it.end}` : it.start, it.overridden ? 'trainer' : 'ok') : fv('offen', 'offen'),
+          time: it.untimed ? fv('danach') : it.start ? fv(it.end ? `${it.start}–${it.end}` : it.start, it.overridden ? 'trainer' : 'ok') : fv('offen', 'offen'),
           label: it.label,
           note: it.openReason,
         }))
@@ -429,24 +432,32 @@ export function buildDossier(team: TeamProfile, match: Match, prep: Preparation)
   slides.push({
     key: 'soSpieltGegner',
     number: 8,
-    title: SLIDE_TITLES.soSpieltGegner,
-    kicker: 'Beobachtungen des Trainerteams',
+    title: ownPerspective ? 'So spielen wir' : SLIDE_TITLES.soSpieltGegner,
+    kicker: ownPerspective ? `Unser Plan gegen ${opp}` : 'Beobachtungen des Trainerteams',
+    formationLabel: ownPerspective ? 'Unsere Grundordnung' : 'Grundordnung',
+    absencesLabel: ownPerspective ? `Ausfälle ${opp}` : 'Ausfälle',
     formation: answerFV(prep.answers.q1_grundordnung),
     absences: prep.answers.q8_ausfaelle?.state === 'beantwortet' && prep.answers.q8_ausfaelle.text.trim() ? answerFV(prep.answers.q8_ausfaelle) : null,
     phases: (
       [
-        ['ballbesitz', 'Eigener Ballbesitz', 'Aufbau und Chancen', 'q2_aufbau'],
-        ['ballverlust', 'Umschalten nach Ballverlust', 'Defensives Umschalten', 'q4b_ballverlust'],
-        ['gegnerBall', 'Gegnerischer Ballbesitz', 'Verteidigen und Pressing', 'q3_verteidigung'],
-        ['ballgewinn', 'Umschalten nach Ballgewinn', 'Offensives Umschalten', 'q4_umschalten'],
+        ['ballbesitz', ownPerspective ? 'Wir haben den Ball' : 'Eigener Ballbesitz', 'Aufbau und Chancen', 'q2_aufbau'],
+        ['ballverlust', ownPerspective ? 'Wir verlieren den Ball' : 'Umschalten nach Ballverlust', 'Defensives Umschalten', 'q4b_ballverlust'],
+        ['gegnerBall', ownPerspective ? 'Der Gegner hat den Ball' : 'Gegnerischer Ballbesitz', 'Verteidigen und Pressing', 'q3_verteidigung'],
+        ['ballgewinn', ownPerspective ? 'Wir gewinnen den Ball' : 'Umschalten nach Ballgewinn', 'Offensives Umschalten', 'q4_umschalten'],
       ] as const
     ).map(([key, label, sub, id]) => ({ key, label, sub, value: answerFV(prep.answers[id as QuestionId]) })),
     extras: (
-      [
-        ['Standards', 'q5b_standards'],
-        ['Stärken', 'q5_staerken'],
-        ['Verwundbarkeit', 'q6_verwundbar'],
-      ] as const
+      (ownPerspective
+        ? [
+            ['Unsere Standards', 'q5b_standards'],
+            [`${opp}: Stärken`, 'q5_staerken'],
+            [`${opp}: Da ist er anfällig`, 'q6_verwundbar'],
+          ]
+        : [
+            ['Standards', 'q5b_standards'],
+            ['Stärken', 'q5_staerken'],
+            ['Verwundbarkeit', 'q6_verwundbar'],
+          ]) as [string, QuestionId][]
     ).map(([label, id]) => ({ label, value: answerFV(prep.answers[id]) })),
     sources: ['Trainerteam'],
     footnote: '',
@@ -488,7 +499,12 @@ export function buildDossier(team: TeamProfile, match: Match, prep: Preparation)
     goalkeepers: cards.filter((c) => c.gk).map(strip),
     players: cards
       .filter((c) => !c.gk)
-      .sort((x, y) => (order.indexOf(x.pos) + 1 || 99) - (order.indexOf(y.pos) + 1 || 99) || x.name.localeCompare(y.name))
+      // Positionen wie „Rechtsverteidiger“ (vom Trainer genannt): Reihenfolge des Trainers beibehalten.
+      .sort((x, y) => {
+        const ox = order.indexOf(x.pos) + 1 || 99;
+        const oy = order.indexOf(y.pos) + 1 || 99;
+        return ox - oy || (ox === 99 ? 0 : x.name.localeCompare(y.name));
+      })
       .map(strip),
     coaches: coachCards,
     placeholders: players.length

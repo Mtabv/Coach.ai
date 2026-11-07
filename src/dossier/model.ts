@@ -136,6 +136,8 @@ export interface ProfileSlide extends SlideBase<'gegnerAuffaelligkeiten'> {
 
 /** Spielphasenmodell: vier Phasen im Kreislauf, dazu Grundordnung, Standards, Stärken, Verwundbarkeit. */
 export interface ObservationSlide extends SlideBase<'soSpieltGegner'> {
+  formationLabel: string;
+  absencesLabel: string;
   formation: FV;
   /** Ausfälle/Besonderheiten – nur, wenn etwas eingetragen ist. */
   absences: FV | null;

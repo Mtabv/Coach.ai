@@ -92,6 +92,8 @@ export interface ScheduleItem {
   /** Ausdrücklich vom Trainer geändert. */
   overridden?: boolean;
   openReason?: string;
+  /** Schritt ohne feste Uhrzeit („danach“). */
+  untimed?: boolean;
 }
 
 export interface ScheduleResult {
@@ -111,11 +113,15 @@ function blockItems(
     .sort((a, b) => a.startOffsetMin - b.startOffsetMin)
     .map((b) => {
       const o = overrides[b.id];
+      if (b.untimed && !o) return { id: b.id, label: b.label, start: null, end: null, kind: 'block' as const, untimed: true };
+      const start = o ? o.start : formatMinutes(kickoff + b.startOffsetMin);
+      const end = o ? o.end : formatMinutes(kickoff + b.endOffsetMin);
       return {
         id: b.id,
         label: b.label,
-        start: o ? o.start : formatMinutes(kickoff + b.startOffsetMin),
-        end: o ? o.end : formatMinutes(kickoff + b.endOffsetMin),
+        start,
+        // Zeitpunkt statt Zeitraum, wenn Beginn = Ende (z. B. „ab 13:15 Kabine“).
+        end: end === start ? null : end,
         kind: 'block' as const,
         overridden: Boolean(o),
       };

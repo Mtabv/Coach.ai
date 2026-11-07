@@ -139,6 +139,19 @@ export function TeamPage() {
             ))}
           </div>
           <p className="muted small">Plätze für die farbige Markierung der Tabelle (liefert fussball.de nicht mit).</p>
+          <div className="field">
+            <span className="field-label">Folie „Spielphasen“</span>
+            <Segmented
+              label="Blickwinkel der Spielphasen-Folie"
+              value={team.phaseModel ?? 'gegner'}
+              onChange={(v) => set((t) => (t.phaseModel = v as 'gegner' | 'eigene'))}
+              options={[
+                { value: 'gegner', label: 'So spielt der Gegner' },
+                { value: 'eigene', label: 'So spielen wir' },
+              ]}
+            />
+            <span className="muted small">„So spielen wir“: eigenes Verhalten je Spielphase, der Gegner kurz darunter – für Spiele mit wenig Gegnerinformationen.</span>
+          </div>
         </Card>
 
         <Card title="Links und Heimspielort">
