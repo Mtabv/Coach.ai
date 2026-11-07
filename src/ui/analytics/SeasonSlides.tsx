@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { BIN_LABELS, type HalfState, type Res, type SeasonReport, type Split } from '../../analytics/report';
+import { BIN_LABELS, lateVerdict, type HalfState, type Res, type SeasonReport, type Split } from '../../analytics/report';
 import type { SeasonData } from '../../analytics/types';
 
 /** Farben für Tore/Gegentore: mit dem Palettenprüfer (CVD, Kontrast auf Weiß) validiert. */
@@ -249,7 +249,7 @@ function MinutesSlide({ ctx }: { ctx: SeasonCtx }) {
   const lateFor = r.binsFor[4] + r.binsFor[5];
   const lateShareLeague = r.leagueShares ? r.leagueShares[5] : null;
   const expectedLate = ga * (lateShareLeague ?? 1 / 6);
-  const even = ga > 0 && !(r.binsAgainst[5] >= expectedLate * 1.4 && r.binsAgainst[5] - expectedLate >= 3);
+  const verdict = lateVerdict(r.binsAgainst[5], expectedLate);
   const pct = (v: number) => `${Math.round(v * 100)} %`;
   return (
     <Frame ctx={ctx} n={2} title="Wann fallen die Tore?" foot={`${srcFoot(ctx)} · nur Spiele mit vollständigem Spielbericht`} bodyClass="an-row">
@@ -270,7 +270,7 @@ function MinutesSlide({ ctx }: { ctx: SeasonCtx }) {
             </span>
           )}
           <span className="an-muted">
-            je 15 Minuten · {r.withGoals} Spiele{r.leagueBins ? ` · Ligaschnitt: Tore einer Mannschaft in ${r.withGoals} Spielen, aus ${r.leagueGamesWithGoals} Ligaspielen` : ''}
+            je 15 Min. · {r.withGoals} Spiele{r.leagueBins ? ` · Ligaschnitt aus ${r.leagueGamesWithGoals} Ligaspielen, auf ${r.withGoals} Spiele gerechnet` : ''}
           </span>
         </div>
         <MinutesChart r={r} />
@@ -278,12 +278,12 @@ function MinutesSlide({ ctx }: { ctx: SeasonCtx }) {
       <div className="an-side">
         <div className="s-box an-insight">
           <div className="s-box-title">Gegentore</div>
-          <div className="an-big">{ga === 0 ? 'keine' : even ? 'gleichmäßig verteilt' : 'Häufung am Ende'}</div>
+          <div className="an-big">{ga === 0 ? 'keine' : verdict === 'häufung' ? 'Häufung am Ende' : verdict === 'leicht' ? 'am Ende etwas mehr' : 'kein Einbruch am Ende'}</div>
           {ga > 0 && (
             <div>
               In der Schlussphase {r.binsAgainst[5]} von {ga} Gegentoren ({pct(r.binsAgainst[5] / ga)})
               {lateShareLeague !== null ? `, in der Liga fallen ${pct(lateShareLeague)} aller Tore ab der 76. Minute.` : '.'}{' '}
-              {even ? 'Ein „Einbruch am Ende“ zeigt sich nicht.' : 'Deutlich mehr als zu erwarten.'}
+              {verdict === 'häufung' ? 'Deutlich mehr als zu erwarten.' : verdict === 'leicht' ? 'Etwas mehr als zu erwarten, aber noch kein belastbares Muster.' : 'Ein „Einbruch am Ende“ zeigt sich nicht.'}
             </div>
           )}
         </div>

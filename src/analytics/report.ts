@@ -93,6 +93,13 @@ export function halfState(a: number, b: number): HalfState {
 
 const fmt = (v: number) => v.toFixed(2).replace('.', ',');
 
+/** Gegentore der Schlussphase gegen die Erwartung (Ligaverteilung bzw. Gleichverteilung). */
+export function lateVerdict(late: number, expected: number): 'häufung' | 'leicht' | 'normal' {
+  if (late >= expected * 1.4 && late - expected >= 3) return 'häufung';
+  if (late - expected >= 1.5) return 'leicht';
+  return 'normal';
+}
+
 export function buildSeasonReport(data: SeasonData): SeasonReport {
   const place = new Map(data.table.map((r) => [r.team, r.place]));
   const games: ReportGame[] = [...data.games]
@@ -208,21 +215,25 @@ export function hintsFor(r: SeasonReport): Hint[] {
     // Erwartung: Verteilung der Liga, ohne Ligavergleich Gleichverteilung.
     const expected = r.leagueShares ? total * r.leagueShares[5] : total / 6;
     const basis = r.leagueShares ? `im Ligaschnitt wären es etwa ${Math.round(expected)}` : `gleichmäßig wären es etwa ${Math.round(expected)}`;
-    if (late >= expected * 1.4 && late - expected >= 3) {
+    const lateTrend = lateFor / Math.max(1, r.goalsFor) >= 0.45 && r.goalsFor >= 8 ? ` Unsere eigenen Tore fallen eher spät (${lateFor} von ${r.goalsFor} nach der 60.).` : '';
+    const defense =
+      r.leagueGoalsPerGame && r.n && r.goalsAgainst / r.n >= r.leagueGoalsPerGame + 0.3
+        ? ` Auffälliger ist die Defensive insgesamt: ${fmt(r.goalsAgainst / r.n)} Gegentore pro Spiel, Ligaschnitt ${fmt(r.leagueGoalsPerGame)}.`
+        : '';
+    if (lateVerdict(late, expected) === 'häufung') {
       out.push({
         id: 'schlussphase',
         title: 'Gegentore häufen sich in der Schlussphase.',
         text: `${late} von ${total} Gegentoren fallen ab der 76. Minute, ${basis}. Frage an den Trainer: Fitness, Wechsel oder Konzentration? Ein Schwerpunkt Fitness wäre hier begründbar.`,
       });
-    } else {
+    } else if (lateVerdict(late, expected) === 'leicht') {
       out.push({
         id: 'schlussphase',
-        title: 'Kein Fitness-Muster bei den Gegentoren.',
-        text:
-          `In der Schlussphase ${late} von ${total} Gegentoren, ${basis}` +
-          (r.goalsFor ? `; unsere eigenen Tore fallen eher spät (${lateFor} von ${r.goalsFor} nach der 60.).` : '.') +
-          (r.leagueGoalsPerGame && r.n ? ` Ein Schwerpunkt Fitness lässt sich daraus nicht begründen – eher die Defensive insgesamt (${fmt(r.goalsAgainst / r.n)} Gegentore pro Spiel, Ligaschnitt ${fmt(r.leagueGoalsPerGame)}).` : ''),
+        title: 'Schlussphase im Blick behalten.',
+        text: `${late} von ${total} Gegentoren fallen ab der 76. Minute, ${basis}. Etwas mehr als üblich, bei ${r.withGoals} Spielen aber noch kein belastbares Muster.${defense}`,
       });
+    } else {
+      out.push({ id: 'schlussphase', title: 'Kein Fitness-Muster bei den Gegentoren.', text: `In der Schlussphase ${late} von ${total} Gegentoren, ${basis}.${lateTrend}${defense}` });
     }
   }
   const t = r.vsTop, b = r.vsBottom;

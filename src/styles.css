@@ -2053,7 +2053,8 @@ select:focus-visible {
 .an-chart { width: 100%; height: auto; }
 .an-chart .an-ax { font-size: 12px; fill: #5b6b62; }
 .an-chart .an-vl { font-size: 13px; font-weight: 700; fill: #14211b; }
-.an-legend { display: flex; gap: 18px; font-size: 13px; align-items: center; font-weight: 600; }
+.an-legend { display: flex; flex-wrap: wrap; gap: 4px 18px; font-size: 13px; align-items: center; font-weight: 600; }
+.an-legend > span { white-space: nowrap; }
 .an-legend i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
 .an-legend .an-muted { font-weight: 400; font-size: 12px; }
 .an-legend i.an-dash { width: 18px; height: 0; border-top: 2px dashed #14211b; border-radius: 0; vertical-align: 3px; }
