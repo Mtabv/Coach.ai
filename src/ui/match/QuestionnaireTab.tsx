@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { ruleBasedAssistant } from '../../ai/textAssistant';
 import { REFERENCE_MATCH_ID } from '../../data/seed';
 import { now } from '../../domain/factory';
-import { questionProgress, QUESTIONS, SECTIONS, type QuestionDef, type QuestionStatus } from '../../domain/questionnaire';
+import { questionProgress, questionsFor, SECTIONS, type QuestionDef, type QuestionStatus } from '../../domain/questionnaire';
+import { effectivePhaseModel } from '../../domain/dossierOptions';
 import { computeAwaySchedule, computeHomeSchedule, isValidTime } from '../../domain/time';
 import type { Answer, AnswerState, Match, Preparation, QuestionId, TeamProfile } from '../../domain/types';
 import { insertExampleAnswers, updatePrep } from '../../state/actions';
@@ -10,6 +11,7 @@ import { useStore } from '../../state/store';
 import { Badge, Card, ConfirmAction, Field, Notice, ProgressBar, speechSupported, TextArea, TextInput } from '../components';
 import { SquadEditor } from '../SquadEditor';
 import { TravelInput } from './DataTab';
+import { DossierOptionsCard } from './DossierOptionsCard';
 
 const STATUS_TONE: Record<QuestionStatus, 'ok' | 'warn' | 'info'> = { erledigt: 'ok', offen: 'warn', übernommen: 'info' };
 
@@ -51,13 +53,17 @@ export function QuestionnaireTab({ match, team }: { match: Match; team: TeamProf
         )}
       </Card>
 
-      {SECTIONS.map((sec) => {
-        const qs = QUESTIONS.filter((q) => q.section === sec.id).filter((q) => !onlyOpen || statusOf(q.id).status !== 'erledigt');
+      <DossierOptionsCard match={match} team={team} prep={prep} />
+
+      {SECTIONS.map((sec) => ({ sec, all: questionsFor(match, effectivePhaseModel(team, prep)).filter((q) => q.section === sec.id) }))
+        .filter((x) => x.all.length)
+        .map(({ sec, all }, si) => {
+        const qs = all.filter((q) => !onlyOpen || statusOf(q.id).status !== 'erledigt');
         if (!qs.length) return null;
         return (
           <section key={sec.id} className="q-section">
             <h2 className="q-section-title">
-              <span className="q-section-letter">{sec.id}</span> {sec.title}
+              <span className="q-section-letter">{String.fromCharCode(65 + si)}</span> {sec.title}
             </h2>
             <p className="muted">{sec.intro}</p>
             {qs.map((q) => (

@@ -485,7 +485,8 @@ function renderBody(slide: Slide): ReactNode {
         </div>
       );
     }
-    case 'soSpieltGegner': {
+    case 'soSpieltGegner':
+    case 'soSpielenWir': {
       const ph = Object.fromEntries(slide.phases.map((p) => [p.key, p]));
       const phase = (k: 'ballbesitz' | 'ballverlust' | 'gegnerBall' | 'ballgewinn') => {
         const p = ph[k];
@@ -520,7 +521,7 @@ function renderBody(slide: Slide): ReactNode {
               <span>Spiel&shy;phasen</span>
             </div>
           </div>
-          <div className="s-model-extras">
+          <div className="s-model-extras" style={{ gridTemplateColumns: `repeat(${Math.max(slide.extras.length, 1)}, 1fr)` }}>
             {slide.extras.map((x) => (
               <Box key={x.label} title={x.label}>
                 <p>

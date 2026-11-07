@@ -1,3 +1,4 @@
+import type { ObservationSlide } from '../dossier/model';
 import { describe, expect, it } from 'vitest';
 import { computeAwaySchedule, computeHomeSchedule, formatDate } from './time';
 import { lastLeagueGames, seasonSummary } from './stats';
@@ -133,7 +134,7 @@ describe('Fragebogen und neue Begegnungen', () => {
     const prog = questionProgress(s.teams[0], s.matches[0], s.preparations[REFERENCE_MATCH_ID]);
     expect(prog.find((p) => p.id === 'q2_aufbau')!.status).toBe('offen');
     const d = buildDossier(s.teams[0], s.matches[0], s.preparations[REFERENCE_MATCH_ID]);
-    const obs = d.slides.find((x) => x.key === 'soSpieltGegner') as Extract<typeof d.slides[number], { key: 'soSpieltGegner' }>;
+    const obs = d.slides.find((x) => x.key === 'soSpieltGegner') as ObservationSlide;
     expect(obs.phases.every((p) => p.value.flag === 'offen')).toBe(true);
   });
 
@@ -237,7 +238,7 @@ describe('Bestätigung und Versionen', () => {
     const s = await loadedState();
     const d = buildDossier(s.teams[0], s.matches[0], s.preparations[REFERENCE_MATCH_ID]);
     const o = applyOverrides(d, { 'soSpieltGegner.phases.0.value.text': '4-4-2' });
-    const obs = o.slides.find((x) => x.key === 'soSpieltGegner') as Extract<typeof d.slides[number], { key: 'soSpieltGegner' }>;
+    const obs = o.slides.find((x) => x.key === 'soSpieltGegner') as ObservationSlide;
     expect(obs.phases[0].value).toEqual({ text: '4-4-2', flag: 'trainer' });
     expect(d.slides).toHaveLength(11);
   });

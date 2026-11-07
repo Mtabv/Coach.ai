@@ -1,5 +1,6 @@
 import { samePerson } from '../data/fupa/mapping';
 import { analyzeTable } from '../domain/dataQuality';
+import { effectivePhaseModel, effectiveSlides } from '../domain/dossierOptions';
 import { formFacts, goalPhases, keyStats } from '../domain/insights';
 import { selectKeyPlayers, type SelectedPlayer } from '../domain/players';
 import { kitLabel } from '../domain/questionnaire';
@@ -23,6 +24,7 @@ const SLIDE_TITLES = {
   gegnerGefahr: 'Der Gegner · Gefahr',
   gegnerAuffaelligkeiten: 'Der Gegner · Auffälligkeiten',
   soSpieltGegner: 'So spielt der Gegner',
+  soSpielenWir: 'So spielen wir',
   unsereForm: '· Unsere Form',
   kader: 'Unser Kader',
   auftrag: 'Unser Auftrag',
@@ -152,7 +154,7 @@ export function buildDossier(team: TeamProfile, match: Match, prep: Preparation)
   // Eigenes Wappen aus dem Mannschaftsprofil hat Vorrang (FuPa-Wappen sind teils niedrig aufgelöst).
   const crests = { ...(b.tabelle.value?.crests ?? {}), ...(team.crest ? { [ownName]: team.crest } : {}) };
   const slides: Slide[] = [];
-  const enabled = new Set<SlideKey>(team.template.slides);
+  const enabled = new Set<SlideKey>(effectiveSlides(team, prep));
   const blank = { sources: [] as string[], footnote: '' };
 
   // 1 Titel
@@ -171,8 +173,8 @@ export function buildDossier(team: TeamProfile, match: Match, prep: Preparation)
     ...blank,
   });
 
-  // Spielphasenmodell aus eigener Sicht (Mannschaftsprofil): „So spielen wir“ statt „So spielt der Gegner“.
-  const ownPerspective = team.phaseModel === 'eigene';
+  // Spielphasenmodell: Gegner, eigene Mannschaft oder beides – je Spiel wählbar, Standard aus dem Profil.
+  const phaseModel = effectivePhaseModel(team, prep);
 
   // 2 Inhalt
   const ownFormTitle = 'Unsere Form';
@@ -182,7 +184,8 @@ export function buildDossier(team: TeamProfile, match: Match, prep: Preparation)
     ['gegnerForm', SLIDE_TITLES.gegnerForm, 'Letzte fünf Ligaspiele und Bilanzen'],
     ['gegnerGefahr', SLIDE_TITLES.gegnerGefahr, 'Gegenspieler, auf die wir achten'],
     ['gegnerAuffaelligkeiten', SLIDE_TITLES.gegnerAuffaelligkeiten, 'Kennzahlen und belegte Besonderheiten'],
-    ownPerspective ? ['soSpieltGegner', 'So spielen wir', 'Unser Plan nach Spielphasen'] : ['soSpieltGegner', SLIDE_TITLES.soSpieltGegner, 'Beobachtungen des Trainerteams'],
+    ['soSpieltGegner', SLIDE_TITLES.soSpieltGegner, 'Beobachtungen des Trainerteams'],
+    ['soSpielenWir', SLIDE_TITLES.soSpielenWir, 'Unser Plan nach Spielphasen'],
     ['unsereForm', ownFormTitle, 'Unsere letzten fünf Ligaspiele und Bilanzen'],
     ['kader', SLIDE_TITLES.kader, 'Spieltagskader'],
     ['auftrag', SLIDE_TITLES.auftrag, 'Drei Botschaften und unser Leitmotiv'],
@@ -431,36 +434,57 @@ export function buildDossier(team: TeamProfile, match: Match, prep: Preparation)
   });
 
   // 8 So spielt der Gegner – nur Trainerbeobachtungen
+  const absences = prep.answers.q8_ausfaelle?.state === 'beantwortet' && prep.answers.q8_ausfaelle.text.trim() ? answerFV(prep.answers.q8_ausfaelle) : null;
+  const phaseRows = (ids: [QuestionId, QuestionId, QuestionId, QuestionId], own: boolean) =>
+    (
+      [
+        ['ballbesitz', own ? 'Wir haben den Ball' : 'Eigener Ballbesitz', 'Aufbau und Chancen', ids[0]],
+        ['ballverlust', own ? 'Wir verlieren den Ball' : 'Umschalten nach Ballverlust', 'Defensives Umschalten', ids[1]],
+        ['gegnerBall', own ? 'Der Gegner hat den Ball' : 'Gegnerischer Ballbesitz', 'Verteidigen und Pressing', ids[2]],
+        ['ballgewinn', own ? 'Wir gewinnen den Ball' : 'Umschalten nach Ballgewinn', 'Offensives Umschalten', ids[3]],
+      ] as const
+    ).map(([key, label, sub, id]) => ({ key, label, sub, value: answerFV(prep.answers[id]) }));
+  const extrasOf = (list: [string, QuestionId][]) => list.map(([label, id]) => ({ label, value: answerFV(prep.answers[id]) }));
   slides.push({
     key: 'soSpieltGegner',
     number: 8,
-    title: ownPerspective ? 'So spielen wir' : SLIDE_TITLES.soSpieltGegner,
-    kicker: ownPerspective ? `Unser Plan gegen ${opp}` : 'Beobachtungen des Trainerteams',
-    formationLabel: ownPerspective ? 'Unsere Grundordnung' : 'Grundordnung',
-    absencesLabel: ownPerspective ? `Ausfälle ${opp}` : 'Ausfälle',
+    title: SLIDE_TITLES.soSpieltGegner,
+    kicker: 'Beobachtungen des Trainerteams',
+    formationLabel: 'Grundordnung',
+    absencesLabel: 'Ausfälle',
     formation: answerFV(prep.answers.q1_grundordnung),
-    absences: prep.answers.q8_ausfaelle?.state === 'beantwortet' && prep.answers.q8_ausfaelle.text.trim() ? answerFV(prep.answers.q8_ausfaelle) : null,
-    phases: (
-      [
-        ['ballbesitz', ownPerspective ? 'Wir haben den Ball' : 'Eigener Ballbesitz', 'Aufbau und Chancen', 'q2_aufbau'],
-        ['ballverlust', ownPerspective ? 'Wir verlieren den Ball' : 'Umschalten nach Ballverlust', 'Defensives Umschalten', 'q4b_ballverlust'],
-        ['gegnerBall', ownPerspective ? 'Der Gegner hat den Ball' : 'Gegnerischer Ballbesitz', 'Verteidigen und Pressing', 'q3_verteidigung'],
-        ['ballgewinn', ownPerspective ? 'Wir gewinnen den Ball' : 'Umschalten nach Ballgewinn', 'Offensives Umschalten', 'q4_umschalten'],
-      ] as const
-    ).map(([key, label, sub, id]) => ({ key, label, sub, value: answerFV(prep.answers[id as QuestionId]) })),
-    extras: (
-      (ownPerspective
+    absences,
+    phases: phaseRows(['q2_aufbau', 'q4b_ballverlust', 'q3_verteidigung', 'q4_umschalten'], false),
+    extras: extrasOf([
+      ['Standards', 'q5b_standards'],
+      ['Stärken', 'q5_staerken'],
+      ['Verwundbarkeit', 'q6_verwundbar'],
+    ]),
+    sources: ['Trainerteam'],
+    footnote: '',
+  });
+
+  // 8b So spielen wir – unser Plan nach Spielphasen. Steht er allein, fasst er den Gegner kurz mit zusammen;
+  // bei „beides“ stehen Stärken und Verwundbarkeit schon auf der Gegnerfolie.
+  slides.push({
+    key: 'soSpielenWir',
+    number: 8,
+    title: SLIDE_TITLES.soSpielenWir,
+    kicker: `Unser Plan gegen ${opp}`,
+    formationLabel: 'Unsere Grundordnung',
+    absencesLabel: `Ausfälle ${opp}`,
+    formation: answerFV(prep.answers.u1_grundordnung),
+    absences: phaseModel === 'eigene' ? absences : null,
+    phases: phaseRows(['u2_ballbesitz', 'u3_ballverlust', 'u4_gegnerball', 'u5_ballgewinn'], true),
+    extras: extrasOf(
+      phaseModel === 'eigene'
         ? [
-            ['Unsere Standards', 'q5b_standards'],
+            ['Unsere Standards', 'u6_standards'],
             [`${opp}: Stärken`, 'q5_staerken'],
             [`${opp}: Da ist er anfällig`, 'q6_verwundbar'],
           ]
-        : [
-            ['Standards', 'q5b_standards'],
-            ['Stärken', 'q5_staerken'],
-            ['Verwundbarkeit', 'q6_verwundbar'],
-          ]) as [string, QuestionId][]
-    ).map(([label, id]) => ({ label, value: answerFV(prep.answers[id]) })),
+        : [['Unsere Standards', 'u6_standards']],
+    ),
     sources: ['Trainerteam'],
     footnote: '',
   });

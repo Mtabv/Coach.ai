@@ -122,6 +122,9 @@ export interface SquadSnapshot {
   origin: { kind: 'dossier'; dossierId: ID; label: string } | { kind: 'ersteingabe' } | { kind: 'beispiel'; label: string };
 }
 
+/** Blickwinkel des Vier-Phasen-Modells: Gegner, eigene Mannschaft oder beides (zwei Folien). */
+export type PhaseModel = 'gegner' | 'eigene' | 'beides';
+
 export type SlideKey =
   | 'titel'
   | 'inhalt'
@@ -131,6 +134,7 @@ export type SlideKey =
   | 'gegnerGefahr'
   | 'gegnerAuffaelligkeiten'
   | 'soSpieltGegner'
+  | 'soSpielenWir'
   | 'unsereForm'
   | 'kader'
   | 'auftrag';
@@ -159,10 +163,10 @@ export interface TeamProfile {
   /** Tabellenzonen der eigenen Liga (fussball.de liefert sie nicht mit): Aufsteiger, Relegation, Absteiger. */
   leagueZones?: LeagueZones;
   /**
-   * Blickwinkel der Folie „Spielphasen“: 'gegner' = So spielt der Gegner (Standard),
-   * 'eigene' = So spielen wir (eigenes Verhalten je Spielphase, Gegner kurz zusammengefasst).
+   * Standard für das Spielphasenmodell neuer Dossiers: 'gegner' = So spielt der Gegner,
+   * 'eigene' = So spielen wir, 'beides' = beide Folien. Je Spiel überschreibbar (Preparation.dossierOptions).
    */
-  phaseModel?: 'gegner' | 'eigene';
+  phaseModel?: PhaseModel;
   /** Eigenes Wappen (Data-URL), hat Vorrang vor dem Wappen laut FuPa. */
   crest?: string;
   homeVenue: Venue;
@@ -404,7 +408,14 @@ export type QuestionId =
   | 'q12_kader'
   | 'q13_layout'
   | 'q14_auftrag'
-  | 'q15_leitmotiv';
+  | 'q15_leitmotiv'
+  // Unser Plan nach Spielphasen (nur bei Phasenmodell „eigene“ oder „beides“)
+  | 'u1_grundordnung'
+  | 'u2_ballbesitz'
+  | 'u3_ballverlust'
+  | 'u4_gegnerball'
+  | 'u5_ballgewinn'
+  | 'u6_standards';
 
 export type AnswerState = 'offen' | 'beantwortet' | 'nicht_bekannt' | 'keine_abweichung';
 
@@ -465,8 +476,16 @@ export interface Preparation {
   squadReviewed: boolean;
   mission: MissionState;
   layoutWish: string;
+  /** Aufbau genau dieses Dossiers; ohne Angabe gelten die Standards aus dem Mannschaftsprofil. */
+  dossierOptions?: DossierOptions;
   updatedAt: Timestamp;
   extensions?: Record<string, unknown>;
+}
+
+export interface DossierOptions {
+  phaseModel?: PhaseModel;
+  /** Gewählte Folien (ohne Titel, Inhalt und Spielphasen – die ergeben sich aus dem Phasenmodell). */
+  slides?: SlideKey[];
 }
 
 // ---------------------------------------------------------------------------

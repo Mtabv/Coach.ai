@@ -7,20 +7,9 @@ import { useStore } from '../../state/store';
 import { Badge, Card, DemoBadge, Field, Notice, Segmented, TextArea, TextInput } from '../components';
 import { SOURCE_PRIORITY_FIELDS, sourcePriorityOf } from '../../domain/sourcePriority';
 import { SquadEditor } from '../SquadEditor';
+import { DossierOptionsFields } from '../match/DossierOptionsCard';
+import { chosenSlides, CHOOSABLE_SLIDES } from '../../domain/dossierOptions';
 
-const SLIDE_NAMES: Record<string, string> = {
-  titel: 'Titelseite',
-  inhalt: 'Was euch erwartet',
-  spieltag: 'Der Spieltag',
-  unserSpiel: 'Unser Spiel',
-  gegnerForm: 'Der Gegner · Form',
-  gegnerGefahr: 'Der Gegner · Gefahr',
-  gegnerAuffaelligkeiten: 'Der Gegner · Auffälligkeiten',
-  soSpieltGegner: 'So spielt der Gegner',
-  unsereForm: 'Unsere Form',
-  kader: 'Unser Kader',
-  auftrag: 'Unser Auftrag',
-};
 
 export function NewTeamPage() {
   const { update } = useStore();
@@ -139,19 +128,6 @@ export function TeamPage() {
             ))}
           </div>
           <p className="muted small">Plätze für die farbige Markierung der Tabelle (liefert fussball.de nicht mit).</p>
-          <div className="field">
-            <span className="field-label">Folie „Spielphasen“</span>
-            <Segmented
-              label="Blickwinkel der Spielphasen-Folie"
-              value={team.phaseModel ?? 'gegner'}
-              onChange={(v) => set((t) => (t.phaseModel = v as 'gegner' | 'eigene'))}
-              options={[
-                { value: 'gegner', label: 'So spielt der Gegner' },
-                { value: 'eigene', label: 'So spielen wir' },
-              ]}
-            />
-            <span className="muted small">„So spielen wir“: eigenes Verhalten je Spielphase, der Gegner kurz darunter – für Spiele mit wenig Gegnerinformationen.</span>
-          </div>
         </Card>
 
         <Card title="Links und Heimspielort">
@@ -277,27 +253,20 @@ export function TeamPage() {
             <strong>{team.template.name}</strong>{' '}
             {team.template.confirmedAt ? <Badge tone="ok">bestätigt {formatTimestamp(team.template.confirmedAt)}</Badge> : <Badge tone="warn">noch nicht bestätigt</Badge>}
           </p>
-          <ol className="template-list">
-            {ALL_SLIDES.map((k) => (
-              <li key={k}>
-                <label className="check">
-                  <input
-                    type="checkbox"
-                    checked={team.template.slides.includes(k)}
-                    disabled={k === 'titel' || k === 'auftrag'}
-                    onChange={(e) =>
-                      set((t) => {
-                        const on = e.target.checked;
-                        t.template.slides = ALL_SLIDES.filter((x) => (x === k ? on : t.template.slides.includes(x)));
-                        t.template.confirmedAt = null;
-                      })
-                    }
-                  />
-                  {k === 'unsereForm' ? `${team.shortName} · Unsere Form` : SLIDE_NAMES[k]}
-                </label>
-              </li>
-            ))}
-          </ol>
+          <p className="muted small">Voreinstellung für neue Dossiers – je Spiel im Trainerfragebogen unter „Aufbau dieses Dossiers“ änderbar.</p>
+          <DossierOptionsFields
+            phaseModel={team.phaseModel ?? 'gegner'}
+            slides={chosenSlides(team)}
+            onPhaseModel={(m) => set((t) => void (t.phaseModel = m))}
+            onToggle={(k, on) =>
+              set((t) => {
+                const cur = chosenSlides(t);
+                const keep = t.template.slides.filter((x) => !CHOOSABLE_SLIDES.includes(x));
+                t.template.slides = ALL_SLIDES.filter((x) => keep.includes(x) || (x === k ? on : cur.includes(x)));
+                t.template.confirmedAt = null;
+              })
+            }
+          />
           <p className="muted small">Die Vorlage gilt als bestätigt, sobald ein Dossier mit ihr bestätigt wird.</p>
         </Card>
 

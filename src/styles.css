@@ -2741,3 +2741,19 @@ select:focus-visible {
   font-size: 14px;
   padding: 5px 14px;
 }
+
+/* Aufbau des Dossiers: Folienauswahl */
+.check-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 6px 16px;
+  margin: 4px 0 6px;
+}
+.dossier-options {
+  margin: 0 0 16px;
+}
+.dossier-options > summary {
+  cursor: pointer;
+  font-weight: 600;
+  padding: 6px 0;
+}

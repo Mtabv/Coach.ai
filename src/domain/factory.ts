@@ -17,6 +17,7 @@ export const ALL_SLIDES: SlideKey[] = [
   'gegnerGefahr',
   'gegnerAuffaelligkeiten',
   'soSpieltGegner',
+  'soSpielenWir',
   'unsereForm',
   'kader',
   'auftrag',

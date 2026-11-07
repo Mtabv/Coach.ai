@@ -371,7 +371,8 @@ function addSlide(p: PptxGenJS, slide: Slide, content: DossierContent) {
       slide.keyStats.forEach((t, i) => pill(s, 7.35, 2.95 + i * (ph + 0.07), 5.5, ph, t, 11));
       break;
     }
-    case 'soSpieltGegner': {
+    case 'soSpieltGegner':
+    case 'soSpielenWir': {
       // Spielphasenmodell: Kreislauf aus vier Phasen um einen Mittelpunkt.
       s.addText([{ text: `${slide.formationLabel.toUpperCase()}  `, options: { bold: true, color: C.green2, fontSize: 9.5 } }, ...fvRuns(slide.formation, { color: C.text, fontSize: 12 })], { x: 0.5, y: 1.35, w: 7.5, h: 0.35, fontFace: FONT, valign: 'middle' });
       if (slide.absences) s.addText([{ text: `${slide.absencesLabel.toUpperCase()}  `, options: { bold: true, color: C.green2, fontSize: 9.5 } }, ...fvRuns(slide.absences, { color: C.muted, fontSize: 11 })], { x: 8.1, y: 1.35, w: 4.75, h: 0.35, fontFace: FONT, valign: 'middle', align: 'right' });
@@ -394,7 +395,8 @@ function addSlide(p: PptxGenJS, slide: Slide, content: DossierContent) {
       s.addShape('ellipse', { x: cx - 0.6, y: cy - 0.6, w: 1.2, h: 1.2, fill: { color: C.green }, line: { color: C.light, width: 4 } });
       s.addText('Spiel-\nphasen', { x: cx - 0.6, y: cy - 0.6, w: 1.2, h: 1.2, fontFace: FONT, fontSize: 11, bold: true, color: C.lime, align: 'center', valign: 'middle' });
       const ey = 1.8 + 2 * phH + 0.3 + 0.1;
-      const ew = (W - 1 - 2 * 0.2) / 3;
+      const nx = Math.max(slide.extras.length, 1);
+      const ew = (W - 1 - (nx - 1) * 0.2) / nx;
       slide.extras.forEach((e, i) => {
         const x = 0.5 + i * (ew + 0.2);
         card(s, x, ey, ew, H - 0.55 - ey, e.label);

@@ -11,6 +11,7 @@ import { useStore } from '../../state/store';
 import { Badge, Card, Notice, TextArea, TextInput, Toast } from '../components';
 import { ScaledSlide, slideIssues } from '../dossier/SlideView';
 import { SquadEditor } from '../SquadEditor';
+import { DossierOptionsCard } from './DossierOptionsCard';
 
 export function DossierTab({ match, team }: { match: Match; team: TeamProfile }) {
   const { state, update } = useStore();
@@ -77,6 +78,10 @@ export function DossierTab({ match, team }: { match: Match; team: TeamProfile })
           </a>
         </div>
       </div>
+      <details className="dossier-options">
+        <summary>Aufbau dieses Dossiers: Spielphasenmodell und Folien</summary>
+        <DossierOptionsCard match={match} team={team} prep={prep} />
+      </details>
 
       <nav className="slide-tabs" aria-label="Dossierseiten">
         {content.slides.map((s, i) => {
