@@ -47,6 +47,23 @@ describe('PPTX-Export', () => {
     expect(pptxFileName(content)).toMatch(/\.pptx$/);
   });
 
+  it('lässt abgewählte Folien weg – auch im Inhaltsverzeichnis – und nummeriert lückenlos', async () => {
+    const s = initialState();
+    applyProviderResult(s, REFERENCE_MATCH_ID, await demoProvider.fetch(s.teams[0], s.matches[0]));
+    insertExampleAnswers(s, REFERENCE_MATCH_ID);
+    const team = { ...s.teams[0], template: { ...s.teams[0].template, slides: s.teams[0].template.slides.filter((k) => k !== 'kader') } };
+    const content = buildDossier(team, s.matches[0], s.preparations[REFERENCE_MATCH_ID]);
+    expect(content.slides.map((x) => x.key)).not.toContain('kader');
+    expect(content.slides.map((x) => x.number)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+    const toc = content.slides.find((x) => x.key === 'inhalt');
+    if (toc?.key !== 'inhalt') throw new Error('Inhalt fehlt');
+    expect(toc.items.map((x) => x.title)).not.toContain('Unser Kader');
+    expect(toc.items.at(-1)).toMatchObject({ number: 10 });
+    const files = unzip((await buildPptx(content).write({ outputType: 'nodebuffer', compression: true })) as Buffer);
+    expect([...files.keys()].filter((f) => /^ppt\/slides\/slide\d+\.xml$/.test(f))).toHaveLength(10);
+    expect(files.get('ppt/slides/slide10.xml')).toContain('10/10');
+  });
+
   it('bettet Spielerfotos der Gefahr-Folie ein und zeigt sonst Initialen', async () => {
     const s = initialState();
     applyProviderResult(s, REFERENCE_MATCH_ID, await demoProvider.fetch(s.teams[0], s.matches[0]));

@@ -5,7 +5,7 @@ import { selectKeyPlayers, type SelectedPlayer } from '../domain/players';
 import { kitLabel } from '../domain/questionnaire';
 import { normalizeName, opponentKpis, seasonSummary, teamResults, type TeamResult } from '../domain/stats';
 import { computeAwaySchedule, computeHomeSchedule, formatDate, isValidDate, isValidTime } from '../domain/time';
-import type { Answer, KitCombination, Match, Preparation, QuestionId, SourceRef, TeamProfile } from '../domain/types';
+import type { Answer, KitCombination, Match, Preparation, QuestionId, SlideKey, SourceRef, TeamProfile } from '../domain/types';
 import { fv, type DossierContent, type FV, type FormSlide, type KitView, type RecordLine, type Slide, type SquadCard } from './model';
 
 /**
@@ -152,6 +152,7 @@ export function buildDossier(team: TeamProfile, match: Match, prep: Preparation)
   // Eigenes Wappen aus dem Mannschaftsprofil hat Vorrang (FuPa-Wappen sind teils niedrig aufgelöst).
   const crests = { ...(b.tabelle.value?.crests ?? {}), ...(team.crest ? { [ownName]: team.crest } : {}) };
   const slides: Slide[] = [];
+  const enabled = new Set<SlideKey>(team.template.slides);
   const blank = { sources: [] as string[], footnote: '' };
 
   // 1 Titel
@@ -175,23 +176,24 @@ export function buildDossier(team: TeamProfile, match: Match, prep: Preparation)
 
   // 2 Inhalt
   const ownFormTitle = 'Unsere Form';
-  const contentItems: [string, string][] = [
-    [SLIDE_TITLES.spieltag, 'Tabelle und Spieltagspaarungen'],
-    [SLIDE_TITLES.unserSpiel, 'Spielort, Treffpunkt, Kleidung, direkte Duelle und Zeitplan'],
-    [SLIDE_TITLES.gegnerForm, 'Letzte fünf Ligaspiele und Bilanzen'],
-    [SLIDE_TITLES.gegnerGefahr, 'Gegenspieler, auf die wir achten'],
-    [SLIDE_TITLES.gegnerAuffaelligkeiten, 'Kennzahlen und belegte Besonderheiten'],
-    ownPerspective ? ['So spielen wir', 'Unser Plan nach Spielphasen'] : [SLIDE_TITLES.soSpieltGegner, 'Beobachtungen des Trainerteams'],
-    [ownFormTitle, 'Unsere letzten fünf Ligaspiele und Bilanzen'],
-    [SLIDE_TITLES.kader, 'Spieltagskader'],
-    [SLIDE_TITLES.auftrag, 'Drei Botschaften und unser Leitmotiv'],
+  const contentItems: [SlideKey, string, string][] = [
+    ['spieltag', SLIDE_TITLES.spieltag, 'Tabelle und Spieltagspaarungen'],
+    ['unserSpiel', SLIDE_TITLES.unserSpiel, 'Spielort, Treffpunkt, Kleidung, direkte Duelle und Zeitplan'],
+    ['gegnerForm', SLIDE_TITLES.gegnerForm, 'Letzte fünf Ligaspiele und Bilanzen'],
+    ['gegnerGefahr', SLIDE_TITLES.gegnerGefahr, 'Gegenspieler, auf die wir achten'],
+    ['gegnerAuffaelligkeiten', SLIDE_TITLES.gegnerAuffaelligkeiten, 'Kennzahlen und belegte Besonderheiten'],
+    ownPerspective ? ['soSpieltGegner', 'So spielen wir', 'Unser Plan nach Spielphasen'] : ['soSpieltGegner', SLIDE_TITLES.soSpieltGegner, 'Beobachtungen des Trainerteams'],
+    ['unsereForm', ownFormTitle, 'Unsere letzten fünf Ligaspiele und Bilanzen'],
+    ['kader', SLIDE_TITLES.kader, 'Spieltagskader'],
+    ['auftrag', SLIDE_TITLES.auftrag, 'Drei Botschaften und unser Leitmotiv'],
   ];
   slides.push({
     key: 'inhalt',
     number: 2,
     title: SLIDE_TITLES.inhalt,
     kicker: `${homeName} – ${awayName}`,
-    items: contentItems.map(([title, text], i) => ({ number: i + 3, title, text })),
+    // Nur Folien der Vorlage; Nummern folgen der tatsächlichen Reihenfolge (abgewählte Folien fallen heraus).
+    items: contentItems.filter(([k]) => enabled.has(k)).map(([, title, text], i) => ({ number: i + 3, title, text })),
     ...blank,
   });
 
@@ -553,7 +555,8 @@ export function buildDossier(team: TeamProfile, match: Match, prep: Preparation)
         ...(crestFor(crests, awayName) ? { away: crestFor(crests, awayName) } : {}),
       },
     },
-    slides: slides.filter((s) => team.template.slides.includes(s.key)),
+    // Abgewählte Folien entfallen; die übrigen werden lückenlos durchnummeriert.
+    slides: slides.filter((s) => enabled.has(s.key)).map((s, i) => ({ ...s, number: i + 1 })),
   };
 }
 
