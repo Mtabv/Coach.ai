@@ -1,6 +1,7 @@
 import { href, useRoute } from './router';
 import { StoreProvider, useStore } from './state/store';
 import { ConfirmAction } from './ui/components';
+import { AnalyticsPage, AnalyticsPrintPage } from './ui/pages/AnalyticsPage';
 import { ArchiveDossierPage, ArchivePage } from './ui/pages/ArchivePage';
 import { MatchWorkspace } from './ui/pages/MatchWorkspace';
 import { NewMatchPage } from './ui/pages/NewMatchPage';
@@ -20,9 +21,10 @@ function Shell() {
   const route = useRoute();
   const { state, update, saveStatus, resetAll } = useStore();
   if (route.name === 'druck') return <PrintPage dossierId={route.dossierId} />;
+  if (route.name === 'analyticsDruck') return <AnalyticsPrintPage />;
 
   const team = state.teams.find((t) => t.id === state.activeTeamId) ?? state.teams[0];
-  const section = route.name === 'mannschaft' || route.name === 'neueMannschaft' ? 'mannschaft' : route.name === 'archiv' || route.name === 'archivDossier' ? 'archiv' : 'start';
+  const section = route.name === 'mannschaft' || route.name === 'neueMannschaft' ? 'mannschaft' : route.name === 'archiv' || route.name === 'archivDossier' ? 'archiv' : route.name === 'analytics' ? 'analytics' : 'start';
 
   return (
     <div className="app">
@@ -47,6 +49,9 @@ function Shell() {
           </a>
           <a href={href({ name: 'mannschaft' })} className={section === 'mannschaft' ? 'is-active' : ''}>
             Mannschaft
+          </a>
+          <a href={href({ name: 'analytics' })} className={section === 'analytics' ? 'is-active' : ''}>
+            Analytics
           </a>
           <a href={href({ name: 'archiv' })} className={section === 'archiv' ? 'is-active' : ''}>
             Archiv
@@ -80,6 +85,7 @@ function Shell() {
         {route.name === 'neueMannschaft' && <NewTeamPage />}
         {route.name === 'neuesSpiel' && <NewMatchPage />}
         {route.name === 'spiel' && <MatchWorkspace key={route.matchId} matchId={route.matchId} tab={route.tab} />}
+        {route.name === 'analytics' && <AnalyticsPage />}
         {route.name === 'archiv' && <ArchivePage />}
         {route.name === 'archivDossier' && <ArchiveDossierPage dossierId={route.dossierId} />}
       </main>

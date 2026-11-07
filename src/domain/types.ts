@@ -10,6 +10,8 @@
  *   (Spielnachbereitung, Trainingsableitung, Halbserienanalyse, SpielerPlus, Veo …).
  */
 
+import type { SeasonData } from '../analytics/types';
+
 export type ID = string;
 
 /** ISO-Datum `YYYY-MM-DD` (Ortszeit Europe/Berlin). */
@@ -528,4 +530,6 @@ export interface AppState {
   matches: Match[];
   preparations: Record<ID, Preparation>;
   dossiers: DossierRecord[];
+  /** Saison-Zwischenreport (Analytics): geladene Rohdaten je Mannschaft. */
+  analytics?: Record<ID, SeasonData>;
 }

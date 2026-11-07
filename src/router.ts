@@ -8,6 +8,8 @@ export type Route =
   | { name: 'neuesSpiel' }
   | { name: 'spiel'; matchId: string; tab: 'daten' | 'fragebogen' | 'dossier' | 'export' }
   | { name: 'archiv' }
+  | { name: 'analytics' }
+  | { name: 'analyticsDruck' }
   | { name: 'archivDossier'; dossierId: string }
   | { name: 'druck'; dossierId: string };
 
@@ -27,6 +29,8 @@ export function parseHash(hash: string): Route {
       return parts[1] ? { name: 'archivDossier', dossierId: parts[1] } : { name: 'archiv' };
     case 'druck':
       return parts[1] ? { name: 'druck', dossierId: parts[1] } : { name: 'start' };
+    case 'analytics':
+      return parts[1] === 'druck' ? { name: 'analyticsDruck' } : { name: 'analytics' };
     default:
       return { name: 'start' };
   }
@@ -46,6 +50,10 @@ export function href(r: Route): string {
       return `#/spiel/${encodeURIComponent(r.matchId)}/${r.tab}`;
     case 'archiv':
       return '#/archiv';
+    case 'analytics':
+      return '#/analytics';
+    case 'analyticsDruck':
+      return '#/analytics/druck';
     case 'archivDossier':
       return `#/archiv/${encodeURIComponent(r.dossierId)}`;
     case 'druck':

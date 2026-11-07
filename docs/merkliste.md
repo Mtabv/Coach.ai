@@ -21,6 +21,14 @@ Siehe `docs/spielnachbereitung.md`. Dort stehen Spielerbewertung (mit Abfrage, o
 
 ## Analytics-Bereich
 
+**Erste Version umgesetzt (07.11.2026):** Saison-Zwischenreport mit sieben Seiten, Navigation „Analytics“.
+
+Später verfeinern, nach Wünschen der Trainer:
+- Ligavergleich der Torminuten (Spielberichte aller Mannschaften laden)
+- Verbindung mit Nachbereitungen (Bewertung der Spielphasen, Spielerbewertungen, Trainingsschwerpunkte)
+- PowerPoint-Export
+- Hin- und Rückrunde getrennt
+
 Auswertungen über mehrere Spiele. Daten und Grenzen siehe Abstimmung vom 07.11.2026. Kurz:
 
 - **Aus Ergebnissen und Spielberichten:**

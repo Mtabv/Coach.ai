@@ -2008,6 +2008,89 @@ select:focus-visible {
   }
 }
 
+/* ---------- Analytics: Saison-Zwischenreport ---------- */
+.an-crest { display: flex; align-items: flex-start; gap: 8px; }
+.an-crest img { width: 40px; height: 40px; object-fit: contain; }
+.an-crest .s-num { margin-left: 10px; margin-top: 4px; }
+.an-body { display: flex; flex-direction: column; gap: 10px; font-size: 16px; }
+.an-body.an-row { flex-direction: row; gap: 16px; padding-bottom: 6px; }
+.an-body.an-spread { justify-content: space-between; padding-bottom: 8px; }
+.an-muted { color: var(--muted); }
+.an-small { font-size: 12px; line-height: 1.4; }
+.an-title { background: radial-gradient(120% 120% at 0% 0%, #1c5a43 0%, #0f3b2c 55%, #0a2a1f 100%); color: #fff; justify-content: center; }
+.an-title-wrap { padding: 0 90px; }
+.an-t-kicker { color: var(--lime); font-weight: 800; letter-spacing: 0.14em; font-size: 15px; }
+.an-t-sub { color: #cfe0d6; margin-top: 8px; font-size: 17px; }
+.an-t-team { display: flex; flex-direction: column; align-items: center; gap: 16px; margin: 44px 0 40px; font-size: 34px; font-weight: 800; }
+.an-t-team img { width: 130px; height: 130px; object-fit: contain; background: #fff; border-radius: 50%; padding: 14px; }
+.an-t-toc { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+.an-t-toc span { border: 1px solid rgba(198, 243, 94, 0.5); border-radius: 999px; padding: 7px 16px; font-size: 15px; color: #e8f3ec; }
+.an-t-note { position: absolute; bottom: 18px; left: 0; right: 0; text-align: center; font-size: 12px; letter-spacing: 0.06em; color: #a9c3b4; }
+.an-tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+.an-tile { background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 16px 20px; }
+.an-tile.dark { background: var(--green-900); color: #fff; border-color: var(--green-900); }
+.an-tl { font-size: 11.5px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: var(--green-700); }
+.an-tile.dark .an-tl { color: var(--lime); }
+.an-tv { font-size: 40px; font-weight: 900; color: var(--green-900); line-height: 1.1; }
+.an-tv small { font-size: 15px; font-weight: 600; color: var(--muted); }
+.an-tv-m { font-size: 34px; }
+.an-tile.dark .an-tv { color: #fff; }
+.an-ts { font-size: 12.5px; color: var(--muted); }
+.an-tile.dark .an-ts { color: #cfe0d6; }
+.an-strip { display: grid; gap: 4px; }
+.an-g { border-radius: 8px; padding: 12px 4px; text-align: center; background: #f4f7f2; border-top: 5px solid #8a948e; min-width: 0; }
+.an-g-S { border-top-color: #2e7d32; }
+.an-g-N { border-top-color: #b42318; }
+.an-gd { font-size: 12px; color: var(--muted); }
+.an-gr { font-size: 13px; font-weight: 800; margin: 2px 0; }
+.an-g-S .an-gr { color: #2e7d32; }
+.an-g-N .an-gr { color: #b42318; }
+.an-gs { font-size: 24px; font-weight: 900; color: var(--green-900); }
+.an-go { font-size: 10.5px; color: var(--muted); line-height: 1.25; height: 40px; margin-top: 4px; overflow: hidden; word-break: break-word; }
+.an-two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.an-ha { font-size: 17px; line-height: 1.5; }
+.an-chartbox { flex: 1.45; display: flex; flex-direction: column; gap: 6px; }
+.an-chart { width: 100%; height: auto; }
+.an-chart .an-ax { font-size: 12px; fill: #5b6b62; }
+.an-chart .an-vl { font-size: 13px; font-weight: 700; fill: #14211b; }
+.an-legend { display: flex; gap: 18px; font-size: 13px; align-items: center; font-weight: 600; }
+.an-legend i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+.an-legend .an-muted { font-weight: 400; font-size: 12px; }
+.an-side { flex: 1; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.an-insight { font-size: 14.5px; line-height: 1.45; }
+.an-big { font-size: 24px; font-weight: 900; color: var(--green-900); margin-bottom: 4px; }
+.s-box-dark .an-big { color: #fff; }
+.an-mbox { flex: 1.3; display: flex; flex-direction: column; gap: 12px; justify-content: center; }
+.an-mat { border-collapse: separate; border-spacing: 6px; width: 100%; font-size: 15px; }
+.an-mat th { text-align: left; font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--green-700); font-weight: 800; }
+.an-mat tbody th { font-size: 15px; text-transform: none; letter-spacing: 0; color: #14211b; }
+.an-mat td { text-align: center; border-radius: 8px; height: 64px; font-size: 26px; font-weight: 900; }
+.an-mat td.an-n { color: var(--muted); font-size: 18px; font-weight: 700; }
+.an-c-S { background: #e5f4e6; color: #2e7d32; }
+.an-c-U { background: #eceeed; color: #5b6b62; }
+.an-c-N { background: #fdeceb; color: #b42318; }
+.an-mat td.an-z { background: #f6f8f6; color: #c3ccc6; font-weight: 600; }
+.an-col { flex: 1; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.an-ollist { display: flex; flex-direction: column; gap: 9px; font-size: 16px; flex: 1; }
+.an-ol { display: flex; gap: 8px; align-items: center; }
+.an-ol b { margin-left: auto; }
+.an-ol em { font-style: normal; color: var(--muted); font-size: 12px; width: 14px; }
+.an-r { width: 20px; height: 20px; border-radius: 4px; color: #fff; font-size: 11px; font-weight: 800; display: inline-flex; align-items: center; justify-content: center; flex: none; }
+.an-r-S { background: #2e7d32; }
+.an-r-N { background: #b42318; }
+.an-r-U { background: #8a948e; }
+.an-pr { display: grid; grid-template-columns: 40px 190px 1fr 64px; gap: 10px; align-items: center; margin: 4px 0; }
+.an-pr img, .an-noimg { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; background: #dfe7e1; display: block; }
+.an-pn { font-weight: 700; font-size: 14.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.an-pb { height: 14px; background: #eef2ef; border-radius: 4px; }
+.an-pb div { height: 100%; background: var(--green-700); border-radius: 4px; }
+.an-pv { font-size: 20px; font-weight: 900; color: var(--green-900); text-align: right; }
+.an-pv small { font-size: 12px; color: var(--muted); font-weight: 600; }
+.an-hints { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; flex: 1; margin-bottom: 6px; }
+.an-hint { display: flex; gap: 16px; font-size: 18px; line-height: 1.5; padding: 22px 24px; }
+.an-hn { flex: none; width: 30px; height: 30px; border-radius: 50%; background: var(--lime); color: var(--green-900); font-weight: 900; display: flex; align-items: center; justify-content: center; }
+.an-note { font-size: 14px; background: #e3ece6; border-radius: 10px; padding: 12px 16px; color: var(--green-900); margin-bottom: 6px; }
+
 /* ---------- Responsiv ---------- */
 @media (max-width: 1080px) {
   .dossier-main {

@@ -33,6 +33,18 @@ npm run e2e          # End-to-End mit Playwright, Vorschau muss laufen (BASE_URL
 5. **Dossier** prüfen und bearbeiten (11 Seiten, markierte Lücken und Konflikte).
 6. **Bestätigen & exportieren**: Prüfungen, Bestätigung (eingefroren), PPTX-Download, Druckansicht → „Als PDF speichern“, Archiv.
 
+**Analytics** (eigener Bereich in der Navigation): Saison-Zwischenreport der aktiven Mannschaft, jederzeit auf Klick.
+- **Daten:** alle bisherigen Ligaspiele mit Spielbericht (fussball.de) und Spielerfotos (FuPa). Sie werden im Browser gespeichert und erst beim Anzeigen ausgewertet.
+- **Sieben Seiten:**
+  - Saison in Zahlen
+  - Torminuten je Viertelstunde
+  - Halbzeit und Endstand, erstes Tor
+  - Gegner nach Tabellenhälfte
+  - Torschützen und Startelf
+  - Hinweise
+- **Regeln:** Nur gezählte Werte. Hinweise erscheinen erst ab 8 Spielen mit vollständigem Spielbericht und sind als Fragen an den Trainer formuliert.
+- **Ausgabe:** Druckansicht → „Als PDF speichern“.
+
 ## Architektur
 
 | Ordner | Inhalt |
@@ -41,6 +53,7 @@ npm run e2e          # End-to-End mit Playwright, Vorschau muss laufen (BASE_URL
 | `src/data` | Datenanbieter-Schnittstelle (`provider.ts`), Demo-Anbieter mit **fiktiven** Beispieldaten, Startzustand |
 | `src/ai` | Schnittstelle für spätere KI-Funktionen; in der Vorschau nur regelbasierte Textübernahme (ausdrücklich keine KI) |
 | `src/dossier` | Darstellungsunabhängiges Dossiermodell, Aufbau aus den Daten, Textüberschreibungen |
+| `src/analytics` | Saison-Zwischenreport: Datenabruf (`fetch.ts`), reine Auswertung mit Mindestmengen für Hinweise (`report.ts`) |
 | `src/export` | PPTX-Export (PptxGenJS, native Textfelder und Tabellen) |
 | `src/state`, `src/storage` | Zustandsänderungen (rein, testbar) und lokale Speicherung |
 | `src/ui` | Oberfläche (React) |

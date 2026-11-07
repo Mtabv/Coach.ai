@@ -95,6 +95,10 @@ export interface FdMatchEvent {
   type: string | null;
   team: 'home' | 'away' | null;
   description: string | null;
+  /** Halbzeit (1 oder 2), falls im Spielbericht erkennbar. */
+  half?: number | null;
+  /** Spielstand nach dem Ereignis, nur bei Toren. */
+  score?: string | null;
 }
 
 export interface FdGameDetail {
