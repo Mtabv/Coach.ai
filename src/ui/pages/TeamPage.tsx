@@ -103,6 +103,30 @@ export function TeamPage() {
             <TextInput label="Altersklasse" value={team.ageGroup} onChange={(v) => set((t) => (t.ageGroup = v))} />
             <TextInput label="Wettbewerb" value={team.competition} onChange={(v) => set((t) => (t.competition = v))} />
             <TextInput label="Saison" value={team.season} onChange={(v) => set((t) => (t.season = v))} />
+            <TextInput
+              label="Trainingseinheiten pro Woche"
+              inputMode="numeric"
+              placeholder="z. B. 3"
+              value={team.trainingsPerWeek ? String(team.trainingsPerWeek) : ''}
+              onChange={(v) =>
+                set((t) => {
+                  const n = Math.min(14, Number(v.replace(/\D/g, '')) || 0);
+                  if (n) t.trainingsPerWeek = n;
+                  else delete t.trainingsPerWeek;
+                })
+              }
+            />
+            <TextInput
+              label="Trainingstage"
+              placeholder="z. B. Di, Do, Fr"
+              value={team.trainingDays ?? ''}
+              onChange={(v) =>
+                set((t) => {
+                  if (v.trim()) t.trainingDays = v;
+                  else delete t.trainingDays;
+                })
+              }
+            />
           </div>
           <p className="muted small">Zeitzone: Europe/Berlin (fest)</p>
           <div className="form-grid three">

@@ -169,6 +169,10 @@ export interface TeamProfile {
   phaseModel?: PhaseModel;
   /** Eigenes Wappen (Data-URL), hat Vorrang vor dem Wappen laut FuPa. */
   crest?: string;
+  /** Trainingseinheiten pro Woche (Trainerangabe); Grundlage für Nachbereitung und Trainingsableitung. */
+  trainingsPerWeek?: number;
+  /** Trainingstage, frei eingegeben, z. B. „Di, Do, Fr“. */
+  trainingDays?: string;
   homeVenue: Venue;
   schedule: { home: HomeScheduleTemplate; away: AwayScheduleTemplate };
   kits: KitProfile;
