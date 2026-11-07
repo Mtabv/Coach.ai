@@ -69,3 +69,6 @@ Hintergrund: Externe Spielberichte sind Kostentreiber (Sportmedia) und rechtlich
 - **Verein und Vorstand**
   - Halbserien- und Saisonbericht als Präsentation
   - Trainerteam: Co-Trainer liefert Beobachtungen zu
+- **Übungsaustausch unter Trainern:** Jeder Trainer erfasst seine bewährten Übungen per Sprachnachricht und Skizzenfoto als Übungskarte (Organisation, Ablauf, Coachingpunkte, Varianten, Schlagworte). Die Karten lassen sich mit anderen Trainern teilen. Eine gemeinsame, praxisgeprüfte Bibliothek ist zugleich ein Grund mitzumachen.
+  - Offen: Wer darf was sehen (nur eigener Verein / alle Teilnehmer)? Namensnennung des Urhebers. Missbrauch melden.
+- **Kommerzielle Übungsdatenbanken (Stand Recherche 07.11.2026):** easy2coach, fussballtraining.com, Advance Football, TacticTrain, Planet Training, Philippka „fussballtraining“. Das sind Endkunden-Abos zwischen etwa 5 und 15 € im Monat. Eine Einbindung in Coach.AI ginge nur über eine Lizenz- oder Kooperationsvereinbarung, die öffentlich nicht angeboten wird. Ansprechen, sobald es Pilottrainer gibt.
