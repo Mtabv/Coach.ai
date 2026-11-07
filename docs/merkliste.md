@@ -48,3 +48,24 @@ Auswertungen über mehrere Spiele. Daten und Grenzen siehe Abstimmung vom 07.11.
   - Karten ohne Spielernamen
   - ausgewechselte Spieler unbekannt, daher keine genauen Einsatzminuten
   - kleine Stichproben (15 Ligaspiele je Halbserie)
+
+## Produktideen aus „eigener Feder“ (Abstimmung 07.11.2026)
+
+Hintergrund: Externe Spielberichte sind Kostentreiber (Sportmedia) und rechtlich heikel. Der Kern soll aus dem Wissen des Trainers entstehen; von außen nur Tabelle, Spielplan und Ergebnisse.
+
+- **Zeit sparen**
+  - Sprachnachricht → Dossier
+  - Mannschaftsnachricht (WhatsApp-Text mit Treffpunkt, Ablauf, Kleidung, Kader) auf Knopfdruck
+  - Nachbereitung per Sprachnachricht, inklusive Aufstellung, Torschützen und Minuten
+- **Gedächtnis**
+  - Gegner-Akte: Beobachtungen werden beim nächsten Duell vorgeschlagen, über Spielzeiten hinweg
+  - Spielerakte: Noten, Einsätze, Minuten aus den Nachbereitungen
+  - Blatt für Spielergespräche zur Halbserie
+- **Vom Spiel zum Training**
+  - **Spielidee („Trainer-Ich“):** dauerhaftes Profil mit Prinzipien je Spielphase. Die Dossierfolie „So spielen wir“ und die Bewertung in der Nachbereitung messen sich daran.
+  - **Trainingsschwerpunkte:** Vorschlag aus der Nachbereitung, Trainer bestätigt.
+  - **Wochenstruktur:** nach Trainingseinheiten pro Woche.
+  - **Übungen:** Die KI erfindet keine Übungen. Sie wählt aus einer geprüften Bibliothek: eigene Übungen des Trainers, Übungen geteilt unter den Pilottrainern, lizenzierte oder verlinkte Quellen wie DFB-Trainingsinhalte (Nutzungsrechte klären). Die Übungen sind verschlagwortet nach Spielphase, Prinzip und Form. Die KI passt nur Spielerzahl und Feldgröße innerhalb fester Regeln an.
+- **Verein und Vorstand**
+  - Halbserien- und Saisonbericht als Präsentation
+  - Trainerteam: Co-Trainer liefert Beobachtungen zu
