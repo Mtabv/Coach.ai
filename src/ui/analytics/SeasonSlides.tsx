@@ -451,7 +451,7 @@ function PlayersSlide({ ctx }: { ctx: SeasonCtx }) {
   const sc = r.scorers.slice(0, 6);
   const st = r.starters.slice(0, 6);
   return (
-    <Frame ctx={ctx} n={5} title="Wer trifft, wer spielt?" foot="Quelle: fussball.de-Spielberichte (Torschützen, Startelf) · Fotos: FuPa · Einsatzminuten nicht auswertbar, da der Spielbericht Auswechslungen nicht nennt" bodyClass="an-row">
+    <Frame ctx={ctx} n={5} title="Wer trifft, wer spielt?" foot="Quelle: fussball.de-Spielberichte (Torschützen, Startelf) · Fotos: FuPa, fehlende von fussball.de · Einsatzminuten nicht auswertbar, da der Spielbericht Auswechslungen nicht nennt" bodyClass="an-row">
       <div className="s-box an-col">
         <div className="s-box-title">Torschützen</div>
         {sc.map((p) => (
