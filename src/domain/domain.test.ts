@@ -186,6 +186,17 @@ describe('Fragebogen und neue Begegnungen', () => {
     expect(sel.map((p) => p.name)).toEqual(['Trainerwahl', 'MVP', 'Mittel', 'Torjäger']);
   });
 
+  it('Gegenspieler: Torhüter nur auf Trainerwunsch, nicht über den MVP-Wert', () => {
+    const ev = [{ text: 'x', sourceId: 's' }];
+    const mvp = (value: number) => ({ value, asOf: null, sourceId: 'fupa' });
+    const cands = [
+      { id: 'tw', name: 'Keeper', position: 'Torwart', evidence: ev, mvp: mvp(99) },
+      { id: 'st', name: 'Stürmer', position: 'Angriff', evidence: ev, goals: 8, mvp: mvp(90) },
+    ];
+    expect(selectKeyPlayers(cands, []).map((p) => p.name)).toEqual(['Stürmer']);
+    expect(selectKeyPlayers(cands, [{ candidateId: 'tw', name: 'Keeper', reason: 'spielt lange Bälle' }]).map((p) => p.name)).toEqual(['Keeper', 'Stürmer']);
+  });
+
   it('regelbasierte Übernahme erfindet keine Inhalte', () => {
     const r = splitMessage('Zweite Bälle gehören uns – wir sind als Erste da');
     expect(r.headline).toBe('Zweite Bälle gehören uns');

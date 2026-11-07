@@ -201,6 +201,7 @@ export const fussballDeProvider: MatchDataProvider = {
       if (e instanceof FdUnavailableError) {
         return { blocks: {}, messages: [e.message, 'Anleitung: docs/fussballde-anbindung.md. Ohne den lokalen Dienst bleiben die Angaben offen.'] };
       }
+      console.error('fd-provider', (e as Error).stack);
       return { blocks: {}, messages: [`Abruf fehlgeschlagen: ${(e as Error).message}`] };
     }
   },

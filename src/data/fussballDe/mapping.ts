@@ -34,8 +34,9 @@ export const FD_SOURCE_LABEL = 'fussball.de (inoffiziell ausgelesen)';
 // ---------------------------------------------------------------------------
 
 /** Entfernt unsichtbare Zeichen, die fussball.de in Namen einstreut, und Tabellenkürzel (zg., oW, SW). */
-export function cleanName(s: string): string {
-  return s
+export function cleanName(s: string | null | undefined): string {
+  // fussball.de liefert vereinzelt Spieler ohne Namen (z. B. nicht freigegebene Aufstellungen).
+  return (s ?? '')
     .replace(/[​-‍⁠﻿­]/g, '')
     .replace(/\s+/g, ' ')
     .trim()
@@ -46,7 +47,7 @@ export function cleanName(s: string): string {
 /** Übliche Abkürzungen in Vereinsnamen auf fussball.de. */
 const ABBREVIATIONS: Record<string, string> = { ks: 'kassel', ffm: 'frankfurt', eintr: 'eintracht', vikt: 'viktoria', bor: 'borussia', germ: 'germania' };
 
-export function foldName(s: string): string {
+export function foldName(s: string | null | undefined): string {
   return cleanName(s)
     .toLowerCase()
     .replace(/ä/g, 'ae')
@@ -308,6 +309,7 @@ export function playerCandidates(bundle: FdBundle, oppSource: string | null, sou
     if (!side) continue;
     games++;
     for (const p of d.lineup[side].starting) {
+      if (!cleanName(p.name)) continue;
       const a = get(p.name);
       a.starts++;
       if (p.is_captain) a.captain++;
@@ -364,8 +366,8 @@ export function goalLog(raw: FdBundle, isOpp: TeamMatcher, sourceId: string): Go
     const goalEvents = d.events.filter((e) => e.type === 'goal' && (e.team === 'home' || e.team === 'away'));
     if (goalEvents.length !== Number(g.home_score) + Number(g.away_score)) continue;
     const lineup = d.lineup?.[side];
-    const starters = new Set((lineup?.starting ?? []).map((p) => foldName(p.name)));
-    const bench = new Set((lineup?.substitutes ?? []).map((p) => foldName(p.name)));
+    const starters = new Set((lineup?.starting ?? []).filter((p) => p.name).map((p) => foldName(p.name)));
+    const bench = new Set((lineup?.substitutes ?? []).filter((p) => p.name).map((p) => foldName(p.name)));
     const goals: GoalLog['games'][number]['goals'] = [];
     for (const e of goalEvents) {
       const minute = eventMinute(e.time);
@@ -468,7 +470,17 @@ export function mapToBlocks(team: TeamProfile, match: Match, raw: FdBundle): { b
     ]
       .filter(Boolean)
       .join(' ');
-    fdTable = { snapshot: { source: src('fd-tabelle', `nach ${maxGames} Spielen (laut Tabelle)`, maxGames), rows }, note };
+    // Spielfreie Runden (ungerade Mannschaftszahl, Rückzüge): Die Zahl der Spiele liegt dann unter dem Spieltag.
+    // Stimmt die Spielzahl der eigenen Mannschaft in der Tabelle mit ihren gewerteten Ligaspielen überein,
+    // ist die Tabelle auf dem Stand des letzten Spieltags.
+    const ownRow = rows.find((r) => r.team === team.name);
+    const ownLeaguePlayed = own.results.filter((r) => r.competitionType === 'liga' && (!match.date || r.date < match.date)).length;
+    const md = match.matchday ?? raw.matchday?.matchday ?? null;
+    const current = md !== null && ownRow !== undefined && ownLeaguePlayed > 0 && ownRow.played === ownLeaguePlayed && maxGames < md - 1;
+    fdTable = {
+      snapshot: { source: current ? src('fd-tabelle', `nach dem ${md! - 1}. Spieltag (spielfreie Runden eingerechnet)`, md! - 1) : src('fd-tabelle', `nach ${maxGames} Spielen (laut Tabelle)`, maxGames), rows },
+      note,
+    };
   }
   let fupaTable: { snapshot: TableSnapshot; note: string } | null = null;
   if (raw.fupa?.table?.rows.length) {

@@ -297,3 +297,11 @@ describe('fussball.de-Anbindung (inoffiziell)', () => {
     expect(fussballDeProvider.supports(team, { ...match, isHistoricalReference: true })).toBe(false);
   });
 });
+
+describe('Spielplan mit „spielfrei“', () => {
+  it('wertet spielfrei-Zeilen ohne Datum nicht als Spiel', async () => {
+    const { isRealGame } = await import('./api');
+    expect(isRealGame({ datetime_utc: null as unknown as string, home_team: 'TSG Wilhelmshöhe II', away_team: 'spielfrei' })).toBe(false);
+    expect(isRealGame({ datetime_utc: '2026-11-08T16:30:00Z', home_team: 'TSG Wilhelmshöhe II', away_team: 'Dynamo Windrad KS' })).toBe(true);
+  });
+});

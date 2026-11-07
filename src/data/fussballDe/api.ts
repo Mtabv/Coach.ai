@@ -5,6 +5,11 @@
  * Nur Felder, die Coach.AI verwendet.
  */
 
+/** Echte Begegnung: Datum vorhanden, beide Mannschaften benannt, kein „spielfrei“. */
+export function isRealGame(g: Pick<FdGame, 'datetime_utc' | 'home_team' | 'away_team'>): boolean {
+  return Boolean(g.datetime_utc && g.home_team && g.away_team) && !/^spielfrei$/i.test(g.home_team.trim()) && !/^spielfrei$/i.test(g.away_team.trim());
+}
+
 export interface FdGame {
   id: string;
   datetime_utc: string;
@@ -139,7 +144,9 @@ const enc = encodeURIComponent;
 
 export const fdApi = {
   liga: (teamId: string, f?: typeof fetch) => getJson<FdLiga>(`/api/coachai/team/${enc(teamId)}/liga`, f),
-  saison: (teamId: string, von: string, bis: string, f?: typeof fetch) => getJson<FdGame[]>(`/api/coachai/team/${enc(teamId)}/saison?von=${von}&bis=${bis}`, f),
+  // „spielfrei“-Zeilen (ungerade Mannschaftszahl) haben weder Datum noch Gegner – sie sind kein Spiel.
+  saison: (teamId: string, von: string, bis: string, f?: typeof fetch) =>
+    getJson<FdGame[]>(`/api/coachai/team/${enc(teamId)}/saison?von=${von}&bis=${bis}`, f).then((gs) => gs.filter(isRealGame)),
   spieltag: (staffel: string, n: number, f?: typeof fetch) => getJson<FdMatchday>(`/api/coachai/staffel/${enc(staffel)}/spieltag/${n}`, f),
   aufstellungen: (gameIds: string[], f?: typeof fetch) => getJson<FdGameDetail[]>(`/api/coachai/spiele/aufstellungen?ids=${gameIds.map(enc).join(',')}`, f),
   sucheVerein: (query: string, f?: typeof fetch) => getJson<FdClub[]>(`/api/search/clubs?query=${enc(query)}`, f),

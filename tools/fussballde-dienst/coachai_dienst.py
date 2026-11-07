@@ -238,6 +238,9 @@ async def coachai_saison(team_id: str, von: str = Query(..., pattern=r"^\d{4}-\d
         gm = re.search(r"/-/spiel/([A-Za-z0-9]+)", link.get("href", "")) if link else None
         name = lambda c: _clean((c.select_one(".club-name") or c).get_text(" ", strip=True))  # noqa: E731
         tid = lambda c: _team_id_from_href(c.select_one("a").get("href") if c.select_one("a") else None)  # noqa: E731
+        # Ligen mit ungerader Mannschaftszahl: „spielfrei“ ist kein Spiel (kein Datum, kein Gegner).
+        if any(name(c).lower() == "spielfrei" for c in clubs):
+            continue
         games.append(
             {
                 "id": gm.group(1) if gm else f"{head.get('datetime_utc')}_{name(clubs[0])}_{name(clubs[1])}",
