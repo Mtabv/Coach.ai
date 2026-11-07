@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { goalsFromDetail, leagueMinutes } from './fetch';
+import { goalsFromDetail, leagueMinutes, matchSquadPlayer } from './fetch';
 import { binOf, buildSeasonReport } from './report';
 import type { SeasonData, SeasonGame, SeasonGoal } from './types';
 
@@ -102,5 +102,24 @@ describe('Ligavergleich', () => {
     const det = (id: string, mins: number[]) => ({ game_id: id, home_team: 'A', away_team: 'B', lineup: null, events: mins.map((m) => ({ time: `${m}’`, type: 'goal', team: 'home' as const, description: 'X', half: m > 45 ? 2 : 1 })) });
     const res = leagueMinutes([md('1', '2', '0'), md('2', '1', '0')], new Map([['1', det('1', [10, 80])], ['2', det('2', [])]]));
     expect(res).toEqual({ games: 2, withGoals: 1, bins: [1, 0, 0, 0, 0, 1] });
+  });
+});
+
+describe('Spielerfotos', () => {
+  const squad = [
+    { first_name: 'Anton', last_name: 'Moawed' },
+    { first_name: 'Anton Lee', last_name: 'Eikemeier' },
+    { first_name: 'Kevin', last_name: 'van der Veen' },
+    { first_name: 'Tom', last_name: 'Müller' },
+    { first_name: 'Tim', last_name: 'Müller' },
+  ];
+  it('findet Spieler trotz zusätzlicher Vornamen bei fussball.de', () => {
+    expect(matchSquadPlayer(squad, 'Anton Nady Wasef Moawed')?.last_name).toBe('Moawed');
+    expect(matchSquadPlayer(squad, 'Kevin van der Veen')?.last_name).toBe('van der Veen');
+    expect(matchSquadPlayer(squad, 'Anton Lee Eikemeier')?.last_name).toBe('Eikemeier');
+  });
+  it('rät nicht, wenn der Nachname mehrdeutig ist', () => {
+    expect(matchSquadPlayer(squad, 'Thomas Müller')).toBeNull();
+    expect(matchSquadPlayer(squad, 'Tom Müller')?.first_name).toBe('Tom');
   });
 });

@@ -97,7 +97,22 @@ export async function loadSeasonData(team: TeamProfile, today: LocalDate, progre
     };
   });
 
-  // Spielerfotos und Wappen von FuPa (optional – der Report funktioniert auch ohne).
+  // Spielerfotos: FuPa ist die Hauptquelle; fehlt dort ein Bild (oder die Mannschaft), wird das Bild aus der
+  // fussball.de-Aufstellung genommen. Der Report funktioniert auch ganz ohne Fotos.
+  const names = new Set<string>();
+  for (const g of games) {
+    g.starting?.forEach((p) => names.add(p));
+    g.goals?.forEach((x) => x.own && x.scorer && names.add(x.scorer));
+  }
+  const fdImages = new Map<string, string>();
+  for (const g of played) {
+    const side = isOwn(g.home_team_id, g.home_team) ? 'home' : 'away';
+    const lu = details.get(g.id)?.lineup?.[side];
+    for (const p of [...(lu?.starting ?? []), ...(lu?.substitutes ?? [])]) {
+      const n = cleanName(p.name);
+      if (n && p.image_url && !fdImages.has(n)) fdImages.set(n, p.image_url);
+    }
+  }
   const photos: Record<string, string> = {};
   let crest: string | null = team.crest ?? null;
   const sources = [`fussball.de: Tabelle und ${played.length} Spielberichte der Saison ${team.season || ''}`.trim()];
@@ -105,25 +120,31 @@ export async function loadSeasonData(team: TeamProfile, today: LocalDate, progre
   else if (withLeague) sources.push('Ligavergleich nicht verfügbar');
   // FuPa-Mannschaft über den Link im Profil oder – wie beim Dossier – über den Vereinsnamen (von FuPa bestätigt, nicht geraten).
   const fupaOwn = await fupaTeamFor(ownFupaLink(team), [team.name, ownName], fupaSeason(today), categoryOf(liga.staffel_name), f).catch(() => null);
+  let fromFupa = 0;
   if (fupaOwn) {
     progress('Spielerfotos von FuPa werden geladen …');
     try {
       const squad = await fupaApi.kader(fupaOwn.team.slug, f);
-      const names = new Set<string>();
-      for (const g of games) {
-        g.starting?.forEach((p) => names.add(p));
-        g.goals?.forEach((x) => x.own && x.scorer && names.add(x.scorer));
-      }
       for (const n of names) {
-        const p = squad.players.find((x) => foldName(`${x.first_name ?? ''} ${x.last_name ?? ''}`) === foldName(n));
-        if (p?.photo_url) photos[n] = p.photo_url;
+        const p = matchSquadPlayer(squad.players, n);
+        if (p?.photo_url) {
+          photos[n] = p.photo_url;
+          fromFupa++;
+        }
       }
       crest = crest ?? fupaOwn.team.image_url ?? null;
-      sources.push('FuPa: Spielerfotos');
     } catch {
-      /* ohne Fotos weiter */
+      /* weiter mit fussball.de-Bildern */
     }
   }
+  let fromFd = 0;
+  for (const n of names) {
+    if (!photos[n] && fdImages.has(n)) {
+      photos[n] = fdImages.get(n)!;
+      fromFd++;
+    }
+  }
+  if (fromFupa || fromFd) sources.push(`Spielerfotos: ${[fromFupa ? `${fromFupa} FuPa` : '', fromFd ? `${fromFd} fussball.de` : ''].filter(Boolean).join(', ')}`);
 
   return {
     teamId: team.id,
@@ -178,4 +199,29 @@ export function leagueMinutes(games: FdMatchdayGame[], details: Map<string, FdGa
 function pick(rows: FdTableRow[], ownId: string): SeasonTableRow | null {
   const r = rows.find((x) => x.team_id === ownId);
   return r ? row(r) : null;
+}
+
+type SquadName = { first_name: string | null; last_name: string | null };
+
+/**
+ * Spieler aus dem FuPa-Kader zum Namen im Spielbericht finden. fussball.de führt oft alle Vornamen
+ * („Anton Nady Wasef Moawed“), FuPa nur den Rufnamen („Anton Moawed“). Reihenfolge:
+ * voller Name → erster Vorname + Nachname → Nachname, wenn er im Kader nur einmal vorkommt.
+ */
+export function matchSquadPlayer<T extends SquadName>(players: T[], name: string): T | null {
+  const full = (p: SquadName) => foldName(`${p.first_name ?? ''} ${p.last_name ?? ''}`);
+  const target = foldName(name);
+  const exact = players.find((p) => full(p) === target);
+  if (exact) return exact;
+  const parts = target.split(' ').filter(Boolean);
+  if (parts.length < 2) return null;
+  const first = parts[0];
+  const endsWith = (p: SquadName) => {
+    const last = foldName(p.last_name);
+    return Boolean(last) && (target === last || target.endsWith(` ${last}`));
+  };
+  const firstLast = players.filter((p) => endsWith(p) && foldName(p.first_name).split(' ')[0] === first);
+  if (firstLast.length === 1) return firstLast[0];
+  const lastOnly = players.filter(endsWith);
+  return lastOnly.length === 1 ? lastOnly[0] : null;
 }

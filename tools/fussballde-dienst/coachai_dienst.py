@@ -320,6 +320,24 @@ async def coachai_spieltag(staffel: str, n: int):
     return {"staffel_id": staffel, "matchday": n, "games": games}
 
 
+async def _lineup_images(gid: str) -> Dict[str, str]:
+    """Spielerbilder der Aufstellung (Profil-URL → Bildadresse auf cdn.fussball.de). Dieselbe Seite hat der Crawler
+    gerade geladen; sie kommt aus dem Zwischenspeicher, es entsteht kein zusätzlicher Abruf."""
+    url = f"https://www.fussball.de/ajax.match.lineup/-/mode/PAGE/spiel/{gid}"
+    async with _sem:
+        res = await asyncio.to_thread(fetch_url, url)
+    if res is None or res.status_code != 200:
+        return {}
+    out: Dict[str, str] = {}
+    for w in BeautifulSoup(res.text or "", "lxml").select(".player-wrapper"):
+        href = w.get("href") or ""
+        img = w.select_one(".player-image [data-responsive-image]")
+        src = img["data-responsive-image"] if img else ""
+        if "spielerprofil" in href and src.startswith("https://cdn.fussball.de/"):
+            out[href] = src
+    return out
+
+
 @app.get("/api/coachai/spiele/aufstellungen", dependencies=[Depends(get_api_key)], tags=["Coach.AI"])
 async def coachai_aufstellungen(ids: str = Query(..., max_length=900)):
     # Bis zu 17 Spiele: alle Ligaspiele einer Hinrunde (Torminuten für die Auswertung der Spielphasen).
@@ -332,9 +350,16 @@ async def coachai_aufstellungen(ids: str = Query(..., max_length=900)):
             game = await crawler.get_game_by_id(gid)
         dump = lambda o: (o.model_dump(mode="json") if hasattr(o, "model_dump") else o.dict()) if o else None  # noqa: E731
         g = dump(game)
+        lu = dump(lineup)
+        if lu:
+            images = await _lineup_images(gid)
+            for side in ("home", "away"):
+                for group in ("starting", "substitutes"):
+                    for p in (lu.get(side) or {}).get(group) or []:
+                        p["image_url"] = images.get(p.get("profile_url") or "")
         return {
             "game_id": gid,
-            "lineup": dump(lineup),
+            "lineup": lu,
             "events": (g or {}).get("match_events") or [],
             "home_team": (g or {}).get("home_team"),
             "away_team": (g or {}).get("away_team"),

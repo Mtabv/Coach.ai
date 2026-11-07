@@ -81,6 +81,9 @@ export interface FdLineupPlayer {
   number: number | null;
   is_goalkeeper: boolean;
   is_captain: boolean;
+  profile_url?: string | null;
+  /** Spielerbild auf cdn.fussball.de (aus der Aufstellungsseite), falls vorhanden. */
+  image_url?: string | null;
 }
 
 export interface FdTeamLineup {

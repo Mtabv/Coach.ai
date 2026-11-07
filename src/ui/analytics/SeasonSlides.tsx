@@ -207,26 +207,33 @@ function MinutesChart({ r }: { r: SeasonReport }) {
       ))}
       {BIN_LABELS.map((l, i) => {
         const cx = PADL + gw * i + gw / 2;
+        const vals = [r.binsFor[i], r.binsAgainst[i]];
+        const xs = vals.map((_, j) => cx - bw - 1 + j * (bw + 2));
+        const line = r.leagueBins ? sy(r.leagueBins[i]) : null;
+        // Zahl über der Säule; läge sie auf der Ligaschnitt-Linie, rückt sie über die Linie.
+        const labelY = (v: number) => {
+          const ly = sy(v) - 6;
+          return line !== null && line > ly - 15 && line < ly + 5 ? line - 6 : ly;
+        };
         return (
           <g key={l}>
-            {[r.binsFor[i], r.binsAgainst[i]].map((v, j) => {
-              const x = cx - bw - 1 + j * (bw + 2);
-              return (
-                <g key={j}>
-                  {v > 0 && bar(x, v, j === 0 ? C_FOR : C_AGAINST)}
-                  <text x={x + bw / 2} y={sy(v) - 6} className="an-vl" textAnchor="middle">
-                    {v}
-                  </text>
-                  <title>{`${l}: ${v} ${j === 0 ? 'Tore' : 'Gegentore'}`}</title>
-                </g>
-              );
-            })}
-            {r.leagueBins && (
+            {vals.map((v, j) => (
+              <g key={`b${j}`}>
+                {v > 0 && bar(xs[j], v, j === 0 ? C_FOR : C_AGAINST)}
+                <title>{`${l}: ${v} ${j === 0 ? 'Tore' : 'Gegentore'}`}</title>
+              </g>
+            ))}
+            {line !== null && (
               <g>
-                <line x1={cx - bw - 8} x2={cx + bw + 8} y1={sy(r.leagueBins[i])} y2={sy(r.leagueBins[i])} stroke="#14211b" strokeWidth={2} strokeDasharray="5 3" />
-                <title>{`${l}: Ligaschnitt ${r.leagueBins[i].toFixed(1).replace('.', ',')}`}</title>
+                <line x1={cx - bw - 8} x2={cx + bw + 8} y1={line} y2={line} stroke="#14211b" strokeWidth={2} strokeDasharray="5 3" />
+                <title>{`${l}: Ligaschnitt ${r.leagueBins![i].toFixed(1).replace('.', ',')}`}</title>
               </g>
             )}
+            {vals.map((v, j) => (
+              <text key={`t${j}`} x={xs[j] + bw / 2} y={labelY(v)} className="an-vl" textAnchor="middle">
+                {v}
+              </text>
+            ))}
             <text x={cx} y={H - 12} className="an-ax" textAnchor="middle">
               {l}
             </text>
@@ -416,10 +423,17 @@ function OpponentsSlide({ ctx }: { ctx: SeasonCtx }) {
   );
 }
 
+/** Spielerfoto; lädt das Bild nicht (Quelle offline, Bild gelöscht), bleibt der neutrale Kreis. */
+function Photo({ src }: { src?: string }) {
+  const [failed, setFailed] = useState(false);
+  if (!src || failed) return <span className="an-noimg" />;
+  return <img src={src} alt="" referrerPolicy="no-referrer" onError={() => setFailed(true)} />;
+}
+
 function PlayerRow({ name, v, max, photo, suffix }: { name: string; v: number; max: number; photo?: string; suffix?: string }) {
   return (
     <div className="an-pr">
-      {photo ? <img src={photo} alt="" referrerPolicy="no-referrer" /> : <span className="an-noimg" />}
+      <Photo src={photo} />
       <div className="an-pn">{name}</div>
       <div className="an-pb">
         <div style={{ width: `${Math.round((v / Math.max(1, max)) * 100)}%` }} />
