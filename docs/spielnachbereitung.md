@@ -26,4 +26,11 @@ Nicht abgefragt wird, ob die vorab genannten gefährlichen Spieler tatsächlich 
 ## Merkposten
 
 - **Spielerbewertung im Nachbereitungsfragebogen:** Der Trainer bewertet die eigenen Spieler, zum Beispiel mit Schulnoten (1–6) und einer kurzen Begründung.
-  - Noch offen: ob die Noten auf eine Folie gehören oder nur in die Trainerdokumentation (z. B. für die Halbserienanalyse).
+  - Ob die Noten veröffentlicht werden, wird im Fragebogen je Spiel abgefragt.
+    - **Ja:** Die Noten kommen auf eine Folie für die Mannschaft.
+    - **Nein:** Sie bleiben in der Trainerdokumentation, z. B. für die Halbserienanalyse.
+- **Trainingsschwerpunkte aus dem Spiel:**
+  - Coach.AI schlägt Schwerpunkte vor, abgeleitet aus Spielverlauf, Spielphasen-Bewertung und Gegnerbeobachtung. Die Vorschläge sind als Vorschlag gekennzeichnet.
+  - Zusätzlich fragt der Fragebogen die Schwerpunkte des Trainers ausdrücklich ab.
+  - Die Angabe des Trainers hat Vorrang. Vorschläge übernimmt er, ändert sie oder verwirft sie.
+  - Das ist die Brücke zur späteren Trainingsableitung.
