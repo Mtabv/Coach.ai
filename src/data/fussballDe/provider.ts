@@ -45,7 +45,7 @@ export function ownFupaLink(team: TeamProfile): string | null {
 }
 
 /** Mannschaft auf FuPa über Link oder Vereinsnamen finden (Kennung wird von FuPa bestätigt, nicht geraten). */
-async function fupaTeamFor(link: string | null | undefined, names: (string | null | undefined)[], season: string, category: string | null, f?: typeof fetch): Promise<{ team: FupaTeam; via: string } | null> {
+export async function fupaTeamFor(link: string | null | undefined, names: (string | null | undefined)[], season: string, category: string | null, f?: typeof fetch): Promise<{ team: FupaTeam; via: string } | null> {
   const parsed = parseFupaLink(link);
   if (parsed?.team) return { team: await fupaApi.team(parsed.team, f), via: 'FuPa-Link' };
   const art = fupaArt(category);

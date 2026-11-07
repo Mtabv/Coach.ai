@@ -2056,6 +2056,7 @@ select:focus-visible {
 .an-legend { display: flex; gap: 18px; font-size: 13px; align-items: center; font-weight: 600; }
 .an-legend i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
 .an-legend .an-muted { font-weight: 400; font-size: 12px; }
+.an-legend i.an-dash { width: 18px; height: 0; border-top: 2px dashed #14211b; border-radius: 0; vertical-align: 3px; }
 .an-side { flex: 1; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
 .an-insight { font-size: 14.5px; line-height: 1.45; }
 .an-big { font-size: 24px; font-weight: 900; color: var(--green-900); margin-bottom: 4px; }

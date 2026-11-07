@@ -1,10 +1,12 @@
 import { now } from '../domain/factory';
 import type { LocalDate, TeamProfile } from '../domain/types';
-import { fdApi, type FdGameDetail, type FdTableRow } from '../data/fussballDe/api';
-import { berlinDateTime, cleanName, competitionTypeOf, foldName, seasonRange } from '../data/fussballDe/mapping';
-import { ownFupaLink, ownFussballDeTeamId } from '../data/fussballDe/provider';
-import { fupaApi, parseFupaLink } from '../data/fupa/api';
-import type { SeasonData, SeasonGame, SeasonGoal, SeasonTableRow } from './types';
+import { fdApi, type FdGameDetail, type FdMatchdayGame, type FdTableRow } from '../data/fussballDe/api';
+import { berlinDateTime, categoryOf, cleanName, competitionTypeOf, foldName, seasonRange } from '../data/fussballDe/mapping';
+import { fupaTeamFor, ownFupaLink, ownFussballDeTeamId } from '../data/fussballDe/provider';
+import { fupaSeason } from '../data/fupa/mapping';
+import { fupaApi } from '../data/fupa/api';
+import { binOf } from './report';
+import type { LeagueMinutes, SeasonData, SeasonGame, SeasonGoal, SeasonTableRow } from './types';
 
 /** Der Dienst liefert höchstens 17 Spielberichte je Abruf. */
 const CHUNK = 17;
@@ -37,7 +39,7 @@ export function goalsFromDetail(detail: FdGameDetail | undefined, side: 'home' |
  * Lädt alle Ligaspiele der laufenden Saison bis gestern samt Spielberichten (fussball.de) und die Spielerfotos (FuPa).
  * Nur auf Klick; Ergebnis wird gespeichert, damit der Report ohne erneuten Abruf angezeigt werden kann.
  */
-export async function loadSeasonData(team: TeamProfile, today: LocalDate, progress: (msg: string) => void = () => {}, f?: typeof fetch): Promise<SeasonData> {
+export async function loadSeasonData(team: TeamProfile, today: LocalDate, progress: (msg: string) => void = () => {}, f?: typeof fetch, withLeague = true): Promise<SeasonData> {
   const ownId = ownFussballDeTeamId(team);
   if (!ownId) throw new Error('Im Mannschaftsprofil fehlt der Link zur Mannschaftsseite auf fussball.de.');
   progress('Tabelle wird geladen …');
@@ -54,10 +56,25 @@ export async function loadSeasonData(team: TeamProfile, today: LocalDate, progre
   });
 
   const details = new Map<string, FdGameDetail>();
-  for (let i = 0; i < played.length; i += CHUNK) {
-    progress(`Spielberichte ${i + 1}–${Math.min(i + CHUNK, played.length)} von ${played.length} werden geladen …`);
-    const part = await fdApi.aufstellungen(played.slice(i, i + CHUNK).map((g) => g.id), f);
-    for (const d of part) details.set(d.game_id, d);
+  const fetchDetails = async (ids: string[], label: string) => {
+    for (let i = 0; i < ids.length; i += CHUNK) {
+      progress(`${label} ${i + 1}–${Math.min(i + CHUNK, ids.length)} von ${ids.length} werden geladen …`);
+      const part = await fdApi.aufstellungen(ids.slice(i, i + CHUNK), f);
+      for (const d of part) details.set(d.game_id, d);
+    }
+  };
+  await fetchDetails(played.map((g) => g.id), 'Spielberichte');
+
+  // Ligavergleich: Spielberichte aller Ligaspiele der Staffel (beim ersten Abruf einige Minuten, danach im Zwischenspeicher des Dienstes).
+  let league: LeagueMinutes | null = null;
+  if (withLeague && liga.staffel_id) {
+    try {
+      const all = await leagueGames(liga.staffel_id, today, progress, f);
+      await fetchDetails(all.filter((g) => !details.has(g.game_id!)).map((g) => g.game_id!), 'Spielberichte der Liga');
+      league = leagueMinutes(all, details);
+    } catch {
+      league = null;
+    }
   }
 
   const games: SeasonGame[] = played.map((g) => {
@@ -84,11 +101,14 @@ export async function loadSeasonData(team: TeamProfile, today: LocalDate, progre
   const photos: Record<string, string> = {};
   let crest: string | null = team.crest ?? null;
   const sources = [`fussball.de: Tabelle und ${played.length} Spielberichte der Saison ${team.season || ''}`.trim()];
-  const fupaSlug = parseFupaLink(ownFupaLink(team))?.team;
-  if (fupaSlug) {
+  if (league) sources.push(`Ligavergleich: ${league.withGoals} von ${league.games} Ligaspielen mit vollständigen Torminuten`);
+  else if (withLeague) sources.push('Ligavergleich nicht verfügbar');
+  // FuPa-Mannschaft über den Link im Profil oder – wie beim Dossier – über den Vereinsnamen (von FuPa bestätigt, nicht geraten).
+  const fupaOwn = await fupaTeamFor(ownFupaLink(team), [team.name, ownName], fupaSeason(today), categoryOf(liga.staffel_name), f).catch(() => null);
+  if (fupaOwn) {
     progress('Spielerfotos von FuPa werden geladen …');
     try {
-      const [squad, fteam] = await Promise.all([fupaApi.kader(fupaSlug, f), crest ? Promise.resolve(null) : fupaApi.team(fupaSlug, f).catch(() => null)]);
+      const squad = await fupaApi.kader(fupaOwn.team.slug, f);
       const names = new Set<string>();
       for (const g of games) {
         g.starting?.forEach((p) => names.add(p));
@@ -98,7 +118,7 @@ export async function loadSeasonData(team: TeamProfile, today: LocalDate, progre
         const p = squad.players.find((x) => foldName(`${x.first_name ?? ''} ${x.last_name ?? ''}`) === foldName(n));
         if (p?.photo_url) photos[n] = p.photo_url;
       }
-      crest = crest ?? fteam?.image_url ?? null;
+      crest = crest ?? fupaOwn.team.image_url ?? null;
       sources.push('FuPa: Spielerfotos');
     } catch {
       /* ohne Fotos weiter */
@@ -119,7 +139,40 @@ export async function loadSeasonData(team: TeamProfile, today: LocalDate, progre
     photos,
     crest,
     sources,
+    league,
   };
+}
+
+const isScore = (v: string | null) => /^\d+$/.test(String(v ?? ''));
+
+/** Alle gespielten Partien der Staffel über die Spieltage (Nachholspiele erscheinen mehrfach – einmal gezählt). */
+async function leagueGames(staffel: string, today: LocalDate, progress: (msg: string) => void, f?: typeof fetch): Promise<FdMatchdayGame[]> {
+  const byId = new Map<string, FdMatchdayGame>();
+  let empty = 0;
+  for (let n = 1; n <= 40; n++) {
+    progress(`Spieltage der Liga werden gelesen (${n}) …`);
+    const md = await fdApi.spieltag(staffel, n, f).catch(() => null);
+    if (!md || !md.games.length) break;
+    const played = md.games.filter((g) => g.game_id && isScore(g.home_score) && isScore(g.away_score) && (berlinDateTime(g.datetime_utc)?.date ?? '') < today);
+    for (const g of played) byId.set(g.game_id!, g);
+    // Nach zwei Spieltagen ohne Ergebnis ist die laufende Saison durchgelesen (eine Winterpause überspringt das nicht).
+    empty = played.length ? 0 : empty + 1;
+    if (empty >= 2) break;
+  }
+  return [...byId.values()];
+}
+
+/** Torminuten der Liga; nur Spiele, deren Spielbericht genau so viele Tore enthält wie das Ergebnis. */
+export function leagueMinutes(games: FdMatchdayGame[], details: Map<string, FdGameDetail>): LeagueMinutes {
+  const bins = [0, 0, 0, 0, 0, 0];
+  let withGoals = 0;
+  for (const g of games) {
+    const goals = goalsFromDetail(details.get(g.game_id!), 'home', Number(g.home_score) + Number(g.away_score));
+    if (!goals) continue;
+    withGoals++;
+    for (const x of goals) bins[binOf(x.minute, x.half)]++;
+  }
+  return { games: games.length, withGoals, bins };
 }
 
 function pick(rows: FdTableRow[], ownId: string): SeasonTableRow | null {

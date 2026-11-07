@@ -182,7 +182,7 @@ function OverviewSlide({ ctx }: { ctx: SeasonCtx }) {
 
 function MinutesChart({ r }: { r: SeasonReport }) {
   const W = 760, H = 330, PADL = 34, PADB = 34, TOP = 16, bw = 30;
-  const mx = Math.max(1, ...r.binsFor, ...r.binsAgainst);
+  const mx = Math.max(1, ...r.binsFor, ...r.binsAgainst, ...(r.leagueBins ?? []));
   const step = mx > 12 ? 5 : mx > 6 ? 4 : 2;
   const ymax = (Math.floor(mx / step) + 1) * step;
   const gw = (W - PADL) / 6;
@@ -221,6 +221,12 @@ function MinutesChart({ r }: { r: SeasonReport }) {
                 </g>
               );
             })}
+            {r.leagueBins && (
+              <g>
+                <line x1={cx - bw - 8} x2={cx + bw + 8} y1={sy(r.leagueBins[i])} y2={sy(r.leagueBins[i])} stroke="#14211b" strokeWidth={2} strokeDasharray="5 3" />
+                <title>{`${l}: Ligaschnitt ${r.leagueBins[i].toFixed(1).replace('.', ',')}`}</title>
+              </g>
+            )}
             <text x={cx} y={H - 12} className="an-ax" textAnchor="middle">
               {l}
             </text>
@@ -241,7 +247,10 @@ function MinutesSlide({ ctx }: { ctx: SeasonCtx }) {
   const ga = r.binsAgainst.reduce((s, v) => s + v, 0);
   const gf = r.binsFor.reduce((s, v) => s + v, 0);
   const lateFor = r.binsFor[4] + r.binsFor[5];
-  const even = ga > 0 && r.binsAgainst[5] / ga < 0.25;
+  const lateShareLeague = r.leagueShares ? r.leagueShares[5] : null;
+  const expectedLate = ga * (lateShareLeague ?? 1 / 6);
+  const even = ga > 0 && !(r.binsAgainst[5] >= expectedLate * 1.4 && r.binsAgainst[5] - expectedLate >= 3);
+  const pct = (v: number) => `${Math.round(v * 100)} %`;
   return (
     <Frame ctx={ctx} n={2} title="Wann fallen die Tore?" foot={`${srcFoot(ctx)} · nur Spiele mit vollständigem Spielbericht`} bodyClass="an-row">
       <div className="s-box an-chartbox">
@@ -254,7 +263,15 @@ function MinutesSlide({ ctx }: { ctx: SeasonCtx }) {
             <i style={{ background: C_AGAINST }} />
             Gegentore ({ga})
           </span>
-          <span className="an-muted">je 15 Minuten, Nachspielzeit zum Abschnitt davor · {r.withGoals} Spiele</span>
+          {r.leagueBins && (
+            <span>
+              <i className="an-dash" />
+              Ligaschnitt
+            </span>
+          )}
+          <span className="an-muted">
+            je 15 Minuten · {r.withGoals} Spiele{r.leagueBins ? ` · Ligaschnitt: Tore einer Mannschaft in ${r.withGoals} Spielen, aus ${r.leagueGamesWithGoals} Ligaspielen` : ''}
+          </span>
         </div>
         <MinutesChart r={r} />
       </div>
@@ -264,8 +281,9 @@ function MinutesSlide({ ctx }: { ctx: SeasonCtx }) {
           <div className="an-big">{ga === 0 ? 'keine' : even ? 'gleichmäßig verteilt' : 'Häufung am Ende'}</div>
           {ga > 0 && (
             <div>
-              Zwischen {Math.min(...r.binsAgainst)} und {Math.max(...r.binsAgainst)} Gegentore je Viertelstunde, in der Schlussphase {r.binsAgainst[5]} von {ga}.{' '}
-              {even ? 'Ein „Einbruch am Ende“ zeigt sich nicht.' : 'Mehr als ein Viertel fällt ab der 76. Minute.'}
+              In der Schlussphase {r.binsAgainst[5]} von {ga} Gegentoren ({pct(r.binsAgainst[5] / ga)})
+              {lateShareLeague !== null ? `, in der Liga fallen ${pct(lateShareLeague)} aller Tore ab der 76. Minute.` : '.'}{' '}
+              {even ? 'Ein „Einbruch am Ende“ zeigt sich nicht.' : 'Deutlich mehr als zu erwarten.'}
             </div>
           )}
         </div>

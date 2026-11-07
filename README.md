@@ -37,7 +37,7 @@ npm run e2e          # End-to-End mit Playwright, Vorschau muss laufen (BASE_URL
 - **Daten:** alle bisherigen Ligaspiele mit Spielbericht (fussball.de) und Spielerfotos (FuPa). Sie werden im Browser gespeichert und erst beim Anzeigen ausgewertet.
 - **Sieben Seiten:**
   - Saison in Zahlen
-  - Torminuten je Viertelstunde
+  - Torminuten je Viertelstunde, mit Ligaschnitt aus allen Spielberichten der Staffel
   - Halbzeit und Endstand, erstes Tor
   - Gegner nach Tabellenhälfte
   - Torschützen und Startelf

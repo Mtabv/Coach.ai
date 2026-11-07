@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { goalsFromDetail } from './fetch';
+import { goalsFromDetail, leagueMinutes } from './fetch';
 import { binOf, buildSeasonReport } from './report';
 import type { SeasonData, SeasonGame, SeasonGoal } from './types';
 
@@ -81,5 +81,26 @@ describe('Spielbericht', () => {
     ]);
     expect(goalsFromDetail(detail, 'away', 3)).toBeNull();
     expect(goalsFromDetail(undefined, 'home', 0)).toBeNull();
+  });
+});
+
+describe('Ligavergleich', () => {
+  it('rechnet den Ligaschnitt auf die eigenen Spiele um und misst die Schlussphase daran', () => {
+    // Liga: 40 Spiele, je 2 Tore, die Hälfte aller Tore ab der 76. Minute
+    const league = { games: 40, withGoals: 40, bins: [8, 8, 8, 8, 8, 40] };
+    const games = Array.from({ length: 8 }, (_, i) => g(`z${i}`, `2026-09-${String(i + 10)}`, (i % 7) + 1, 0, 2, [goal(80, false), goal(20 + i, false)]));
+    const r = buildSeasonReport({ ...data(games), league });
+    // Tore einer Mannschaft pro Spiel in 76–90: 40 / 80 = 0,5 → × 8 Spiele = 4
+    expect(r.leagueBins![5]).toBeCloseTo(4);
+    // 8 von 16 Gegentoren am Ende entsprechen genau dem Ligaschnitt (50 %) → kein Muster
+    expect(r.hints.find((h) => h.id === 'schlussphase')?.title).toMatch(/Kein Fitness-Muster/);
+    expect(r.hints.find((h) => h.id === 'schlussphase')?.text).toMatch(/Ligaschnitt/);
+  });
+
+  it('zählt Liga-Torminuten nur aus vollständigen Spielberichten', () => {
+    const md = (id: string, h: string, a: string) => ({ game_id: id, datetime_utc: '2026-09-01T13:00:00Z', home_team: 'A', home_team_id: null, away_team: 'B', away_team_id: null, home_score: h, away_score: a, note: null });
+    const det = (id: string, mins: number[]) => ({ game_id: id, home_team: 'A', away_team: 'B', lineup: null, events: mins.map((m) => ({ time: `${m}’`, type: 'goal', team: 'home' as const, description: 'X', half: m > 45 ? 2 : 1 })) });
+    const res = leagueMinutes([md('1', '2', '0'), md('2', '1', '0')], new Map([['1', det('1', [10, 80])], ['2', det('2', [])]]));
+    expect(res).toEqual({ games: 2, withGoals: 1, bins: [1, 0, 0, 0, 0, 1] });
   });
 });

@@ -22,6 +22,17 @@ export interface SeasonData {
   photos: Record<string, string>;
   crest: string | null;
   sources: string[];
+  /** Torminuten der ganzen Liga (alle Spielberichte der Staffel) für den Ligavergleich; fehlt, wenn nicht geladen. */
+  league?: LeagueMinutes | null;
+}
+
+export interface LeagueMinutes {
+  /** Gespielte Ligaspiele der Staffel bis zum Stichtag. */
+  games: number;
+  /** Davon mit vollständigen Torminuten. */
+  withGoals: number;
+  /** Alle Tore dieser Spiele je Viertelstunde (wie SeasonReport.binsFor). */
+  bins: number[];
 }
 
 export interface SeasonTableRow {

@@ -14,6 +14,8 @@ export const BIN_LABELS = ["1–15'", "16–30'", "31–45'+", "46–60'", "61�
 export const MIN_GAMES_PATTERN = 8;
 /** Mindestens so viele Spiele je Gruppe für Vergleiche (Tabellenhälften, Halbzeitstand). */
 export const MIN_GAMES_GROUP = 3;
+/** Ligavergleich der Torminuten erst ab so vielen Ligaspielen mit vollständigem Spielbericht. */
+export const MIN_LEAGUE_GAMES = 20;
 
 export interface ReportGame extends SeasonGame {
   res: Res;
@@ -44,6 +46,14 @@ export interface SeasonReport {
   withGoals: number;
   binsFor: number[];
   binsAgainst: number[];
+  /**
+   * Ligaschnitt je Viertelstunde, umgerechnet auf unsere Spiele mit Torminuten: Tore einer Mannschaft pro Spiel
+   * in der Liga × unsere Spielzahl. Gilt für Tore und Gegentore gleichermaßen. null ohne Ligavergleich.
+   */
+  leagueBins: number[] | null;
+  /** Anteil der Liga-Tore je Viertelstunde (Summe 1). */
+  leagueShares: number[] | null;
+  leagueGamesWithGoals: number;
   halves: { first: [number, number]; second: [number, number] } | null;
   halfMatrix: Record<HalfState, Record<Res, number>>;
   lostLeads: ReportGame[];
@@ -109,6 +119,11 @@ export function buildSeasonReport(data: SeasonData): SeasonReport {
   for (const g of withGoalsGames) for (const x of g.goals!) (x.own ? binsFor : binsAgainst)[binOf(x.minute, x.half)]++;
 
   // Halbzeit → Endstand
+  const lg = data.league && data.league.withGoals >= MIN_LEAGUE_GAMES ? data.league : null;
+  const lgTotal = lg ? lg.bins.reduce((a, b) => a + b, 0) : 0;
+  const leagueShares = lg && lgTotal ? lg.bins.map((v) => v / lgTotal) : null;
+  const leagueBins = lg && lgTotal ? lg.bins.map((v) => (v / (2 * lg.withGoals)) * withGoalsGames.length) : null;
+
   const halfMatrix: Record<HalfState, Record<Res, number>> = { Führung: emptyRes(), Remis: emptyRes(), Rückstand: emptyRes() };
   const htGames = games.filter((g) => g.halftime);
   for (const g of htGames) halfMatrix[halfState(...g.halftime!)][g.res]++;
@@ -159,7 +174,7 @@ export function buildSeasonReport(data: SeasonData): SeasonReport {
   const ownRow = data.table.find((r) => r.team === data.ownName) ?? null;
   const report: SeasonReport = {
     ownRow, teamsInLeague, games, n, points, record, goalsFor, goalsAgainst, leagueGoalsPerGame,
-    withGoals: withGoalsGames.length, binsFor, binsAgainst, halves, halfMatrix, lostLeads, firstGoal,
+    withGoals: withGoalsGames.length, binsFor, binsAgainst, leagueBins, leagueShares, leagueGamesWithGoals: lg?.withGoals ?? 0, halves, halfMatrix, lostLeads, firstGoal,
     vsTop, vsBottom, topCut, scorers, jokerGoals, starters, withLineup: lineupGames.length, avgChanges, hints: [],
   };
   report.hints = hintsFor(report);
@@ -189,21 +204,23 @@ export function hintsFor(r: SeasonReport): Hint[] {
   if (r.withGoals >= MIN_GAMES_PATTERN && r.goalsAgainst >= 12) {
     const total = r.binsAgainst.reduce((s, v) => s + v, 0);
     const late = r.binsAgainst[5];
-    const lateShare = total ? late / total : 0;
     const lateFor = r.binsFor[4] + r.binsFor[5];
-    if (lateShare >= 0.25) {
+    // Erwartung: Verteilung der Liga, ohne Ligavergleich Gleichverteilung.
+    const expected = r.leagueShares ? total * r.leagueShares[5] : total / 6;
+    const basis = r.leagueShares ? `im Ligaschnitt wären es etwa ${Math.round(expected)}` : `gleichmäßig wären es etwa ${Math.round(expected)}`;
+    if (late >= expected * 1.4 && late - expected >= 3) {
       out.push({
         id: 'schlussphase',
         title: 'Gegentore häufen sich in der Schlussphase.',
-        text: `${late} von ${total} Gegentoren fallen ab der 76. Minute (gleichmäßig wären etwa ${Math.round(total / 6)}). Frage an den Trainer: Fitness, Wechsel oder Konzentration? Ein Schwerpunkt Fitness wäre hier begründbar.`,
+        text: `${late} von ${total} Gegentoren fallen ab der 76. Minute, ${basis}. Frage an den Trainer: Fitness, Wechsel oder Konzentration? Ein Schwerpunkt Fitness wäre hier begründbar.`,
       });
     } else {
       out.push({
         id: 'schlussphase',
         title: 'Kein Fitness-Muster bei den Gegentoren.',
         text:
-          `Die Gegentore verteilen sich über 90 Minuten (${Math.min(...r.binsAgainst)} bis ${Math.max(...r.binsAgainst)} je Viertelstunde)` +
-          (r.goalsFor ? `, unsere eigenen Tore fallen eher spät (${lateFor} von ${r.goalsFor} nach der 60.).` : '.') +
+          `In der Schlussphase ${late} von ${total} Gegentoren, ${basis}` +
+          (r.goalsFor ? `; unsere eigenen Tore fallen eher spät (${lateFor} von ${r.goalsFor} nach der 60.).` : '.') +
           (r.leagueGoalsPerGame && r.n ? ` Ein Schwerpunkt Fitness lässt sich daraus nicht begründen – eher die Defensive insgesamt (${fmt(r.goalsAgainst / r.n)} Gegentore pro Spiel, Ligaschnitt ${fmt(r.leagueGoalsPerGame)}).` : ''),
       });
     }

@@ -82,7 +82,7 @@ export function AnalyticsPage() {
             Stand {formatTimestamp(data.fetchedAt)} · {report.n} Ligaspiele{report.n ? ` bis ${report.games[report.n - 1].date.split('-').reverse().join('.')}` : ''} · {report.withGoals} mit vollständigen Torminuten, {report.withLineup} mit Aufstellung · {data.sources.join(' · ')}
           </p>
         ) : (
-          !busy && <p className="muted">Noch nicht geladen. Der Abruf dauert je nach Zahl der Spiele bis zu einer Minute und wird danach im Browser gespeichert.</p>
+          !busy && <p className="muted">Noch nicht geladen. Für den Ligavergleich werden alle Spielberichte der Liga gelesen: beim ersten Mal einige Minuten, danach deutlich schneller. Das Ergebnis wird im Browser gespeichert.</p>
         )}
       </Card>
 
