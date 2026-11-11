@@ -1,8 +1,8 @@
 /**
  * Antwortformate des selbst betriebenen Dienstes: Crawler „fussball_de_api“
- * (https://github.com/Zetabytes/fussball_de_api, MIT) plus Coach.AI-Erweiterung
+ * (https://github.com/Zetabytes/fussball_de_api, MIT) plus 11Plan-Erweiterung
  * (tools/fussballde-dienst/coachai_dienst.py). Inoffiziell: liest öffentliche Seiten von fussball.de aus.
- * Nur Felder, die Coach.AI verwendet.
+ * Nur Felder, die 11Plan verwendet.
  */
 
 /** Echte Begegnung: Datum vorhanden, beide Mannschaften benannt, kein „spielfrei“. */
@@ -17,7 +17,7 @@ export interface FdGame {
   age_group?: string | null;
   home_team: string;
   away_team: string;
-  /** Team-IDs (nur über die Coach.AI-Erweiterung, über Saisons hinweg stabil). */
+  /** Team-IDs (nur über die 11Plan-Erweiterung, über Saisons hinweg stabil). */
   home_team_id?: string | null;
   away_team_id?: string | null;
   /** Hinweis statt Ergebnis, z. B. „Ausfall“ oder neues Datum bei Verlegung. */
@@ -138,7 +138,7 @@ export async function getJson<T>(path: string, fetchImpl: typeof fetch = fetch):
     throw new FdUnavailableError(`Lokaler fussball.de-Dienst nicht erreichbar oder fussball.de antwortet nicht (HTTP ${res.status}).`);
   }
   if (res.status === 404) {
-    throw new FdUnavailableError('Lokaler fussball.de-Dienst ohne Coach.AI-Erweiterung gestartet (HTTP 404). Bitte wie in docs/fussballde-anbindung.md mit „coachai_dienst:app“ starten.');
+    throw new FdUnavailableError('Lokaler fussball.de-Dienst ohne 11Plan-Erweiterung gestartet (HTTP 404). Bitte wie in docs/fussballde-anbindung.md mit „coachai_dienst:app“ starten.');
   }
   if (res.status === 401) throw new FdUnavailableError('Lokaler fussball.de-Dienst lehnt den Schlüssel ab (HTTP 401). Bitte COACHAI_FUSSBALLDE_KEY prüfen.');
   if (!res.ok) throw new Error(`fussball.de-Dienst: HTTP ${res.status}`);

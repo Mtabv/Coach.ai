@@ -33,7 +33,7 @@ function Shell({ sitzung }: { sitzung: Sitzung | null }) {
         </div>
       )}
       <header className="topbar">
-        <a className="brand" href={href({ name: 'start' })} aria-label="Coach.AI Startseite">
+        <a className="brand" href={href({ name: 'start' })} aria-label="11Plan Startseite">
           <span className="brand-mark" aria-hidden>
             <svg viewBox="0 0 32 32" width="28" height="28">
               <circle cx="16" cy="16" r="10" fill="none" stroke="currentColor" strokeWidth="3" />
@@ -41,7 +41,7 @@ function Shell({ sitzung }: { sitzung: Sitzung | null }) {
             </svg>
           </span>
           <span>
-            Coach<span className="brand-dot">.AI</span>
+            11<span className="brand-dot">Plan</span>
           </span>
         </a>
         <nav className="mainnav" aria-label="Hauptnavigation">
@@ -92,7 +92,7 @@ function Shell({ sitzung }: { sitzung: Sitzung | null }) {
         {route.name === 'archivDossier' && <ArchiveDossierPage dossierId={route.dossierId} />}
       </main>
       <footer className="footer">
-        <span>{sitzung ? 'Coach.AI · Trainerteam · gemeinsamer Stand auf dem eigenen Server' : 'Coach.AI · Vorschau 0.1 · Daten bleiben in diesem Browser'}</span>
+        <span>{sitzung ? '11Plan · Trainerteam · gemeinsamer Stand auf dem eigenen Server' : '11Plan · Vorschau 0.1 · Daten bleiben in diesem Browser'}</span>
         {!sitzung && <ConfirmAction
           className="link-btn"
           label="Vorschau vollständig zurücksetzen"

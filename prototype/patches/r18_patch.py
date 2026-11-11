@@ -5,7 +5,7 @@ def rep(a, b, count=1):
     assert a in s, a[:110]
     s = s.replace(a, b) if count == 0 else s.replace(a, b, count)
 
-rep("/** Nachrichten von Coach.AI: zuerst nächste Schritte", r"""/** Rolle eines Spielers je Pflichtspiel: S Startelf, E eingewechselt, B Bank ohne Einsatz, - nicht im Kader. */
+rep("/** Nachrichten von 11Plan: zuerst nächste Schritte", r"""/** Rolle eines Spielers je Pflichtspiel: S Startelf, E eingewechselt, B Bank ohne Einsatz, - nicht im Kader. */
 function roleSeq(p) {
   return REAL.games.filter(g=>g.res && g.kind!=='test' && REAL.lineups[g.id]).map(g => { const lu = REAL.lineups[g.id];
     if (lu.xi.some(n=>findPlayer(n)===p)) return 'S';
@@ -46,11 +46,11 @@ function talkNews() {
   }
   return out.sort((a,b)=>b.prio-a.prio).slice(0, 5).map(m => ({...m, href:'#analytics', attrs:`data-anaplayer="${m.p.id}"`, icon: av(m.p)}));
 }
-/** Nachrichten von Coach.AI: zuerst nächste Schritte""")
+/** Nachrichten von 11Plan: zuerst nächste Schritte""")
 rep("  // Spielvorbereitung und Nachbereitung stehen schon oben im Kasten „Spiel“ und werden hier nicht wiederholt.\n",
     "  // Spielvorbereitung und Nachbereitung stehen schon oben im Kasten „Spiel“ und werden hier nicht wiederholt.\n  n.push(...talkNews());\n")
 rep("`<b class=\"lbl ${m.kind==='Nächster Schritt'?'nba':''}\">${m.kind}</b> ${m.sub}`", "`<b class=\"lbl k-${m.kind==='Nächster Schritt'?'nba':m.kind==='Gespräch'?'talk':m.kind==='Lob'?'praise':'hl'}\">${m.kind==='Gespräch'?'Gesprächsimpuls':m.kind}</b> ${m.sub}`")
-rep("<section class=\"card\"><h3>Nachrichten von Coach.AI</h3>", "<section class=\"card\"><div class=\"row between\"><h3>Nachrichten von Coach.AI</h3><span class=\"note\">Gesprächsimpulse und Lob zuerst, dann Highlights aus den Zahlen</span></div>")
+rep("<section class=\"card\"><h3>Nachrichten von 11Plan</h3>", "<section class=\"card\"><div class=\"row between\"><h3>Nachrichten von 11Plan</h3><span class=\"note\">Gesprächsimpulse und Lob zuerst, dann Highlights aus den Zahlen</span></div>")
 rep("/* ---- Masken ---- */", """/* ---- Gesprächsimpulse ---- */
 .lbl.k-talk { color: var(--warn); } .lbl.k-praise { color: var(--accent); } .lbl.k-hl { color: var(--muted); }
 .dlink.msg .dl-ic .av { width: 34px; height: 34px; }

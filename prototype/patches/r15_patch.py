@@ -64,7 +64,7 @@ function vDashboard() {
       ${dlink('#einstellungen', 'Trainingsdauer prüfen', 'angenommen: 90 Minuten', 'data-settab="training"', I.clock)}
       ${dlink('#spielersicht', 'Spieler-Links verschicken', 'damit Zu- und Absagen hier ankommen', '', I.link)}</section>
   </div>
-  <section class="card"><h3>Nachrichten von Coach.AI</h3>
+  <section class="card"><h3>Nachrichten von 11Plan</h3>
     <div class="msgs">
       ${dlink('#analytics', 'Saison-Zwischenbilanz nach 16 Spieltagen ist bereit', 'Tore, Gegentore je Viertelstunde, Spieler, Tabelle', '', I.chart, 'msg')}
       ${dlink('#spiel-nachbereitung', `Spielbericht geladen: ${esc(lp ? gameTitle(lp)+' '+lp.res : '')}`, `${lp?fmt(lp.date):''} · ${lp?(REAL.timeline[lp.id]||[]).length:0} Tore, ${lp?((REAL.lineups[lp.id]||{}).subs||[]).length:0} Wechsel. Nachbereitung starten?`, lp?`data-setpost="${lp.id}"`:'', I.doc, 'msg')}

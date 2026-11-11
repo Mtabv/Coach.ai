@@ -19,10 +19,10 @@ for old, new in [
 # Dashboard: Spiel und Training oben, dann Kommunikation und Erkenntnisse, dann Schnelleinstieg und Administratives
 i = s.index("function vDashboard() {"); j = s.index("\n}\n", i)
 d = s[i:j]
-a = d.index('    <section class="card dbox"><h3>Schnelleinstieg</h3>'); b = d.index('  </div>\n  <section class="card"><div class="row between"><h3>Nachrichten von Coach.AI')
+a = d.index('    <section class="card dbox"><h3>Schnelleinstieg</h3>'); b = d.index('  </div>\n  <section class="card"><div class="row between"><h3>Nachrichten von 11Plan')
 quick = d[a:b]
 d = d[:a] + d[b:]
-m1 = d.index('  <section class="card"><div class="row between"><h3>Nachrichten von Coach.AI'); m2 = d.index('  <section class="card"><div class="row between"><h3>Trainerteam</h3>')
+m1 = d.index('  <section class="card"><div class="row between"><h3>Nachrichten von 11Plan'); m2 = d.index('  <section class="card"><div class="row between"><h3>Trainerteam</h3>')
 msgs = r"""  <div class="dgrid two">
   <section class="card"><div class="row between"><h3>Kommunikation</h3><a class="note" href="#kommunikation" data-komtab="uebersicht">Kommunikation öffnen ›</a></div>
     <p class="sub" style="margin:0">Gesprächsimpulse und Lob für einzelne Spieler</p>

@@ -76,7 +76,7 @@ export function createHandler(db: Db, cfg: Config) {
       return send(res, 200, { eingerichtet: countUsers(db) > 0, nutzer: u ? publicUser(u) : null });
     }
     if (path === '/api/einrichten' && m === 'POST') {
-      if (countUsers(db) > 0) throw new HttpError(409, 'Coach.AI ist bereits eingerichtet.');
+      if (countUsers(db) > 0) throw new HttpError(409, '11Plan ist bereits eingerichtet.');
       const b = await readJson(req);
       if (!cfg.setupToken || b.einrichtungsschluessel !== cfg.setupToken) throw new HttpError(403, 'Der Einrichtungsschlüssel stimmt nicht.');
       const pwErr = checkPasswordRules(b.passwort); if (pwErr) throw new HttpError(400, pwErr);

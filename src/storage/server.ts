@@ -1,7 +1,7 @@
 import type { AppState } from '../domain/types';
 
 /**
- * Anbindung an den Coach.AI-Server (Version 1: Trainerteam). Läuft die App ohne Server
+ * Anbindung an den 11Plan-Server (Version 1: Trainerteam). Läuft die App ohne Server
  * (lokale Entwicklung, Vorschau als Artefakt), bleibt alles wie bisher im Browser.
  */
 export interface SessionUser { id: number; name: string; email: string; role: 'trainer' | 'co-trainer' }

@@ -74,7 +74,7 @@ rep("  else if (d.more) {", r"""  else if (d.komtab) { state.komTab = d.komtab; 
 # Link aus dem Kader und Dashboard
 rep("<a class=\"btn ghost\" href=\"#gespraeche\">Spielergespräche</a>", "<a class=\"btn ghost\" href=\"#kommunikation\" data-komtab=\"gespraeche\">Spielergespräche</a>")
 rep("<section class=\"card\"><h3>Trainerteam</h3>", "<section class=\"card\"><div class=\"row between\"><h3>Trainerteam</h3><a class=\"note\" href=\"#kommunikation\" data-komtab=\"trainerteam\">alle in Kommunikation ›</a></div>")
-rep("<section class=\"card\"><div class=\"row between\"><h3>Nachrichten von Coach.AI</h3>", "<section class=\"card\"><div class=\"row between\"><h3>Nachrichten von Coach.AI <a class=\"note\" href=\"#kommunikation\" data-komtab=\"uebersicht\" style=\"font-family:var(--body);font-size:14px;font-weight:400\">Kommunikation öffnen ›</a></h3>")
+rep("<section class=\"card\"><div class=\"row between\"><h3>Nachrichten von 11Plan</h3>", "<section class=\"card\"><div class=\"row between\"><h3>Nachrichten von 11Plan <a class=\"note\" href=\"#kommunikation\" data-komtab=\"uebersicht\" style=\"font-family:var(--body);font-size:14px;font-weight:400\">Kommunikation öffnen ›</a></h3>")
 rep("/* ---- Masken ---- */", """/* ---- Kommunikation ---- */
 .komgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 16px; align-items: start; }
 .komgrid .card { gap: 8px; }

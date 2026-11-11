@@ -1,7 +1,7 @@
 """
-Coach.AI-Erweiterung für den Crawler „fussball_de_api“ (https://github.com/Zetabytes/fussball_de_api, MIT).
+11Plan-Erweiterung für den Crawler „fussball_de_api“ (https://github.com/Zetabytes/fussball_de_api, MIT).
 
-Startet die Crawler-App und ergänzt Endpunkte unter /api/coachai/…, die Coach.AI für ein vollständiges
+Startet die Crawler-App und ergänzt Endpunkte unter /api/coachai/…, die 11Plan für ein vollständiges
 Datenbild braucht:
 
   GET /api/coachai/team/{team_id}/liga             Tabelle mit Team-IDs, Heim-/Auswärtstabelle,
@@ -40,7 +40,7 @@ BERLIN = ZoneInfo("Europe/Berlin")
 UTC = ZoneInfo("UTC")
 ID_RE = re.compile(r"^[A-Za-z0-9-]{16,48}$")
 
-# Logos nicht herunterladen: Coach.AI nutzt sie (noch) nicht, und jeder Download kostet einen Abruf.
+# Logos nicht herunterladen: 11Plan nutzt sie (noch) nicht, und jeder Download kostet einen Abruf.
 crawler.download_and_rewrite_logo = lambda url: url  # type: ignore[assignment]
 
 # Höflich bleiben: höchstens drei gleichzeitige Seitenabrufe aus dieser Erweiterung.
@@ -117,7 +117,7 @@ def _deduction_note(soup: BeautifulSoup) -> Optional[str]:
     return text or None
 
 
-@app.get("/api/coachai/team/{team_id}/liga", dependencies=[Depends(get_api_key)], tags=["Coach.AI"])
+@app.get("/api/coachai/team/{team_id}/liga", dependencies=[Depends(get_api_key)], tags=["11Plan"])
 async def coachai_liga(team_id: str):
     _check_id(team_id)
     html = await _get(f"{BASE}/ajax.team.table/-/team-id/{team_id}", settings.CACHE_TTL_TABLE)
@@ -206,7 +206,7 @@ def _parse_score(text: str):
     return None, None, (t or None) if rest else None
 
 
-@app.get("/api/coachai/team/{team_id}/saison", dependencies=[Depends(get_api_key)], tags=["Coach.AI"])
+@app.get("/api/coachai/team/{team_id}/saison", dependencies=[Depends(get_api_key)], tags=["11Plan"])
 async def coachai_saison(team_id: str, von: str = Query(..., pattern=r"^\d{4}-\d{2}-\d{2}$"), bis: str = Query(..., pattern=r"^\d{4}-\d{2}-\d{2}$")):
     """Spielplan einer Mannschaft. Liest nur die Spielplanseite selbst (ein Abruf je Zeitraum),
     keine Detailseiten je Spiel."""
@@ -272,7 +272,7 @@ def _parse_date_time(text: str) -> Optional[str]:
     return local.astimezone(UTC).strftime("%Y-%m-%dT%H:%M:%SZ") if t else None
 
 
-@app.get("/api/coachai/staffel/{staffel}/spieltag/{n}", dependencies=[Depends(get_api_key)], tags=["Coach.AI"])
+@app.get("/api/coachai/staffel/{staffel}/spieltag/{n}", dependencies=[Depends(get_api_key)], tags=["11Plan"])
 async def coachai_spieltag(staffel: str, n: int):
     _check_id(staffel)
     if n < 1 or n > 60:
@@ -338,7 +338,7 @@ async def _lineup_images(gid: str) -> Dict[str, str]:
     return out
 
 
-@app.get("/api/coachai/spiele/aufstellungen", dependencies=[Depends(get_api_key)], tags=["Coach.AI"])
+@app.get("/api/coachai/spiele/aufstellungen", dependencies=[Depends(get_api_key)], tags=["11Plan"])
 async def coachai_aufstellungen(ids: str = Query(..., max_length=900)):
     # Bis zu 17 Spiele: alle Ligaspiele einer Hinrunde (Torminuten für die Auswertung der Spielphasen).
     game_ids = [_check_id(i) for i in ids.split(",") if i][:17]

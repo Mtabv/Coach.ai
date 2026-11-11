@@ -1,5 +1,5 @@
 /**
- * Zentrales Datenmodell von Coach.AI.
+ * Zentrales Datenmodell von 11Plan.
  *
  * Grundsätze:
  * - Jede extern beschaffte Angabe liegt in einem DataBlock mit Herkunft, Datenstand,

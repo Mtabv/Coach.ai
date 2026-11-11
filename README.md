@@ -1,4 +1,4 @@
-# Coach.AI – Vorschau
+# 11Plan – Vorschau
 
 Anwendung für Fußballtrainer im Amateurbereich. Erster Anwendungsfall: **individuelles Spieltagsdossier**
 (11 Seiten) aus Spiel- und Gegnerdaten, Mannschaftsstandards, Trainerbeobachtungen und Trainerbotschaften.
@@ -65,7 +65,7 @@ Echte Datenanbieter und KI gehören auf einen Server – keine Schlüssel im Fro
 ## Datenquellen
 
 - **Demo-Anbieter:** fiktive Beispieldaten, nur für den historischen Referenzfall.
-- **fussball.de (inoffiziell):** über einen lokal laufenden Crawler plus Coach.AI-Erweiterung (`tools/fussballde-dienst/`), nur auf Klick, gekennzeichnet. Liefert Tabelle (inkl. Punktabzüge), Spieltagspaarungen, Ergebnisse der ganzen Saison, direkte Duelle (5 Vorsaisons), Gegenspieler (Torjägerliste, Aufstellungen) und Gegnerfakten, Torminuten aller Ligaspiele des Gegners; der Gegner wird automatisch gefunden. Einrichtung: `docs/fussballde-anbindung.md`.
+- **fussball.de (inoffiziell):** über einen lokal laufenden Crawler plus 11Plan-Erweiterung (`tools/fussballde-dienst/`), nur auf Klick, gekennzeichnet. Liefert Tabelle (inkl. Punktabzüge), Spieltagspaarungen, Ergebnisse der ganzen Saison, direkte Duelle (5 Vorsaisons), Gegenspieler (Torjägerliste, Aufstellungen) und Gegnerfakten, Torminuten aller Ligaspiele des Gegners; der Gegner wird automatisch gefunden. Einrichtung: `docs/fussballde-anbindung.md`.
 - **FuPa (inoffiziell):** über denselben Dienst. Kader beider Mannschaften mit Fotos, Positionen, Vorlagen, MVP-Wert, Wappen der Ligamannschaften.
 - Folienregeln: `docs/dossier-sollbild.md`.
 - **Geplant:** offizieller Bezug über Sportmedia (`docs/anfrage-sportmedia.md`), Datenregeln in `docs/datenmatrix.md`.

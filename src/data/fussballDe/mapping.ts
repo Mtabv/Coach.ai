@@ -21,7 +21,7 @@ import { pick, sourcePriorityOf } from '../../domain/sourcePriority';
 import { FUPA_SOURCE_LABEL, fupaCoachFact, fupaCrests, fupaTableSnapshot, mergePlayerCandidates, type FupaBundle } from '../fupa/mapping';
 
 /**
- * Reine Umwandlung der Antworten des lokalen fussball.de-Dienstes in Coach.AI-Datenblöcke.
+ * Reine Umwandlung der Antworten des lokalen fussball.de-Dienstes in 11Plan-Datenblöcke.
  * Keine Werte werden geschätzt: Was fussball.de nicht liefert, bleibt leer bzw. fehlend.
  * Einzige Ableitung: Die Höhe eines Punktabzugs wird aus Bilanz und Punkten errechnet,
  * wenn fussball.de ausdrücklich auf Punktabzüge in der Tabelle hinweist.

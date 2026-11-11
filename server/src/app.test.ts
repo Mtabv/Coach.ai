@@ -12,7 +12,7 @@ const dir = mkdtempSync(join(tmpdir(), 'coachai-'));
 const db = openDb(join(dir, 'test.db'));
 
 beforeAll(async () => {
-  writeFileSync(join(dir, 'index.html'), '<!doctype html><title>Coach.AI</title>');
+  writeFileSync(join(dir, 'index.html'), '<!doctype html><title>11Plan</title>');
   // Stellvertreter für den Datendienst: merkt sich den mitgeschickten Schlüssel.
   upstream = createServer((req, res) => { upstreamKey = String(req.headers['x-api-key']); res.writeHead(200, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ pfad: req.url })); });
   await new Promise<void>((r) => upstream.listen(0, r));
@@ -106,7 +106,7 @@ describe('Server', () => {
 
   it('liefert das Frontend aus und lässt keine Pfade außerhalb zu', async () => {
     const r = await fetch(base + '/irgendwo');
-    expect(await r.text()).toContain('Coach.AI');
+    expect(await r.text()).toContain('11Plan');
     const bad = await fetch(base + '/..%2f..%2fetc%2fpasswd');
     expect([200, 400]).toContain(bad.status);
     expect(await bad.text()).not.toContain('root:');

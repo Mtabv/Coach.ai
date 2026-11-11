@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "description": "Coach.AI – Spieltagsdossiers für Fußballtrainer (Vorschau)",
+  "description": "11Plan – Spieltagsdossiers für Fußballtrainer (Vorschau)",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",

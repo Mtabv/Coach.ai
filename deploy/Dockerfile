@@ -1,4 +1,4 @@
-# Coach.AI: Oberfläche (Vite) und Server (Node, SQLite) in einem Container.
+# 11Plan: Oberfläche (Vite) und Server (Node, SQLite) in einem Container.
 FROM node:22-slim AS bau
 WORKDIR /app
 COPY package.json package-lock.json ./

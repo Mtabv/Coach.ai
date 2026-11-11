@@ -18,7 +18,7 @@ def replace_between(start, end, new):
     i = s.index(start); j = s.index(end, i)
     s = s[:i] + new + s[j:]
 
-rep('<title>Coach.AI Teamzentrale Entwurf</title>', '<title>Coach.AI TSG Wilhelmshöhe</title>')
+rep('<title>11Plan Teamzentrale Entwurf</title>', '<title>11Plan TSG Wilhelmshöhe</title>')
 rep('<select id="who"><option>Trainer</option><option>Co-Trainer</option></select>', '<select id="who"><option>Manuel Viehmann</option><option>Thorsten Klemann</option></select>')
 rep('<span>Beide sehen und bearbeiten dieselben Daten.</span>', '<span>Trainer und Co-Trainer sehen und bearbeiten dieselben Daten.</span>')
 rep('<script>\n', '<script>\n' + open(data).read(), 1)
@@ -111,8 +111,8 @@ rep("""  const tbl = [[3,'SC Testfeld',12,25],[4,'TSG Wilhelmshöhe',12,22],[5,'
 rep("""<span class="note">Von fussball.de, Stand 10.11.2026</span>""", """<span class="note">Von fussball.de, Stand 11.11.2026</span>""")
 rep("""${tbl.map(([pl,n,s,p])=>`<tr ${n.startsWith('TSG')||n.startsWith('TuS')?'style="font-weight:700"':''}><td class="num">${pl}</td><td>${n}</td><td class="num">${s}</td><td class="num">${p}</td><td class="note">${n.startsWith('TuS')?'N S N U N':n.startsWith('TSG')?'S S S N U':''}</td></tr>`).join('')}""",
     """${tbl.map(([pl,n,s,p,f,b])=>`<tr ${b?'style="font-weight:700"':''}><td class="num">${pl}</td><td>${esc(n)}</td><td class="num">${s}</td><td class="num">${p}</td><td class="note form">${f}</td></tr>`).join('')}""")
-rep("""<div class="q"><b>Rückfrage von Coach.AI:</b> 6 der 19 Tore des Gegners fielen nach Standards. Soll Standards defensiv in „Unser Plan“?</div>""",
-    """${REAL.ask && g.id===REAL.next ? `<div class="q"><b>Rückfrage von Coach.AI:</b> ${esc(REAL.ask)}</div>` : ''}""")
+rep("""<div class="q"><b>Rückfrage von 11Plan:</b> 6 der 19 Tore des Gegners fielen nach Standards. Soll Standards defensiv in „Unser Plan“?</div>""",
+    """${REAL.ask && g.id===REAL.next ? `<div class="q"><b>Rückfrage von 11Plan:</b> ${esc(REAL.ask)}</div>` : ''}""")
 rep("""<div class="tb">${textBox('kleidung-'+g.id,'Kleidung','')}<div class="kitshow">${state.kitPhoto[g.home?'Heim':'Auswärts'] ? `<img src="${state.kitPhoto[g.home?'Heim':'Auswärts']}" alt="Foto Spielkleidung">` : kitSvg(g.home?'Heim':'Auswärts')}""",
     """<div class="tb">${textBox('kleidung-'+g.id,'Kleidung','')}<div class="kitshow">${g.home && REAL.kit.images.shirt ? ['shirt','shorts','socks'].map(k=>REAL.kit.images[k]?`<img src="${REAL.kit.images[k]}" alt="">`:'').join('') : state.kitPhoto[g.home?'Heim':'Auswärts'] ? `<img src="${state.kitPhoto[g.home?'Heim':'Auswärts']}" alt="Foto Spielkleidung">` : kitSvg(g.home?'Heim':'Auswärts')}""")
 rep("const kitText = g =>", "const kitText = g => settings.kit[g.home?'Heim':'Auswärts'][0][1]==='noch offen' ? 'Auswärtskleidung ist noch nicht hinterlegt (Einstellungen › Spieltag und Dossier).' : kitText_(g);\nconst kitText_ = g =>")
@@ -126,9 +126,9 @@ rep("""<p class="sub">Für dieses Beispiel sind die Tore erfunden.</p>
       <ul class="list"><li><span>12′ 1:0 Luca Neumann</span></li><li><span>38′ 1:1 Gegner</span></li><li><span>67′ 2:1 Max Hoffmann</span></li><li><span>88′ 2:2 Gegner</span></li></ul></div>""",
     """<p class="sub">${tl.length} Tore laut Spielbericht</p>
       <ul class="list">${tl.map(x=>`<li><span>${x.min} ${x.score||''} ${esc(x.who)}</span><span class="pill ${x.own?'':'game'}">${x.own?'TSG':'Gegner'}</span></li>`).join('') || '<li><span class="note">Im Spielbericht stehen keine Tore.</span></li>'}</ul></div>""")
-rep("""<div class="q"><b>Vorschlag von Coach.AI:</b> Beide Gegentore fielen kurz nach eigenem Ballverlust. Soll der laufende Block „Sofort Gegenpressing“ um zwei Wochen verlängert werden?</div>
+rep("""<div class="q"><b>Vorschlag von 11Plan:</b> Beide Gegentore fielen kurz nach eigenem Ballverlust. Soll der laufende Block „Sofort Gegenpressing“ um zwei Wochen verlängert werden?</div>
       <div class="row"><button class="btn small">Verlängern</button><button class="btn ghost small">Anderer Schwerpunkt</button></div>""",
-    """<div class="q"><b>Frage von Coach.AI:</b> ${conc.length ? `${conc.length} Gegentore, davon ${c2} in der zweiten Halbzeit. Woran lag es aus deiner Sicht, und soll daraus ein Schwerpunkt für die nächsten Wochen werden?` : 'Kein Gegentor. Was hat gegen den Ball besonders gut funktioniert?'}</div>""")
+    """<div class="q"><b>Frage von 11Plan:</b> ${conc.length ? `${conc.length} Gegentore, davon ${c2} in der zweiten Halbzeit. Woran lag es aus deiner Sicht, und soll daraus ein Schwerpunkt für die nächsten Wochen werden?` : 'Kein Gegentor. Was hat gegen den Ball besonders gut funktioniert?'}</div>""")
 rep("<p class=\"sub\">Schulnoten 1 bis 6 mit kurzer Begründung.", "<p class=\"sub\">Startelf laut Spielbericht. Schulnoten 1 bis 6 mit kurzer Begründung.")
 rep("""${xi.map(p=>`<tr><td><b>${p.nr} ${p.name}</b> <span class="note">${p.pos}</span></td>""", """${xi.map(p=>`<tr><td><b>${p.nr?p.nr+' ':''}${esc(p.name)}</b> <span class="note">${p.pos}</span></td>""")
 
@@ -147,7 +147,7 @@ r"""    ${state.focusSug ? (()=>{ const B = REAL.bins, r = B.own_against.map((v,
       Soll der Schwerpunkt diese Woche auf „Gegen den Ball: Kompakt stehen“ liegen?
       <div class="row" style="margin-top:6px"><button class="btn small" data-setfocus="g2">Übernehmen</button><button class="btn ghost small" data-keepfocus="1">Beibehalten</button></div></div>`; })() : ''}
 """)
-rep("""  <div class="card"><h3>Vorschlag von Coach.AI</h3><div class="q">Das Prinzip „Ecken defensiv“ lag in den letzten 6 Spielen bei Ø ${de(avg(PR('s1').hist))}. Soll der geplante Block in KW 49 vorgezogen werden?</div>
+rep("""  <div class="card"><h3>Vorschlag von 11Plan</h3><div class="q">Das Prinzip „Ecken defensiv“ lag in den letzten 6 Spielen bei Ø ${de(avg(PR('s1').hist))}. Soll der geplante Block in KW 49 vorgezogen werden?</div>
     <div class="row"><button class="btn small">Vorziehen</button><button class="btn ghost small">So lassen</button></div></div>`;""",
     """  <div class="card"><h3>Hinweis</h3><p class="sub" style="margin:0">Die Blöcke oben sind ein Beispiel. Legt eure eigene Periodisierung an, sobald die Spielphilosophie mit den Prinzipien steht. Vorschläge kommen dann aus euren Nachbereitungen.</p></div>`;""")
 rep("<h3>Periodisierung Hinrunde und Rückrunden-Vorbereitung</h3>", "<h3>Periodisierung Hinrunde und Rückrunden-Vorbereitung <span class=\"pill grey\">Beispiel</span></h3>")

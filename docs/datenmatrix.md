@@ -1,4 +1,4 @@
-# Coach.AI – Datenmatrix (Entwurf 2)
+# 11Plan – Datenmatrix (Entwurf 2)
 
 Stand: 05.11.2026 · Grundlage: Briefing, aktuelle Vorschau, Referenzdossier „TSG Wilhelmshöhe – Eintracht Baunatal V1“, FAQ von fussball.de zur Schnittstelle (Screenshot des Trainers).
 
@@ -16,8 +16,8 @@ Mit **[E…]** markierte Stellen sind Entscheidungen, die nur der Trainer bzw. P
 | **fussball.de** (DFB/DFBnet) | Keine direkte Schnittstelle (laut FAQ „derzeit nicht möglich“). **Offizieller Weg: automatisierte Datenlieferung über Sportmedia per SFTP** (Abschnitt 1a). Daneben Widgets für Vereinsseiten. | Ansetzungen, Anstoßzeiten, Spielorte, Ergebnisse, Tabelle, Spieltagspaarungen, Kader (je nach Verein), Vereinslogos. Amtliche Quelle für Spielbetrieb. | Automatisches Auslesen der Webseiten: technisch fragil, Nutzungsbedingungen **noch nicht geprüft** (Seite aus der Entwicklungsumgebung nicht erreichbar). Inoffizielle Dienste wie api-fussball.de: Doku-Repository seit 31.03.2026 archiviert. |
 | **FuPa** | Keine öffentliche Schnittstelle oder Nutzungsregel für automatisierten Abruf gefunden. | Spielerstatistiken (Einsätze, Tore, Vorlagen), FuPa-MVP-Wert, Spielerfotos, Körpergröße, Transfers, Vereinsnachrichten, Aufstellungen (wenn getickert). | Datenqualität abhängig davon, ob Vereine/Reporter pflegen. Rechte an Fotos und Texten. Zugang nur mit Zustimmung von FuPa sinnvoll. |
 | **Vereinswebseiten / Social Media** | Manuell | Trainerwechsel, Neuzugänge, Ausfälle | Unstrukturiert, selten aktuell |
-| **Trainer** | Eingabe in Coach.AI | Beobachtungen, Organisation, Kleidung, Kader, Botschaften, Fahrzeit, Korrekturen | Zeitaufwand am Spieltag |
-| **Berechnet** (Coach.AI) | Intern | Bilanzen, Serien, Kennzahlen, Zeitplan, „3 Facts“ | Nur so gut wie die Eingangsdaten |
+| **Trainer** | Eingabe in 11Plan | Beobachtungen, Organisation, Kleidung, Kader, Botschaften, Fahrzeit, Korrekturen | Zeitaufwand am Spieltag |
+| **Berechnet** (11Plan) | Intern | Bilanzen, Serien, Kennzahlen, Zeitplan, „3 Facts“ | Nur so gut wie die Eingangsdaten |
 | **Kostenpflichtige Sportdaten-Anbieter** | Vertrag/API | Meist Profi- und höhere Amateurligen | Gruppenliga-Abdeckung unwahrscheinlich, zu prüfen |
 
 ### 1a. Offizieller Datenweg: Sportmedia (laut FAQ von fussball.de)
@@ -46,13 +46,13 @@ Rechnung für **eine Staffel** (eigene Liga) zum Basispreis: Ergebnisse/Tabellen
 
 **Nicht abgedeckt** (bleibt FuPa, Verein oder Trainer): Spielerfotos, Logos (zu klären), FuPa-MVP-Wert, Körpergröße, Transfers/Trainerwechsel, Spielkleidung, Fahrzeit, alle Trainerangaben.
 
-**Was das technisch bedeutet:** SFTP ist eine *Lieferung* von Dateien an einen Server, kein Abruf aus dem Browser. Coach.AI braucht dafür ein **Backend** (Server mit SFTP-Empfang, Einlesen der Dateien, Datenbank, Bereitstellung an die App). Die heutige Vorschau läuft rein im Browser; die Schnittstelle für Datenanbieter ist aber bereits so angelegt, dass ein Server-Anbieter angeschlossen werden kann.
+**Was das technisch bedeutet:** SFTP ist eine *Lieferung* von Dateien an einen Server, kein Abruf aus dem Browser. 11Plan braucht dafür ein **Backend** (Server mit SFTP-Empfang, Einlesen der Dateien, Datenbank, Bereitstellung an die App). Die heutige Vorschau läuft rein im Browser; die Schnittstelle für Datenanbieter ist aber bereits so angelegt, dass ein Server-Anbieter angeschlossen werden kann.
 
 **Konsequenz:** Für die **amtlichen Spielbetriebsdaten** gibt es einen offiziellen, voraussichtlich vertraglich geregelten Weg. Für **Spielerdetails und Bilder** bleibt FuPa bzw. der Trainer. Empfohlene Reihenfolge:
 
 1. **Sportmedia anfragen** (Fragen in Abschnitt 6): Konditionen, Formate, Abdeckung, Lizenz für ein Trainerwerkzeug.
 2. **FuPa anfragen** (support@fupa.net) für Spielerdaten und Bilder.
-3. Bis zur Klärung: **Halbautomatik (Stufe B)** – Trainer fügt Tabellen/Ergebnisse ein, Coach.AI liest und prüft sie.
+3. Bis zur Klärung: **Halbautomatik (Stufe B)** – Trainer fügt Tabellen/Ergebnisse ein, 11Plan liest und prüft sie.
 
 ---
 
@@ -71,7 +71,7 @@ Rechnung für **eine Staffel** (eigene Liga) zum Basispreis: Ergebnisse/Tabellen
 6. **Trainerbeobachtungen** und **Mannschaftsbotschaften** stammen ausschließlich vom Trainer und werden getrennt von Statistik ausgegeben.
 7. **Pflichtangaben** blockieren nur die *Bestätigung*, nie den Entwurf.
 
-Legende Spalte „Bei Fehlen“: **offen** = im Dossier sichtbar als „offen“ markiert · **nachfragen** = Coach.AI fragt im Fragebogen nach · **weglassen** = Element entfällt still bzw. Folie wird reduziert · **blockiert** = Bestätigung nicht möglich.
+Legende Spalte „Bei Fehlen“: **offen** = im Dossier sichtbar als „offen“ markiert · **nachfragen** = 11Plan fragt im Fragebogen nach · **weglassen** = Element entfällt still bzw. Folie wird reduziert · **blockiert** = Bestätigung nicht möglich.
 
 ---
 
@@ -170,12 +170,12 @@ Ausschließlich Trainer: 3 Botschaften (Überschrift + Begleittext), Leitmotiv, 
 
 | Stufe | Beschreibung | Aufwand | Abhängigkeit |
 | --- | --- | --- | --- |
-| **A – Manuell geführt** (heute) | Trainer erfasst bzw. ergänzt; Coach.AI prüft und berechnet | gering | keine |
-| **B – Halbautomatisch** | Trainer fügt Tabelle/Ergebnisliste per Kopieren ein oder lädt Screenshot; Coach.AI liest strukturiert aus, zeigt Quelle und Stand, Trainer bestätigt | mittel | keine Rechtefrage, da Trainer die Daten selbst bereitstellt |
-| **C1 – Amtliche Daten via Sportmedia** | Backend empfängt SFTP-Lieferungen (Ergebnisse, Tabellen, Spielberichte, Spielpläne), liest sie ein, stellt sie Coach.AI mit Datenstand bereit | hoch (Backend, Betrieb) | Vertrag Sportmedia, Kosten **[E11] [E12]** |
+| **A – Manuell geführt** (heute) | Trainer erfasst bzw. ergänzt; 11Plan prüft und berechnet | gering | keine |
+| **B – Halbautomatisch** | Trainer fügt Tabelle/Ergebnisliste per Kopieren ein oder lädt Screenshot; 11Plan liest strukturiert aus, zeigt Quelle und Stand, Trainer bestätigt | mittel | keine Rechtefrage, da Trainer die Daten selbst bereitstellt |
+| **C1 – Amtliche Daten via Sportmedia** | Backend empfängt SFTP-Lieferungen (Ergebnisse, Tabellen, Spielberichte, Spielpläne), liest sie ein, stellt sie 11Plan mit Datenstand bereit | hoch (Backend, Betrieb) | Vertrag Sportmedia, Kosten **[E11] [E12]** |
 | **C2 – Spielerdetails via FuPa** | Abruf nur mit Zustimmung von FuPa | mittel–hoch | Zustimmung FuPa |
 
-**Stand 05.11.2026:** Als Übergang ist ein inoffizieller fussball.de-Anbieter über einen lokal laufenden Crawler plus Coach.AI-Erweiterung umgesetzt (`docs/fussballde-anbindung.md`), nur auf Klick. Er füllt alle Datenblöcke außer der Fahrzeit (Tabelle mit Punktabzügen, Spieltag, Saisonergebnisse, direkte Duelle, Gegenspieler, Gegnerfakten) und findet den Gegner automatisch. Live geprüft mit TSG Wilhelmshöhe – TSG Sandershausen.
+**Stand 05.11.2026:** Als Übergang ist ein inoffizieller fussball.de-Anbieter über einen lokal laufenden Crawler plus 11Plan-Erweiterung umgesetzt (`docs/fussballde-anbindung.md`), nur auf Klick. Er füllt alle Datenblöcke außer der Fahrzeit (Tabelle mit Punktabzügen, Spieltag, Saisonergebnisse, direkte Duelle, Gegenspieler, Gegnerfakten) und findet den Gegner automatisch. Live geprüft mit TSG Wilhelmshöhe – TSG Sandershausen.
 
 **Entscheidung des Trainers (05.11.2026):** Nach Sichtung des Sportmedia-Preismodells wird vorerst die **kostenfreie inoffizielle fussball.de-Anbindung** genutzt. Sportmedia (C1) wird erst wieder geprüft, wenn sich der Übergangsweg als unzuverlässig erweist oder Spielberichte benötigt werden.
 
@@ -198,7 +198,7 @@ Empfehlung: **B als nächster Schritt** (sofort nutzbar, kein Vertrag nötig), p
 | E9 | Neue Trainerfelder „Sportliche Einordnung“ und „Merksatz zur Spielweise“ aufnehmen? | Ja (fehlen in der Vorschau) |
 | E10 | Trainer/Staff auf der Kaderfolie? | Ja, aus Profil |
 | E11 | Für welche Ligen/Regionen und Altersklassen soll Stufe C zuerst funktionieren? | Hessen, Herren, Gruppen-/Kreisoberliga |
-| E12 | Soll Coach.AI ein eigenes Backend bekommen (Voraussetzung für Sportmedia, Mehrgeräte-Nutzung, später KI)? Wer betreibt es, welches Budget? | Ja, schlank (z. B. verwalteter Server + Datenbank), erst nach Antwort von Sportmedia |
+| E12 | Soll 11Plan ein eigenes Backend bekommen (Voraussetzung für Sportmedia, Mehrgeräte-Nutzung, später KI)? Wer betreibt es, welches Budget? | Ja, schlank (z. B. verwalteter Server + Datenbank), erst nach Antwort von Sportmedia |
 
 ---
 

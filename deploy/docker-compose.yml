@@ -1,4 +1,4 @@
-# Coach.AI Version 1 (Trainerteam). Läuft getrennt von allen anderen Diensten auf eigenem Server.
+# 11Plan Version 1 (Trainerteam). Läuft getrennt von allen anderen Diensten auf eigenem Server.
 # Start: cd /opt/coachai/deploy && docker compose up -d --build
 name: coachai
 

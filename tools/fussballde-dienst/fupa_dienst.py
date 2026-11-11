@@ -1,8 +1,8 @@
 """
-FuPa-Teil der Coach.AI-Erweiterung (inoffiziell).
+FuPa-Teil der 11Plan-Erweiterung (inoffiziell).
 
 Liest die öffentliche JSON-Schnittstelle, die auch die FuPa-Webseite nutzt (api.fupa.net/v1), und gibt nur die
-Felder weiter, die Coach.AI laut Datenmodell von FuPa bezieht: Kader mit Position, Einsätzen, Toren, Vorlagen,
+Felder weiter, die 11Plan laut Datenmodell von FuPa bezieht: Kader mit Position, Einsätzen, Toren, Vorlagen,
 Kapitän, Spielerfotos (Adresse + Bildnachweis), MVP-Wert mit Stand, Körpergröße, Trainerteam und Tabelle.
 
   GET /api/coachai/fupa/team/{slug}                     Mannschaft (Wettbewerb, Saison)
@@ -112,7 +112,7 @@ def slugify(name: str) -> str:
     return s
 
 
-@app.get("/api/coachai/fupa/team/{slug}", dependencies=[Depends(get_api_key)], tags=["Coach.AI · FuPa"])
+@app.get("/api/coachai/fupa/team/{slug}", dependencies=[Depends(get_api_key)], tags=["11Plan · FuPa"])
 async def fupa_team(slug: str):
     d = await _json(f"/teams/{_slug(slug)}")
     if not d:
@@ -120,7 +120,7 @@ async def fupa_team(slug: str):
     return _team(d)
 
 
-@app.get("/api/coachai/fupa/finde-team", dependencies=[Depends(get_api_key)], tags=["Coach.AI · FuPa"])
+@app.get("/api/coachai/fupa/finde-team", dependencies=[Depends(get_api_key)], tags=["11Plan · FuPa"])
 async def fupa_finde_team(
     namen: str = Query(..., max_length=400, description="Namensvarianten des Vereins, getrennt durch |"),
     saison: str = Query(..., pattern=SEASON_RE),
@@ -141,7 +141,7 @@ async def fupa_finde_team(
     return None
 
 
-@app.get("/api/coachai/fupa/tabelle", dependencies=[Depends(get_api_key)], tags=["Coach.AI · FuPa"])
+@app.get("/api/coachai/fupa/tabelle", dependencies=[Depends(get_api_key)], tags=["11Plan · FuPa"])
 async def fupa_tabelle(wettbewerb: str, saison: str = Query(..., pattern=SEASON_RE)):
     d = await _json(f"/standings?competition={_slug(wettbewerb)}&season={saison}")
     rows = []
@@ -164,7 +164,7 @@ async def fupa_tabelle(wettbewerb: str, saison: str = Query(..., pattern=SEASON_
     return {"competition": wettbewerb, "season": saison, "rows": rows}
 
 
-@app.get("/api/coachai/fupa/kader/{slug}", dependencies=[Depends(get_api_key)], tags=["Coach.AI · FuPa"])
+@app.get("/api/coachai/fupa/kader/{slug}", dependencies=[Depends(get_api_key)], tags=["11Plan · FuPa"])
 async def fupa_kader(slug: str):
     d = await _json(f"/teams/{_slug(slug)}/squad")
     if d is None:
@@ -198,7 +198,7 @@ async def fupa_kader(slug: str):
     return {"team_slug": slug, "players": players, "coaches": coaches, "captain_slug": captain, "season_target": info.get("seasonTarget") or None}
 
 
-@app.get("/api/coachai/fupa/spieler", dependencies=[Depends(get_api_key)], tags=["Coach.AI · FuPa"])
+@app.get("/api/coachai/fupa/spieler", dependencies=[Depends(get_api_key)], tags=["11Plan · FuPa"])
 async def fupa_spieler(slugs: str = Query(..., max_length=1500), team: str = Query(...)):
     team = _slug(team)
     wanted = [_slug(s) for s in slugs.split(",") if s][:10]
@@ -232,7 +232,7 @@ _photo_cache: Dict[str, tuple] = {}
 PHOTO_RE = re.compile(r"^https://image\.fupa\.net/(player|club|team)/[A-Za-z0-9]{6,20}/\d{2,3}x\d{2,3}\.(jpeg|png)$")
 
 
-@app.get("/api/coachai/fupa/foto", dependencies=[Depends(get_api_key)], tags=["Coach.AI · FuPa"])
+@app.get("/api/coachai/fupa/foto", dependencies=[Depends(get_api_key)], tags=["11Plan · FuPa"])
 async def fupa_foto(url: str = Query(..., max_length=200)):
     """Spielerfoto oder Wappen für den PowerPoint-Export (der Browser darf es wegen fehlender CORS-Freigabe nicht
     direkt lesen). Nur Adressen von image.fupa.net/player|club|team/…"""

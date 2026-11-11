@@ -1,4 +1,4 @@
-# Bauplan Coach.AI, Version 1: Trainerteam
+# Bauplan 11Plan, Version 1: Trainerteam
 
 Stand 11.11.2026. Grundlage ist der klickbare Entwurf in `prototype/`. Version 1 ist nur für das Trainerteam (zwei gleichberechtigte Trainerkonten: Manuel Viehmann und Thorsten Klemann). Spieler, Push-Nachrichten und KI-Texte kommen in Version 2.
 

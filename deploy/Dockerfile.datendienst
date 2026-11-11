@@ -1,4 +1,4 @@
-# Datendienst: Crawler „fussball_de_api“ (MIT) mit der Coach.AI-Erweiterung. Nur intern erreichbar.
+# Datendienst: Crawler „fussball_de_api“ (MIT) mit der 11Plan-Erweiterung. Nur intern erreichbar.
 FROM python:3.13-slim
 ARG CRAWLER_STAND=24d83d5
 RUN apt-get update && apt-get install -y --no-install-recommends git && rm -rf /var/lib/apt/lists/*

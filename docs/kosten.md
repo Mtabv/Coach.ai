@@ -1,4 +1,4 @@
-# Kosten Coach.AI
+# Kosten 11Plan
 
 Stand 11.11.2026. Laufende Kosten für den Betrieb. Feste Beträge stehen nur dort, wo sie bekannt sind. Alles andere ist als offen markiert und wird nachgetragen, sobald es feststeht.
 

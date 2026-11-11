@@ -10,7 +10,7 @@ rep("function vUebung() {", r"""function vUebungNeu() {
   return `${demo}
   <div class="crumb"><a href="#training" data-ttabgo="uebungen">Übungspool</a> › Neue Übung</div>
   <div class="head"><div><h1>Übung erfassen</h1><p>Erzählen oder schreiben, dazu ein Foto der Skizze. Die KI erfindet keine Übungen, sie ordnet eure ein.</p></div>
-    <button class="mic" data-flash="Sprachnachricht: erzählen, Coach.AI füllt die Felder. Im Entwurf ohne Funktion.">${ICON.mic} Sprachnachricht</button></div>
+    <button class="mic" data-flash="Sprachnachricht: erzählen, 11Plan füllt die Felder. Im Entwurf ohne Funktion.">${ICON.mic} Sprachnachricht</button></div>
   ${flashBox()}
   <div class="card mask">
     <div class="grid g3">
@@ -98,7 +98,7 @@ rep("${dlink('#training', 'Trainingseinheit zusammenstellen', 'aus Übungen des 
 i = s.index("    <div class=\"msgs\">"); j = s.index("    </div></section>", i)
 s = s[:i] + r"""    <div class="msgs">${coachNews().map(m=>dlink(m.href, m.title, `<b class="lbl ${m.kind==='Nächster Schritt'?'nba':''}">${m.kind}</b> ${m.sub}`, m.attrs||'', m.icon, 'msg')).join('')}
 """ + s[j:]
-rep("function dlink(href,", r"""/** Nachrichten von Coach.AI: zuerst nächste Schritte, dann Highlights aus den Zahlen, die in Analytics führen. */
+rep("function dlink(href,", r"""/** Nachrichten von 11Plan: zuerst nächste Schritte, dann Highlights aus den Zahlen, die in Analytics führen. */
 function coachNews() {
   const T = REAL.tiles, B = REAL.bins, nx = EV(REAL.next), rg = REAL.games.find(g=>g.id===REAL.next), lp = games().filter(g=>g.res && g.post==='offen').pop();
   const n = [], lg = REAL.games.filter(g=>g.res && g.kind==='liga');

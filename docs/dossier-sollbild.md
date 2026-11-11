@@ -1,4 +1,4 @@
-# Coach.AI – Sollbild des Spieltagsdossiers
+# 11Plan – Sollbild des Spieltagsdossiers
 
 Stand: 06.11.2026 · Grundlage: Rückmeldung des Trainers zum Dossier TSG Wilhelmshöhe – TSG Sandershausen.
 Woher die Angaben kommen, regelt `docs/datenmatrix.md`; dieses Dokument regelt, **wie** die Folien aussehen.

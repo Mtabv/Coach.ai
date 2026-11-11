@@ -30,7 +30,7 @@ Nicht abgefragt wird, ob die vorab genannten gefährlichen Spieler tatsächlich 
     - **Ja:** Die Noten kommen auf eine Folie für die Mannschaft.
     - **Nein:** Sie bleiben in der Trainerdokumentation, z. B. für die Halbserienanalyse.
 - **Trainingsschwerpunkte aus dem Spiel:**
-  - Coach.AI schlägt Schwerpunkte vor, abgeleitet aus Spielverlauf, Spielphasen-Bewertung und Gegnerbeobachtung. Die Vorschläge sind als Vorschlag gekennzeichnet.
+  - 11Plan schlägt Schwerpunkte vor, abgeleitet aus Spielverlauf, Spielphasen-Bewertung und Gegnerbeobachtung. Die Vorschläge sind als Vorschlag gekennzeichnet.
   - Zusätzlich fragt der Fragebogen die Schwerpunkte des Trainers ausdrücklich ab.
   - Die Angabe des Trainers hat Vorrang. Vorschläge übernimmt er, ändert sie oder verwirft sie.
   - Das ist die Brücke zur späteren Trainingsableitung.

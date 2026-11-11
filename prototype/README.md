@@ -1,4 +1,4 @@
-# Klickbarer Entwurf: Coach.AI Teamzentrale
+# Klickbarer Entwurf: 11Plan Teamzentrale
 
 Der Entwurf zeigt alle Bereiche und Abläufe der künftigen Anwendung als eine einzige HTML-Seite. Er speichert nichts und dient als Vorlage für die Server-Version (siehe `docs/bauplan-v1.md`).
 

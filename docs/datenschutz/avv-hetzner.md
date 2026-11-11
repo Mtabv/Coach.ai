@@ -4,13 +4,13 @@ Stand 11.11.2026. Diese Unterlage ist eine Arbeitshilfe, keine Rechtsberatung.
 
 ## Worum es geht
 
-Wenn Coach.AI auf einem Hetzner-Server personenbezogene Daten verarbeitet (Spielernamen, Fotos, Einsätze, Noten, Gesprächsnotizen, Abwesenheitsgründe), ist Hetzner Auftragsverarbeiter nach Art. 28 DSGVO. Dafür braucht es einen Vertrag zur Auftragsverarbeitung (AV-Vertrag).
+Wenn 11Plan auf einem Hetzner-Server personenbezogene Daten verarbeitet (Spielernamen, Fotos, Einsätze, Noten, Gesprächsnotizen, Abwesenheitsgründe), ist Hetzner Auftragsverarbeiter nach Art. 28 DSGVO. Dafür braucht es einen Vertrag zur Auftragsverarbeitung (AV-Vertrag).
 
 Bei Hetzner wird er **nicht automatisch** geschlossen. Man schließt ihn **selbst im Kundenkonto** unter accounts.hetzner.com/account/dpa ab. Hetzner verhandelt keine individuellen Verträge, eine Unterschrift ist nicht nötig. Wer einen AV-Vertrag hat, bekommt dort auch den jährlichen Prüfbericht zu den technischen und organisatorischen Maßnahmen (TOM).
 
 ## Vorher klären: Wer ist verantwortlich?
 
-- **Variante A, Trainer persönlich:** Manuel Viehmann betreibt Coach.AI für seine Mannschaft. Er ist Verantwortlicher und schließt den AV-Vertrag in seinem Hetzner-Konto.
+- **Variante A, Trainer persönlich:** Manuel Viehmann betreibt 11Plan für seine Mannschaft. Er ist Verantwortlicher und schließt den AV-Vertrag in seinem Hetzner-Konto.
 - **Variante B, Verein:** Die TSG Wilhelmshöhe ist Verantwortliche. Dann schließt der Verein den Vertrag (Vereinskonto bei Hetzner) oder bevollmächtigt dich. Der Datenschutzbeauftragte des Vereins, falls vorhanden, sollte Bescheid wissen.
 
 **Entschieden am 11.11.2026: Variante A.** Manuel Viehmann ist Verantwortlicher.
@@ -41,7 +41,7 @@ Für Version 1 (nur Trainerteam) ist Variante A schnell umsetzbar. Spätestens m
    - Spieler, die den Verein verlassen, nach einem Jahr anonymisieren.
 3. **Infoblatt für die Mannschaft**, spätestens vor Version 2: Was gespeichert wird, wer es sieht, dass Noten nur auf Freigabe sichtbar sind.
 
-## Technische Maßnahmen in Coach.AI
+## Technische Maßnahmen in 11Plan
 
 - Eigener Server, getrennt vom bestehenden Server mit dem digitalen Assistenten.
 - Zugriff nur per SSH-Schlüssel. Firewall nur für die Ports 22, 80 und 443.

@@ -27,7 +27,7 @@ function setup(overrides: Partial<Parameters<typeof createMatch>[1]> = {}) {
   return { team, match };
 }
 
-/** Nachgebauter lokaler Dienst: beantwortet die Pfade der Coach.AI-Erweiterung mit den Testdaten. */
+/** Nachgebauter lokaler Dienst: beantwortet die Pfade der 11Plan-Erweiterung mit den Testdaten. */
 const FUPA_OPP = { slug: 'gsv-eintracht-baunatal-m1-2026-27', name: 'GSV Eintracht Baunatal', club_slug: 'gsv-eintracht-baunatal', level: 1, age_group: 'Herren', competition_slug: 'kassel-gruppenliga-2', competition_name: 'Gruppenliga Kassel 2', season_slug: '2026-27', season_name: '26/27' };
 const FUPA_OWN = { ...FUPA_OPP, slug: 'tsg-wilhelmshoehe-m1-2026-27', name: 'TSG Wilhelmshöhe', club_slug: 'tsg-wilhelmshoehe' };
 const fupaPlayer = (slug: string, first: string, last: string, position: string, number: number, goals: number, assists: number, captain = false) => ({

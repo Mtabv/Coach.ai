@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Coach.AI Teamzentrale Entwurf</title>
+<title>11Plan Teamzentrale Entwurf</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
@@ -413,7 +413,7 @@ h4.grp { font-size: 16px; color: var(--muted); }
 <body>
 <div class="app">
   <aside class="side">
-    <div class="brand">Coach.AI</div>
+    <div class="brand">11Plan</div>
     <div class="team">TSG Wilhelmshöhe · 1. Herren</div>
     <nav class="nav" id="nav"></nav>
     <div class="who">
@@ -725,7 +725,7 @@ function spark(vals,labels,h=60) {
 }
 const GL = ['4.10.','11.10.','18.10.','25.10.','1.11.','8.11.'];
 function textBox(key, label, ph, rows=2) {
-  return `<div class="tb"><div class="tbh"><label for="t-${key}">${label}</label><button class="mic" data-flash="Sprachnachricht: aufnehmen, Coach.AI schreibt den Text in dieses Feld. Im Entwurf ohne Funktion.">${ICON.mic} Sprechen</button></div>
+  return `<div class="tb"><div class="tbh"><label for="t-${key}">${label}</label><button class="mic" data-flash="Sprachnachricht: aufnehmen, 11Plan schreibt den Text in dieses Feld. Im Entwurf ohne Funktion.">${ICON.mic} Sprechen</button></div>
     <textarea id="t-${key}" data-text="${key}" rows="${rows}" placeholder="${esc(ph)}">${esc(state.texts[key] ?? '')}</textarea></div>`;
 }
 const flashBox = () => state.flash ? `<div class="flash">${state.flash}</div>` : '';
@@ -835,7 +835,7 @@ function periode() {
     <p class="sub">Zeilen sind die Spielphasen. Ein Block ist ein Trainingsschwerpunkt: Thema innerhalb der Phase, verknüpft mit einem Prinzip aus der Spielphilosophie.</p>
     <div class="scroll"><div class="gantt">${head}${rows}</div></div>
     <div class="legend"><span><i style="background:var(--muted)"></i>abgeschlossen</span><span><i style="background:var(--accent)"></i>läuft</span><span><i style="background:var(--accent-soft);border:1px dashed var(--accent)"></i>geplant</span></div></div>
-  <div class="card"><h3>Vorschlag von Coach.AI</h3><div class="q">Das Prinzip „Ecken defensiv“ lag in den letzten 6 Spielen bei Ø ${de(avg(PR('s1').hist))}. Soll der geplante Block in KW 49 vorgezogen werden?</div>
+  <div class="card"><h3>Vorschlag von 11Plan</h3><div class="q">Das Prinzip „Ecken defensiv“ lag in den letzten 6 Spielen bei Ø ${de(avg(PR('s1').hist))}. Soll der geplante Block in KW 49 vorgezogen werden?</div>
     <div class="row"><button class="btn small">Vorziehen</button><button class="btn ghost small">So lassen</button></div></div>`;
 }
 function einheiten() {
@@ -860,7 +860,7 @@ function uebungen() {
       <select class="f" id="exk" aria-label="Art" style="width:auto">${['alle',...KINDS].map(p=>`<option value="${p}" ${state.exKind===p?'selected':''}>${p==='alle'?'Alle Arten':p}</option>`).join('')}</select></div></div>
     ${groups.length ? groups.map(([ph,l])=>`<h4 class="grp">${ph}</h4><div class="scroll"><table><tbody>
       ${l.map(e=>`<tr><td><b>${e.name}</b><br><span class="note">${e.pr?PR(e.pr).name:'Spielform zum Abschluss'}</span>${noteLine(exNotes[e.id])}</td><td><span class="pill grey">${e.kind}</span></td><td>${e.players} Sp.</td><td>${e.field}</td><td class="num">${e.min} min</td><td class="note">${e.src}</td></tr>`).join('')}</tbody></table></div>`).join('') : '<p class="sub">Keine Übung passt zu diesem Filter.</p>'}</div>
-  <div class="card"><div class="row between"><h3>Übung erfassen</h3><button class="mic" data-flash="Sprachnachricht: erzählen, Coach.AI füllt die Felder. Im Entwurf ohne Funktion.">${ICON.mic} Sprachnachricht</button></div><p class="sub">Erzählen oder schreiben, dazu ein Foto der Skizze. Die KI erfindet keine Übungen, sie ordnet eure ein.</p>
+  <div class="card"><div class="row between"><h3>Übung erfassen</h3><button class="mic" data-flash="Sprachnachricht: erzählen, 11Plan füllt die Felder. Im Entwurf ohne Funktion.">${ICON.mic} Sprachnachricht</button></div><p class="sub">Erzählen oder schreiben, dazu ein Foto der Skizze. Die KI erfindet keine Übungen, sie ordnet eure ein.</p>
     <div class="grid g3">
       <label class="fl" for="ue-n">Name<input id="ue-n" type="text" placeholder="z. B. Pressing-Auslöser Rückpass"></label>
       <label class="fl" for="ue-p">Prinzip<select class="f" id="ue-p">${principles.map(p=>`<option>${p.phase}: ${p.name}</option>`).join('')}</select></label>
@@ -1027,7 +1027,7 @@ function kitSvg(k) {
 function teamMessage(g) {
   const out = new Set(absentOn(g.date).map(a=>a.pid));
   const squad = players.filter(p=>!out.has(p.id)).map(p=>p.name.split(' ')[1]).join(', ');
-  const txt = `Hallo zusammen,\nSonntag, ${fmt(g.date)} ${g.home?'Heimspiel gegen':'auswärts bei'} ${g.opp}, Anstoß ${g.time} Uhr.\n\n${planRows(g).map(([t,l])=>`${t} ${l}`).join('\n')}\n\nKleidung: ${state.texts['kleidung-'+g.id] ?? kitText(g)}\nKader: ${squad}\n\nDas Dossier steht in Coach.AI. Bitte bis Freitag zu- oder absagen.`;
+  const txt = `Hallo zusammen,\nSonntag, ${fmt(g.date)} ${g.home?'Heimspiel gegen':'auswärts bei'} ${g.opp}, Anstoß ${g.time} Uhr.\n\n${planRows(g).map(([t,l])=>`${t} ${l}`).join('\n')}\n\nKleidung: ${state.texts['kleidung-'+g.id] ?? kitText(g)}\nKader: ${squad}\n\nDas Dossier steht in 11Plan. Bitte bis Freitag zu- oder absagen.`;
   return `<div class="card msg"><div class="row between"><h3>Mannschaftsnachricht</h3><button class="ib" data-msg="1" aria-label="Schließen">${ICON.x}</button></div>
     <textarea id="msgtxt" rows="11" aria-label="Text der Mannschaftsnachricht">${esc(txt)}</textarea>
     <div class="row"><button class="btn small" data-flash="Im Entwurf: ${players.length} Spieler bekämen eine Push-Nachricht aufs Handy, wer keine Push-Nachrichten erlaubt hat, eine E-Mail.">Als Push an alle Spieler</button>
@@ -1088,7 +1088,7 @@ function vVorbereitung() {
   return `${demo}${spielHead(g,'spiel-vorbereitung')}
   <div class="row between"><p class="sub" style="margin:0">Aufgebaut wie das Dossier. Was hier steht, kommt ins PDF. KI-Fakten lassen sich ändern, neu ziehen oder entfernen.</p>
     <div class="row"><span class="note">Spielphasen:</span><div class="seg">${[['gegner','Gegner'],['wir','Wir'],['beides','Beides']].map(([k,l])=>`<button data-model="${k}" class="${state.model===k?'on':''}">${l}</button>`).join('')}</div></div></div>
-  <div class="q"><b>Rückfrage von Coach.AI:</b> 6 der 19 Tore des Gegners fielen nach Standards. Soll Standards defensiv in „Unser Plan“?</div>
+  <div class="q"><b>Rückfrage von 11Plan:</b> 6 der 19 Tore des Gegners fielen nach Standards. Soll Standards defensiv in „Unser Plan“?</div>
   ${readBox(g)}
   ${sl.map(({s,i},n)=>slide(n,s,bodies[i])).join('')}
   <div class="card finish"><div class="row between"><div><h3>Fertig?</h3><p class="sub">Das PDF enthält genau die Seiten mit Haken „im Dossier“.</p></div>
@@ -1126,7 +1126,7 @@ function vNachbereitung() {
     <div class="card"><span class="label-src">Von fussball.de</span><h3>Spielverlauf</h3><p class="sub">Für dieses Beispiel sind die Tore erfunden.</p>
       <ul class="list"><li><span>12′ 1:0 Luca Neumann</span></li><li><span>38′ 1:1 Gegner</span></li><li><span>67′ 2:1 Max Hoffmann</span></li><li><span>88′ 2:2 Gegner</span></li></ul></div>
     <div class="card"><span class="label-src">Fragebogen</span><h3>Trainingsschwerpunkt</h3>
-      <div class="q"><b>Vorschlag von Coach.AI:</b> Beide Gegentore fielen kurz nach eigenem Ballverlust. Soll der laufende Block „Sofort Gegenpressing“ um zwei Wochen verlängert werden?</div>
+      <div class="q"><b>Vorschlag von 11Plan:</b> Beide Gegentore fielen kurz nach eigenem Ballverlust. Soll der laufende Block „Sofort Gegenpressing“ um zwei Wochen verlängert werden?</div>
       <div class="row"><button class="btn small">Verlängern</button><button class="btn ghost small">Anderer Schwerpunkt</button></div>
       ${textBox('nb-sp','Dein Schwerpunkt aus dem Spiel','z. B. Abstände im Mittelfeld gegen den Ball')}</div>
   </div>
@@ -1195,7 +1195,7 @@ function vPhilosophie() {
   <div class="head"><div><h1>Spielphilosophie</h1><p>Die Vorarbeit für alles andere. Einmal festlegen, selten ändern.</p></div></div>
   <div class="card"><div class="chain"><span class="box">1 Philosophie</span><span class="arr">→</span><span class="box">2 Prinzipien je Spielphase</span><span class="arr">→</span><span class="box">3 Schwerpunkte in der Periodisierung</span><span class="arr">→</span><span class="box">4 Einheiten und Übungen</span></div>
     <p class="note">Die Nachbereitung bewertet die Prinzipien nach jedem Spiel. So siehst du unten, wie ausgeprägt jedes Prinzip gerade ist.</p></div>
-  <div class="card"><h3>Schritt 1: Wie wollen wir spielen?</h3><p class="sub">Leitfragen. Antworten gern per Sprachnachricht. Coach.AI hilft danach, daraus Prinzipien zu formulieren.</p>
+  <div class="card"><h3>Schritt 1: Wie wollen wir spielen?</h3><p class="sub">Leitfragen. Antworten gern per Sprachnachricht. 11Plan hilft danach, daraus Prinzipien zu formulieren.</p>
     <div class="grid g2">
       ${textBox('ph-ball','Was wollen wir mit dem Ball?','z. B. den Ball haben, flach von hinten heraus, Geduld bis zur Lücke')}
       ${textBox('ph-gegen','Was wollen wir gegen den Ball?','z. B. früh stören, Mitte zu, Gegner auf die Seite lenken')}
@@ -1203,7 +1203,7 @@ function vPhilosophie() {
       ${textBox('ph-kader','Was passt zu unserem Kader?','z. B. schnelle Außen, kopfballstarke Innenverteidiger, junger Kader')}
     </div>
     ${textBox('philo','Unser Leitsatz in einem Satz','z. B. Wir wollen den Ball haben, und wenn wir ihn verlieren, holen wir ihn sofort zurück.',1)}
-    <div class="row"><button class="btn ghost small" data-flash="Coach.AI formuliert aus euren Antworten Vorschläge für Prinzipien je Spielphase. Ihr entscheidet, was übernommen wird. Im Entwurf ohne Funktion.">${ICON.spark} Prinzipien vorschlagen lassen</button></div>
+    <div class="row"><button class="btn ghost small" data-flash="11Plan formuliert aus euren Antworten Vorschläge für Prinzipien je Spielphase. Ihr entscheidet, was übernommen wird. Im Entwurf ohne Funktion.">${ICON.spark} Prinzipien vorschlagen lassen</button></div>
     ${flashBox()}</div>
   <h3 class="grp">Schritt 2: Prinzipien je Spielphase und wie ausgeprägt sie sind</h3>
   ${PHASES.map(ph=>`<div class="card"><div class="row between"><h3>${ph}</h3><button class="btn ghost small">Prinzip hinzufügen</button></div>
@@ -1242,7 +1242,7 @@ function setTraining() {
 function setSpieltag() {
   const flow = k => { const rows = settings.flow[k], times = flowTimes(rows, state.kickoff);
     return `<div class="card"><h3>Ablauf ${k==='heim'?'Heimspiel':'Auswärtsspiel'}</h3>
-    <p class="sub">Programmpunkte in ihrer Reihenfolge mit Dauer. Coach.AI rechnet vom Anstoß zurück, daraus ergeben sich Treffpunkt und Zeitplan im Dossier und in der Mannschaftsnachricht.</p>
+    <p class="sub">Programmpunkte in ihrer Reihenfolge mit Dauer. 11Plan rechnet vom Anstoß zurück, daraus ergeben sich Treffpunkt und Zeitplan im Dossier und in der Mannschaftsnachricht.</p>
     <div class="flowed"><div class="flowlist"><div class="flowrow head"><span>Programmpunkt</span><span>Dauer</span><span></span></div>
       ${rows.map(([l,m],i)=>`<div class="flowrow"><input type="text" data-flow="${k}" data-i="${i}" data-k="0" value="${esc(l)}" aria-label="Programmpunkt ${i+1}">
         <span class="dur"><input type="number" class="f" min="0" step="5" data-flow="${k}" data-i="${i}" data-k="1" value="${m}" aria-label="Dauer in Minuten"> min</span>
@@ -1254,7 +1254,7 @@ function setSpieltag() {
       <span class="row" style="flex-wrap:nowrap"><input type="color" id="kit-${k}-${i}c" data-kit="${k}" data-i="${i}" data-k="2" value="${col}" aria-label="Farbe ${part}"><input type="text" id="kit-${k}-${i}" data-kit="${k}" data-i="${i}" data-k="1" value="${esc(name)}"></span></label>`).join('')}</div>
     <div class="row" style="align-items:center">${state.kitPhoto[k] ? `<img class="kitphoto" src="${state.kitPhoto[k]}" alt="Foto Spielkleidung ${k}">` : kitSvg(k)}
       <label class="btn ghost small" for="kitfile-${k}">Foto hochladen</label><input type="file" accept="image/*" id="kitfile-${k}" data-kitfile="${k}" class="visually-hidden">
-      <span class="note">Ohne Foto zeichnet Coach.AI die Kleidung aus den Farben.</span></div></div>`;
+      <span class="note">Ohne Foto zeichnet 11Plan die Kleidung aus den Farben.</span></div></div>`;
   return `${flow('heim')}${flow('auswärts')}
   <div class="grid g2">${kit('Heim')}${kit('Auswärts')}</div>
   <div class="grid g2"><div class="card"><h3>Aufwärmkleidung</h3><input type="text" data-warm="1" value="${esc(settings.warmup)}" aria-label="Aufwärmkleidung"></div>
@@ -1285,7 +1285,7 @@ function setNotify() {
     <div class="scroll"><table><thead><tr><th>Anlass</th>${CHANNELS.map(([,l])=>`<th>${l}</th>`).join('')}</tr></thead><tbody>
     ${NOTIFY.map(([k,l])=>`<tr><td>${l}</td>${CHANNELS.map(([c,cl])=>`<td><input type="checkbox" data-notify="${k}-${c}" ${state.notify[k+'-'+c]?'checked':''} aria-label="${l}: ${cl}"></td>`).join('')}</tr>`).join('')}</tbody></table></div>
     <ul class="list"><li><span><b>Push aufs Handy:</b> Der Spieler legt die Seite einmal auf den Startbildschirm und erlaubt Mitteilungen. Kostenlos, läuft über euren Server.</span></li>
-    <li><span><b>WhatsApp-Gruppe:</b> Coach.AI bereitet den Text mit Link vor, ihr tippt auf „In WhatsApp teilen“ und wählt die Gruppe. Kostenlos, aber ein Klick von euch.</span></li>
+    <li><span><b>WhatsApp-Gruppe:</b> 11Plan bereitet den Text mit Link vor, ihr tippt auf „In WhatsApp teilen“ und wählt die Gruppe. Kostenlos, aber ein Klick von euch.</span></li>
     <li><span><b>E-Mail:</b> für alle ohne Push. Kostenlos über euren Server.</span></li></ul></div>`;
 }
 function setFristen() {
@@ -1348,13 +1348,13 @@ function vSpielersicht() {
   <div class="head"><div><h1>Spielersicht (Vorschau)</h1><p>So sieht es ein Spieler auf dem Handy. Was sichtbar ist, stellst du in den Einstellungen unter Spielersicht ein.</p></div><a class="btn ghost small" href="#einstellungen" data-settab="spieler">Sichtbarkeit einstellen</a></div>
   <div class="row"><label class="row note" for="pvnow">Vorschau-Zeitpunkt <select class="f" id="pvnow" style="width:auto"><option value="2026-11-11T11:00" ${state.pvNow==='2026-11-11T11:00'?'selected':''}>Mi 11.11., 11:00 Uhr (heute)</option><option value="2026-11-12T15:00" ${state.pvNow==='2026-11-12T15:00'?'selected':''}>Do 12.11., 15:00 Uhr (nach der Frist fürs Training)</option></select></label></div>
   <div class="grid" style="grid-template-columns:minmax(0,380px) minmax(0,1fr);align-items:start">
-    <div class="phone"><div class="phone-h"><b>Coach.AI</b><span class="note">${me.name}</span></div>
+    <div class="phone"><div class="phone-h"><b>11Plan</b><span class="note">${me.name}</span></div>
       <div class="ptabs">${tabs.map(([k,l])=>`<button data-pvtab="${k}" class="${state.pvTab===k?'on':''}">${l}</button>`).join('')}</div>
       ${body[state.pvTab]()}
     </div>
     <div class="card"><h3>So kommt der Spieler hinein</h3>
       <ul class="list"><li><span><b>Eigener Link:</b> Jeder Spieler bekommt einmal einen persönlichen Link, etwa per WhatsApp vom Trainer. Der Link ist sein Zugang, ohne Passwort. Er öffnet ihn und kann die Seite als App-Symbol auf den Startbildschirm legen.</span></li>
-      <li><span><b>Wenn ein Link weitergegeben wird:</b> ihr erzeugt in Coach.AI einen neuen, der alte geht dann nicht mehr.</span></li>
+      <li><span><b>Wenn ein Link weitergegeben wird:</b> ihr erzeugt in 11Plan einen neuen, der alte geht dann nicht mehr.</span></li>
       <li><span><b>Benachrichtigungen:</b> Liegt die Seite auf dem Startbildschirm, kann sie Push-Nachrichten schicken, etwa „Nachbereitung gegen SV Musterdorf ist da“. Wer das nicht will, bekommt E-Mail, oder ihr teilt den Text in der WhatsApp-Gruppe.</span></li>
       <li><span><b>Absagen</b> hier erscheinen sofort im Kalender und in „TW / Feld“. Probier „Nicht dabei“ aus und schau ins Dashboard.</span></li></ul></div>
   </div>`;

@@ -7,9 +7,9 @@ def rep(a, b, count=1):
     assert a in s, a[:110]
     s = s.replace(a, b) if count == 0 else s.replace(a, b, count)
 
-# ---------- Fragen von Coach.AI: neu generieren ----------
-rep("function vUebung() {", r"""/** Frage von Coach.AI mit Knopf „neue Frage“. Die Liste wird aus den Daten erzeugt, der Knopf blättert weiter. */
-function askBox(key, list, label='Frage von Coach.AI') {
+# ---------- Fragen von 11Plan: neu generieren ----------
+rep("function vUebung() {", r"""/** Frage von 11Plan mit Knopf „neue Frage“. Die Liste wird aus den Daten erzeugt, der Knopf blättert weiter. */
+function askBox(key, list, label='Frage von 11Plan') {
   list = list.filter(Boolean); if (!list.length) return '';
   const i = (state.ask[key] || 0) % list.length;
   return `<div class="q askq"><div><b>${label}:</b> ${esc(list[i])}</div><button class="ib" data-reask="${key}" title="Neue Frage" aria-label="Neue Frage">${ICON.refresh}</button></div>`;
@@ -27,10 +27,10 @@ function postQuestions(g) {
   return q;
 }
 function vUebung() {""")
-rep("""      <div class="q"><b>Frage von Coach.AI:</b> ${conc.length ? `${conc.length} Gegentore, davon ${c2} in der zweiten Halbzeit. Woran lag es aus deiner Sicht, und soll daraus ein Schwerpunkt für die nächsten Wochen werden?` : 'Kein Gegentor. Was hat gegen den Ball besonders gut funktioniert?'}</div>""",
+rep("""      <div class="q"><b>Frage von 11Plan:</b> ${conc.length ? `${conc.length} Gegentore, davon ${c2} in der zweiten Halbzeit. Woran lag es aus deiner Sicht, und soll daraus ein Schwerpunkt für die nächsten Wochen werden?` : 'Kein Gegentor. Was hat gegen den Ball besonders gut funktioniert?'}</div>""",
     """      ${askBox('post-'+g.id, postQuestions(g))}""")
-rep("""  ${REAL.ask && isNext ? `<div class="q"><b>Rückfrage von Coach.AI:</b> ${esc(REAL.ask)}</div>` : ''}""",
-    """  ${isNext ? askBox('prep-'+g.id, REAL.asks, 'Rückfrage von Coach.AI') : ''}""")
+rep("""  ${REAL.ask && isNext ? `<div class="q"><b>Rückfrage von 11Plan:</b> ${esc(REAL.ask)}</div>` : ''}""",
+    """  ${isNext ? askBox('prep-'+g.id, REAL.asks, 'Rückfrage von 11Plan') : ''}""")
 rep("""      ${full?`<div class="q">Im Verhältnis zum Ligaschnitt fallen die meisten Gegentore zwischen der ${bins[bi].replace('–','. und der ')}. Minute (${ba[bi]} gegenüber ${de(lb[bi])}). Liegt das eher an der Ordnung gegen den Ball oder am Umschalten nach Ballverlust?</div>`:''}</div>""",
     """      ${full?askBox('ana', [
         `Im Verhältnis zum Ligaschnitt fallen die meisten Gegentore zwischen der ${bins[bi].replace('–','. und der ')}. Minute (${ba[bi]} gegenüber ${de(lb[bi])}). Liegt das eher an der Ordnung gegen den Ball oder am Umschalten nach Ballverlust?`,
@@ -38,7 +38,7 @@ rep("""      ${full?`<div class="q">Im Verhältnis zum Ligaschnitt fallen die me
         `${ba[3]} Gegentore direkt nach der Pause zwischen der 46. und 60. Minute (Ligaschnitt ${de(lb[3])}). Wie läuft die Halbzeitansprache, und kommt sie an?`,
         `${ba[5]} Gegentore ab der 76. Minute (Ligaschnitt ${de(lb[5])}). Fehlt am Ende die Kraft oder die Konzentration?`,
         `${bf[4]+bf[5]} unserer ${bf.reduce((a,b)=>a+b,0)} Tore fallen in der letzten halben Stunde. Was ist dann anders als vorher?`,
-      ], 'Frage von Coach.AI'):''}</div>""")
+      ], 'Frage von 11Plan'):''}</div>""")
 
 # ---------- Spielverlauf: Tore kommentieren ----------
 rep("""      <ul class="list">${tl.map(x=>`<li><span>${x.min} ${x.score||''} ${esc(x.who)}</span><span class="pill ${x.own?'':'game'}">${x.own?'TSG':'Gegner'}</span></li>`).join('') || '<li><span class="note">Im Spielbericht stehen keine Tore.</span></li>'}</ul></div>""",

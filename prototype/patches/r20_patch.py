@@ -85,7 +85,7 @@ rep("<div class=\"head\"><div><h1>Kader</h1><p>${players.length} Spieler laut Fu
 rep("['spieler','Spielersicht'],", "['spieler','Spielersicht'],['gespraeche','Spielergespräche'],")
 rep("({fristen:setFristen,", "({gespraeche:setGespraeche,fristen:setFristen,")
 rep("function setDaten() {", r"""function setGespraeche() {
-  return `<div class="card"><h3>Wiederkehrende Gesprächsrunden</h3><p class="sub">Coach.AI erinnert dich rechtzeitig vor dem Zeitraum auf dem Dashboard und zeigt, mit wem das Gespräch noch offen ist. Zeiträume als „TT.MM.–TT.MM.“, mehrere mit Semikolon getrennt.</p></div>
+  return `<div class="card"><h3>Wiederkehrende Gesprächsrunden</h3><p class="sub">11Plan erinnert dich rechtzeitig vor dem Zeitraum auf dem Dashboard und zeigt, mit wem das Gespräch noch offen ist. Zeiträume als „TT.MM.–TT.MM.“, mehrere mit Semikolon getrennt.</p></div>
   ${talkSeries.map(x=>{ const w = seriesWindow(x, TODAY); return `<div class="card serset ${x.active?'':'off'}"><div class="row between"><label class="row" for="ser-a-${x.id}"><input type="checkbox" id="ser-a-${x.id}" data-ser="${x.id}" data-k="active" ${x.active?'checked':''}> <b>aktiv</b></label>
       <span class="note">${w ? `nächster Zeitraum: ${fmtY(w.from)} bis ${fmtY(w.to)}${w.state==='läuft'?' (läuft)':''}` : 'kein gültiger Zeitraum'}</span><button class="ib" data-serdel="${x.id}" aria-label="Runde löschen">${ICON.x}</button></div>
     <div class="grid g3">

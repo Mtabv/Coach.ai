@@ -229,7 +229,7 @@ function vVorbereitung() {
   if (state.include['s-aufst'] == null) state.include['s-aufst'] = false;
   return `${demo}${spielHead(g,'spiel-vorbereitung')}
   <p class="sub" style="margin:0">Aufgebaut wie das Dossier. Jede Seite zeigt, woher die Inhalte kommen: feste Daten, KI-Erkenntnisse aus den Zahlen oder dein Fragebogen.</p>
-  ${REAL.ask && isNext ? `<div class="q"><b>Rückfrage von Coach.AI:</b> ${esc(REAL.ask)}</div>` : ''}
+  ${REAL.ask && isNext ? `<div class="q"><b>Rückfrage von 11Plan:</b> ${esc(REAL.ask)}</div>` : ''}
   ${readBox(g)}
   ${parts.map(([id,title,sp,body],n)=>slide(n,[id,title],body).replace('</h3>', `</h3>${sp}`)).join('')}
   <div class="card finish"><div class="row between"><div><h3>Fertig?</h3><p class="sub">Das PDF enthält genau die Seiten mit Haken „im Dossier“.</p></div>
@@ -245,7 +245,7 @@ rep("'Für diesen Bereich gibt es im Entwurf keine weiteren Fakten.'", "'Für di
 rep("const pName = p => `${p.name}${isTW(p)?' (TW)':''}`;", "const pName = p => `${av(p,'sm')} ${p.name}${isTW(p)?' (TW)':''}`;")
 rep("<button data-bench=\"${p.id}\" class=\"${a?'out':''}\" ${a?'disabled':''}><span>${p.nr} ${p.name}</span>", "<button data-bench=\"${p.id}\" class=\"${a?'out':''}\" ${a?'disabled':''}><span class=\"row\" style=\"flex-wrap:nowrap;gap:6px\">${av(p,'sm')}${p.nr} ${p.name}</span>")
 rep("${xi.map(p=>`<tr><td><b>${p.nr?p.nr+' ':''}${esc(p.name)}</b>", "${xi.map(p=>`<tr><td><span class=\"row\" style=\"flex-wrap:nowrap;gap:8px\">${av(p)}<b>${p.nr?p.nr+' ':''}${esc(p.name)}</b></span>")
-rep("<div class=\"phone\"><div class=\"phone-h\"><b>Coach.AI</b><span class=\"note\">${me.name}</span></div>", "<div class=\"phone\"><div class=\"phone-h\"><b>Coach.AI</b><span class=\"row\" style=\"gap:6px\">${av(me,'sm')}<span class=\"note\">${me.name}</span></span></div>")
+rep("<div class=\"phone\"><div class=\"phone-h\"><b>11Plan</b><span class=\"note\">${me.name}</span></div>", "<div class=\"phone\"><div class=\"phone-h\"><b>11Plan</b><span class=\"row\" style=\"gap:6px\">${av(me,'sm')}<span class=\"note\">${me.name}</span></span></div>")
 
 # ===================== Spielersicht: Analytics wie oben =====================
 i = s.index("    analytics: () => `${pv.analyticsSelf?"); j = s.index("\n  };", i)

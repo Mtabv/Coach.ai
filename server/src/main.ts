@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import { backup, openDb } from './db.js';
 import { createHandler } from './app.js';
 
-/** Start des Coach.AI-Servers. Alle Einstellungen kommen aus Umgebungsvariablen (deploy/.env). */
+/** Start des 11Plan-Servers. Alle Einstellungen kommen aus Umgebungsvariablen (deploy/.env). */
 const env = process.env;
 const dataDir = env.COACHAI_DATEN || './daten';
 const db = openDb(join(dataDir, 'coachai.db'));
@@ -18,7 +18,7 @@ const handler = createHandler(db, {
 });
 
 const port = Number(env.PORT || 3000);
-createServer(handler).listen(port, () => console.log(`Coach.AI läuft auf Port ${port}`));
+createServer(handler).listen(port, () => console.log(`11Plan läuft auf Port ${port}`));
 
 // Tägliche Sicherung der Datenbank (zusätzlich zu den Hetzner-Backups), 14 Tage aufbewahrt.
 const doBackup = () => { try { console.log('Sicherung:', backup(db, join(dataDir, 'sicherungen'))); } catch (e) { console.error('Sicherung fehlgeschlagen', e); } };

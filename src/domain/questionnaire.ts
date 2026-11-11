@@ -13,7 +13,7 @@ export const SECTIONS: { id: SectionId; title: string; intro: string }[] = [
   { id: 'E', title: 'Unser Plan nach Spielphasen', intro: 'Wie wir in den vier Spielphasen spielen wollen – in Ihren Worten. Erscheint als Folie „So spielen wir“.' },
   { id: 'B', title: 'Organisation und Spielkleidung', intro: 'Zeiten werden aus dem gespeicherten Zeitmuster berechnet. Nur ausdrückliche Abweichungen eintragen.' },
   { id: 'C', title: 'Kader und Ausgabe', intro: 'Der zuletzt bestätigte Kader wird übernommen und bleibt editierbar.' },
-  { id: 'D', title: 'Unser Auftrag', intro: 'Ihre Botschaften an die Mannschaft. Coach.AI ergänzt keine eigenen Botschaften.' },
+  { id: 'D', title: 'Unser Auftrag', intro: 'Ihre Botschaften an die Mannschaft. 11Plan ergänzt keine eigenen Botschaften.' },
 ];
 
 export type QuestionKind = 'text' | 'organisation' | 'kit' | 'squad' | 'layout' | 'mission' | 'motto' | 'players';
@@ -81,7 +81,7 @@ export const QUESTIONS: QuestionDef[] = [
     title: 'Unsere Standards: Worauf achten wir bei eigenen und gegnerischen Ecken und Freistößen?' },
   { id: 'q9_abweichungen', section: 'B', number: 11, kind: 'organisation', allowUnknown: false, opponentSpecific: true,
     title: 'Gibt es ausdrücklich neue Abweichungen von Spielort oder Zeitmuster?',
-    help: 'Ohne Abweichung berechnet Coach.AI die Zeiten selbst. Bei Auswärtsspielen bitte die aktuelle Fahrzeit für genau diese Fahrt angeben.' },
+    help: 'Ohne Abweichung berechnet 11Plan die Zeiten selbst. Bei Auswärtsspielen bitte die aktuelle Fahrzeit für genau diese Fahrt angeben.' },
   { id: 'q10_ablauf', section: 'B', number: 12, kind: 'text', allowUnknown: false, opponentSpecific: true,
     title: 'Berechneter Ablauf: Gibt es ausdrücklich genannte Änderungen?',
     help: 'Die Traineransprache wird nur als organisatorischer Zeitblock dargestellt.' },

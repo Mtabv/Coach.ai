@@ -164,7 +164,7 @@ export function TeamPage() {
               value={l.url}
               placeholder="https://…"
               onChange={(v) => set((t) => (t.links[i].url = v))}
-              hint={l.kind === 'fussball.de' ? 'Mannschaftsseite mit „team-id“ im Link. Wird für den Abruf über den lokalen Dienst genutzt.' : l.kind === 'FuPa' ? 'Optional, z. B. https://www.fupa.net/team/… – sonst findet Coach.AI die Mannschaft über den Vereinsnamen.' : undefined}
+              hint={l.kind === 'fussball.de' ? 'Mannschaftsseite mit „team-id“ im Link. Wird für den Abruf über den lokalen Dienst genutzt.' : l.kind === 'FuPa' ? 'Optional, z. B. https://www.fupa.net/team/… – sonst findet 11Plan die Mannschaft über den Vereinsnamen.' : undefined}
             />
           ))}
           <div className="field">
@@ -256,7 +256,7 @@ export function TeamPage() {
         </Card>
 
         <Card title="Spielidee und Grundordnung (optional)">
-          <p className="muted">Nur als ausdrückliche Eingabe des Trainers. Coach.AI entwickelt keine eigene Spielidee.</p>
+          <p className="muted">Nur als ausdrückliche Eingabe des Trainers. 11Plan entwickelt keine eigene Spielidee.</p>
           <TextArea
             label="Spielidee (Trainereingabe)"
             value={team.gameIdea?.text ?? ''}

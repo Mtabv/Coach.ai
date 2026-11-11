@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Coach.AI auf den Hetzner-Server</title>
+<title>11Plan auf den Hetzner-Server</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Source+Sans+3:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 <style>
@@ -58,13 +58,13 @@ table { border-collapse: collapse; width: 100%; font-size: 15px; } td, th { text
 <body class="os-win">
 <main>
   <div>
-    <h1>Coach.AI auf deinen Hetzner-Server</h1>
+    <h1>11Plan auf deinen Hetzner-Server</h1>
     <p class="lead">Schritt für Schritt, ohne Vorkenntnisse. Du arbeitest die Schritte der Reihe nach ab und hakst sie ab. Befehle kopierst du mit „Kopieren“ und fügst sie ein.</p>
   </div>
 
   <div class="box">
     <h3>Worum es geht</h3>
-    <p>Am Ende läuft Coach.AI unter einer eigenen Adresse, etwa <code>https://coach.deine-domain.de</code>, mit Login für dich und Thorsten. Die Daten liegen auf deinem Server, nicht bei Dritten. Dafür richten wir vier Dinge ein:</p>
+    <p>Am Ende läuft 11Plan unter einer eigenen Adresse, <code>https://11plan.de</code>, mit Login für dich und Thorsten. Die Daten liegen auf deinem Server, nicht bei Dritten. Dafür richten wir vier Dinge ein:</p>
     <div class="parts">
       <div><b>Schlüssel</b><span>Dein Laptop bekommt einen digitalen Schlüssel für den Server, statt eines Passworts.</span></div>
       <div><b>Server</b><span>Updates, Firewall und Backups, damit er sicher läuft.</span></div>
@@ -76,7 +76,7 @@ table { border-collapse: collapse; width: 100%; font-size: 15px; } td, th { text
 
   <div class="box">
     <h3>Ehrlich zum Stand</h3>
-    <p>Teil A und C kannst du sofort machen. Teil B, also Coach.AI selbst aufspielen, geht, sobald ich die Server-Fassung gebaut habe: mit Login, gemeinsamer Datenbank und dem Datendienst. Der Entwurf, den du gerade anklickst, speichert noch im Browser und ist dafür noch nicht gedacht.</p>
+    <p>Teil A und C kannst du sofort machen. Teil B, also 11Plan selbst aufspielen, geht, sobald ich die Server-Fassung gebaut habe: mit Login, gemeinsamer Datenbank und dem Datendienst. Der Entwurf, den du gerade anklickst, speichert noch im Browser und ist dafür noch nicht gedacht.</p>
   </div>
 
   <div class="tabs" role="group" aria-label="Betriebssystem des Laptops"><span class="time" style="align-self:center">Dein Laptop:</span><button data-set="win" class="on">Windows</button><button data-set="mac">Mac</button></div>
@@ -123,7 +123,7 @@ table { border-collapse: collapse; width: 100%; font-size: 15px; } td, th { text
     <div class="cmd">apt update && apt upgrade -y</div>
     <p>Sicherheitsupdates künftig automatisch einspielen lassen. Bei der Frage „Yes“ wählen:</p>
     <div class="cmd">apt install -y unattended-upgrades && dpkg-reconfigure -plow unattended-upgrades</div>
-    <p>Braucht ein Update einen Neustart, startet der Server nachts um 4 Uhr kurz neu. Coach.AI ist danach nach etwa einer Minute wieder da:</p>
+    <p>Braucht ein Update einen Neustart, startet der Server nachts um 4 Uhr kurz neu. 11Plan ist danach nach etwa einer Minute wieder da:</p>
     <div class="cmd">printf 'Unattended-Upgrade::Automatic-Reboot "true";\nUnattended-Upgrade::Automatic-Reboot-Time "04:00";\n' > /etc/apt/apt.conf.d/52coachai</div>
   </section>
 
@@ -143,7 +143,7 @@ table { border-collapse: collapse; width: 100%; font-size: 15px; } td, th { text
   </section>
 
   <section class="step" id="s8"><div class="step-h"><span class="no">8</span><h3>Docker installieren</h3><label><input type="checkbox"> erledigt</label></div>
-    <p>Docker packt Coach.AI, die Datenbank und den Datendienst in fertige Pakete. So musst du nichts einzeln installieren.</p>
+    <p>Docker packt 11Plan, die Datenbank und den Datendienst in fertige Pakete. So musst du nichts einzeln installieren.</p>
     <div class="cmd">curl -fsSL https://get.docker.com | sh</div>
     <p>Test: Steht am Ende „Hello from Docker!“, passt alles.</p>
     <div class="cmd">docker run --rm hello-world</div>
@@ -151,26 +151,26 @@ table { border-collapse: collapse; width: 100%; font-size: 15px; } td, th { text
 
   <section class="step" id="s9"><div class="step-h"><span class="no">9</span><h3>Adresse einrichten</h3><label><input type="checkbox"> erledigt</label></div>
     <ol>
-      <li>Klären, welche Domain du nutzt. Entweder eine Subdomain der Vereinsseite, etwa <code>coach.tsg-wilhelmshoehe.de</code> (dafür braucht es den, der die Vereinsdomain verwaltet), oder eine eigene Domain, die es ab etwa einem Euro im Monat gibt, zum Beispiel direkt bei Hetzner.</li>
-      <li>Bei der Domain-Verwaltung einen <b>A-Eintrag</b> anlegen: Name <code>coach</code>, Wert ist die IPv4-Adresse des Servers.</li>
+      <li>Die Domain ist <code>11plan.de</code>, gekauft bei INWX.</li>
+      <li>Bei INWX unter <b>Nameserver</b> beziehungsweise <b>DNS</b> die Einträge vom Typ <b>A</b> so einstellen: Name leer → <code>116.203.28.104</code>, Name <code>www</code> → <code>116.203.28.104</code>. Den Eintrag mit Name <code>*</code> löschen. NS und SOA bleiben.</li>
       <li>Nach einigen Minuten bis Stunden prüfen, auf dem Laptop:</li>
     </ol>
-    <div class="cmd">ping coach.deine-domain.de</div>
+    <div class="cmd">ping 11plan.de</div>
     <p>Erscheint die Server-Adresse in der Antwort, stimmt es. Mit <b>Strg + C</b> beenden.</p>
   </section>
 
-  <h2>Teil B: Coach.AI aufspielen</h2>
+  <h2>Teil B: 11Plan aufspielen</h2>
   <p class="time">sobald die Server-Fassung fertig ist, etwa 15 Minuten</p>
 
-  <section class="step" id="s10"><div class="step-h"><span class="no">10</span><h3>Coach.AI herunterladen und starten</h3><label><input type="checkbox"> erledigt</label></div>
-    <p>Ich lege dafür im Repository einen Ordner <code>deploy</code> an. Darin steckt alles: Coach.AI, die Datenbank, der Datendienst und ein Webserver, der das HTTPS-Zertifikat selbst besorgt. Auf dem Server:</p>
+  <section class="step" id="s10"><div class="step-h"><span class="no">10</span><h3>11Plan herunterladen und starten</h3><label><input type="checkbox"> erledigt</label></div>
+    <p>Ich lege dafür im Repository einen Ordner <code>deploy</code> an. Darin steckt alles: 11Plan, die Datenbank, der Datendienst und ein Webserver, der das HTTPS-Zertifikat selbst besorgt. Auf dem Server:</p>
     <div class="cmd">git clone -b main https://github.com/mtabv/coach.ai.git /opt/coachai && cd /opt/coachai/deploy && cp .env.beispiel .env</div>
     <p>Die Einstellungen öffnen und die Domain eintragen. Passwörter erzeugst du direkt auf dem Server, nie im Chat:</p>
     <div class="cmd">openssl rand -hex 24</div>
     <div class="cmd">nano .env</div>
     <p>Starten:</p>
     <div class="cmd">docker compose up -d --build</div>
-    <p>Der erste Start dauert etwa fünf Minuten, weil alles einmal gebaut wird. Danach ist Coach.AI unter deiner Adresse erreichbar. Beim ersten Aufruf gibst du den Einrichtungsschlüssel aus der <code>.env</code> ein und legst dein Trainer-Konto an. Über den Kreis mit deinen Initialen oben rechts erzeugst du dann den Einladungslink für Thorsten.</p>
+    <p>Der erste Start dauert etwa fünf Minuten, weil alles einmal gebaut wird. Danach ist 11Plan unter deiner Adresse erreichbar. Beim ersten Aufruf gibst du den Einrichtungsschlüssel aus der <code>.env</code> ein und legst dein Trainer-Konto an. Über den Kreis mit deinen Initialen oben rechts erzeugst du dann den Einladungslink für Thorsten.</p>
     <div class="note">Ist das Repository auf GitHub privat, klappt das Herunterladen so nicht. Sag mir dann Bescheid, ich ergänze einen Lesezugang nur für den Server.</div>
   </section>
 
@@ -178,8 +178,8 @@ table { border-collapse: collapse; width: 100%; font-size: 15px; } td, th { text
   <p class="time">einmalig, etwa 20 Minuten</p>
 
   <section class="step" id="s11"><div class="step-h"><span class="no">11</span><h3>Einen eigenen Zugang nur für GitHub anlegen</h3><label><input type="checkbox"> erledigt</label></div>
-    <p>So funktioniert es: Ich ändere Coach.AI hier im Chat und lege die Änderung im Repository ab. Sobald du sie auf GitHub freigibst, spielt GitHub sie selbst auf deinen Server. Dafür bekommt GitHub einen eigenen Schlüssel, der nur das darf. Ich sehe diesen Schlüssel nie.</p>
-    <p><b>Auf dem Server:</b> einen Benutzer <code>deploy</code> anlegen, der Coach.AI aktualisieren darf:</p>
+    <p>So funktioniert es: Ich ändere 11Plan hier im Chat und lege die Änderung im Repository ab. Sobald du sie auf GitHub freigibst, spielt GitHub sie selbst auf deinen Server. Dafür bekommt GitHub einen eigenen Schlüssel, der nur das darf. Ich sehe diesen Schlüssel nie.</p>
+    <p><b>Auf dem Server:</b> einen Benutzer <code>deploy</code> anlegen, der 11Plan aktualisieren darf:</p>
     <div class="cmd">adduser --disabled-password --gecos "" deploy && usermod -aG docker deploy && mkdir -p /home/deploy/.ssh && chown -R deploy:deploy /home/deploy/.ssh /opt/coachai</div>
     <p><b>Auf dem Laptop</b> (neues PowerShell- oder Terminal-Fenster) einen zweiten Schlüssel nur für GitHub erzeugen. Bei der Passphrase zweimal nur Enter drücken:</p>
     <div class="cmd">ssh-keygen -t ed25519 -f coachai-deploy -C "github-deploy"</div>

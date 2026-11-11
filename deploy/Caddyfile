@@ -10,3 +10,8 @@
 	}
 	reverse_proxy app:3000
 }
+
+# www.<domain> leitet auf die Hauptadresse um.
+www.{$COACHAI_DOMAIN} {
+	redir https://{$COACHAI_DOMAIN}{uri} permanent
+}

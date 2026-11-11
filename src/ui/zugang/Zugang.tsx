@@ -40,7 +40,7 @@ export function Zugang({ children }: { children: (sitzung: Sitzung | null) => Re
   };
   useEffect(() => { void pruefen().catch(() => setPhase({ p: 'anmelden' })); }, []);
 
-  if (phase.p === 'laden') return <Rahmen titel="Coach.AI wird geladen …" />;
+  if (phase.p === 'laden') return <Rahmen titel="11Plan wird geladen …" />;
   if (phase.p === 'lokal') return <StoreProvider>{children(null)}</StoreProvider>;
   if (phase.p === 'einrichten') return <Einrichten fertig={pruefen} />;
   if (phase.p === 'anmelden') return <Anmelden fertig={pruefen} />;
@@ -101,7 +101,7 @@ function Rahmen({ titel, text, children }: { titel: string; text?: string; child
   return (
     <div className="entwurf zugang">
       <div className="card zugang-karte">
-        <div className="zugang-marke">Coach<span>.AI</span></div>
+        <div className="zugang-marke">11<span>Plan</span></div>
         <h1>{titel}</h1>
         {text && <p className="note">{text}</p>}
         {children}
@@ -162,7 +162,7 @@ function Einrichten({ fertig }: { fertig: () => Promise<void> }) {
   const [schluessel, setSchluessel] = useState('');
   const f = useFormular(async () => { await api('/api/einrichten', { method: 'POST', body: { ...v, einrichtungsschluessel: schluessel } }); await fertig(); });
   return (
-    <Rahmen titel="Coach.AI einrichten" text="Einmalig: das erste Trainerkonto anlegen. Den Einrichtungsschlüssel findest du in der Datei .env auf dem Server.">
+    <Rahmen titel="11Plan einrichten" text="Einmalig: das erste Trainerkonto anlegen. Den Einrichtungsschlüssel findest du in der Datei .env auf dem Server.">
       <form className="zugang-form" onSubmit={f.onSubmit}>
         <Feld label="Einrichtungsschlüssel" autoComplete="off" value={schluessel} onChange={(e) => setSchluessel(e.target.value)} />
         <KontoFelder v={v} set={set} />

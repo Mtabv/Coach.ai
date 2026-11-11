@@ -8,9 +8,9 @@ Siehe `docs/spielnachbereitung.md`. Dort stehen Spielerbewertung (mit Abfrage, o
 
 ## Regelmäßige Abfragen und Trainingsschwerpunkte
 
-- **Regelmäßige Abfragen:** Coach.AI startet in festen Abständen eine kurze Abfrage beim Trainer, z. B. wöchentlich oder nach jedem Spiel.
+- **Regelmäßige Abfragen:** 11Plan startet in festen Abständen eine kurze Abfrage beim Trainer, z. B. wöchentlich oder nach jedem Spiel.
 - **Trainingsschwerpunkt setzen:** Der Trainer legt einen Schwerpunkt für einen Zeitraum fest, z. B. Fitness für die nächsten drei Wochen.
-  - Coach.AI kann einen Schwerpunkt vorschlagen, wenn sich in den Daten ein Muster zeigt.
+  - 11Plan kann einen Schwerpunkt vorschlagen, wenn sich in den Daten ein Muster zeigt.
   - Beispiel: Gegentore häufen sich regelmäßig in der Schlussphase → Vorschlag „Fitness“.
 - **Vorher prüfen, ob es wirklich ein Muster ist:**
   - Mindestanzahl Spiele mit vollständigem Spielbericht.
@@ -71,4 +71,4 @@ Hintergrund: Externe Spielberichte sind Kostentreiber (Sportmedia) und rechtlich
   - Trainerteam: Co-Trainer liefert Beobachtungen zu
 - **Übungsaustausch unter Trainern:** Jeder Trainer erfasst seine bewährten Übungen per Sprachnachricht und Skizzenfoto als Übungskarte (Organisation, Ablauf, Coachingpunkte, Varianten, Schlagworte). Die Karten lassen sich mit anderen Trainern teilen. Eine gemeinsame, praxisgeprüfte Bibliothek ist zugleich ein Grund mitzumachen.
   - Offen: Wer darf was sehen (nur eigener Verein / alle Teilnehmer)? Namensnennung des Urhebers. Missbrauch melden.
-- **Kommerzielle Übungsdatenbanken (Stand Recherche 07.11.2026):** easy2coach, fussballtraining.com, Advance Football, TacticTrain, Planet Training, Philippka „fussballtraining“. Das sind Endkunden-Abos zwischen etwa 5 und 15 € im Monat. Eine Einbindung in Coach.AI ginge nur über eine Lizenz- oder Kooperationsvereinbarung, die öffentlich nicht angeboten wird. Ansprechen, sobald es Pilottrainer gibt.
+- **Kommerzielle Übungsdatenbanken (Stand Recherche 07.11.2026):** easy2coach, fussballtraining.com, Advance Football, TacticTrain, Planet Training, Philippka „fussballtraining“. Das sind Endkunden-Abos zwischen etwa 5 und 15 € im Monat. Eine Einbindung in 11Plan ginge nur über eine Lizenz- oder Kooperationsvereinbarung, die öffentlich nicht angeboten wird. Ansprechen, sobald es Pilottrainer gibt.
