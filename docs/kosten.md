@@ -8,8 +8,8 @@ Stand 11.11.2026. Laufende Kosten für den Betrieb. Feste Beträge stehen nur do
 |---|---|---|---|
 | Server Hetzner Cloud CPX22 (2 vCPU, 4 GB RAM) | 24,00 € | 288,00 € | fest, Angabe von Manuel |
 | Hetzner-Backups (20 % des Serverpreises) | 4,80 € | 57,60 € | gerechnet aus dem Serverpreis |
-| Domain | offen | offen | kommt mit der Wahl der Domain |
-| **Summe bekannt** | **28,80 €** | **345,60 €** | Server und Backups |
+| Domain 11plan.de (INWX) | 0,50 € | 5,97 € | fest, Angabe von Manuel |
+| **Summe** | **29,30 €** | **351,57 €** | Server, Backups, Domain |
 
 Offen und beim Bestellen zu prüfen:
 - Ob die 24 € mit oder ohne Mehrwertsteuer angezeigt werden. Mit 19 % Mehrwertsteuer wären es 28,56 € nur für den Server.
