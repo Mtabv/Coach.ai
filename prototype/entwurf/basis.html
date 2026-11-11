@@ -1,0 +1,1529 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Coach.AI Teamzentrale Entwurf</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+/* Layout: feste Seitenleiste mit den Bereichen, rechts der Arbeitsbereich; auf dem Handy Leiste oben als Reiter. */
+:root {
+  --bg: #f3f5f4;
+  --panel: #ffffff;
+  --ink: #17221d;
+  --muted: #5b6a63;
+  --line: #d9e0dc;
+  --accent: #1f6f4a;
+  --accent-soft: #e2f0e8;
+  --game: #b5481f;
+  --game-soft: #fbe9e1;
+  --warn: #9a6a00;
+  --warn-soft: #fff4d6;
+  --pitch: #2e7d4f;
+  --display: "Barlow Condensed", "Arial Narrow", sans-serif;
+  --body: "Source Sans 3", "Segoe UI", system-ui, sans-serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #111816; --panel: #19221f; --ink: #e6ede9; --muted: #9baba3; --line: #2c3833;
+    --accent: #5cc08e; --accent-soft: #1d3329; --game: #f08a5d; --game-soft: #3a2219;
+    --warn: #e7b84a; --warn-soft: #362c12; --pitch: #24603e; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #111816; --panel: #19221f; --ink: #e6ede9; --muted: #9baba3; --line: #2c3833;
+  --accent: #5cc08e; --accent-soft: #1d3329; --game: #f08a5d; --game-soft: #3a2219;
+  --warn: #e7b84a; --warn-soft: #362c12; --pitch: #24603e; color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body { background: var(--bg); color: var(--ink); font: 16px/1.45 var(--body); }
+button, input, select, textarea { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+h1, h2, h3 { font-family: var(--display); font-weight: 600; letter-spacing: .01em; text-wrap: balance; margin: 0; }
+h1 { font-size: 30px; } h2 { font-size: 22px; } h3 { font-size: 18px; }
+.num { font-variant-numeric: tabular-nums; }
+
+.app { display: grid; grid-template-columns: 220px 1fr; min-height: 100%; background: linear-gradient(to right, var(--panel) 219px, var(--line) 219px 220px, var(--bg) 220px); }
+.side { background: var(--panel); border-right: 1px solid var(--line); padding: 18px 12px; display: flex; flex-direction: column; gap: 4px; position: sticky; top: 0; height: 100vh; }
+.brand { font-family: var(--display); font-size: 24px; font-weight: 700; padding: 0 10px 2px; }
+.team { color: var(--muted); font-size: 14px; padding: 0 10px 14px; border-bottom: 1px solid var(--line); margin-bottom: 8px; }
+.nav a { display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; border-radius: 6px; color: var(--ink); text-decoration: none; }
+.nav a:hover { background: var(--accent-soft); }
+.nav a.on { background: var(--accent); color: #fff; }
+.nav .badge { font-size: 12px; background: var(--game); color: #fff; border-radius: 10px; padding: 0 7px; }
+.who { margin-top: auto; border-top: 1px solid var(--line); padding: 12px 10px 0; font-size: 14px; color: var(--muted); display: grid; gap: 6px; }
+.who select { width: 100%; padding: 6px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); }
+
+main { padding: 20px 28px 40px; display: grid; gap: 18px; align-content: start; min-width: 0; }
+.demo { background: var(--warn-soft); color: var(--warn); border: 1px solid currentColor; border-radius: 8px; padding: 8px 12px; font-size: 14px; }
+.head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: end; gap: 12px; }
+.head p { margin: 4px 0 0; color: var(--muted); }
+.grid { display: grid; gap: 16px; }
+.g2 { grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); }
+.g3 { grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; display: grid; gap: 10px; align-content: start; min-width: 0; }
+.card .sub { color: var(--muted); font-size: 14px; margin: 0; }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.between { justify-content: space-between; }
+.pill { display: inline-block; font-size: 13px; border-radius: 20px; padding: 1px 9px; background: var(--accent-soft); color: var(--accent); white-space: nowrap; }
+.pill.game { background: var(--game-soft); color: var(--game); }
+.pill.warn { background: var(--warn-soft); color: var(--warn); }
+.pill.grey { background: var(--bg); color: var(--muted); border: 1px solid var(--line); }
+.btn { border: 1px solid var(--accent); background: var(--accent); color: #fff; border-radius: 6px; padding: 6px 12px; cursor: pointer; }
+.btn.ghost { background: transparent; color: var(--accent); }
+.btn.small { padding: 3px 9px; font-size: 14px; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+.seg button { border: 0; background: var(--panel); padding: 5px 12px; cursor: pointer; }
+.seg button.on { background: var(--accent); color: #fff; }
+.note { font-size: 13px; color: var(--muted); }
+.list { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.list li { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; border-bottom: 1px solid var(--line); padding-bottom: 6px; }
+.list li:last-child { border-bottom: 0; }
+table { border-collapse: collapse; width: 100%; font-size: 15px; }
+th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+th { font-size: 13px; color: var(--muted); font-weight: 600; }
+.scroll { overflow-x: auto; }
+input[type="text"], textarea, select.f { width: 100%; border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; background: var(--panel); }
+label.fl { display: grid; gap: 4px; font-size: 14px; color: var(--muted); }
+
+/* Kalender */
+.cal-wrap { display: grid; grid-template-columns: minmax(0, 1fr) 260px; gap: 16px; align-items: start; }
+.week { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 8px; }
+.day { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 8px; min-height: 230px; display: grid; gap: 8px; align-content: start; }
+.day.today { border-color: var(--accent); box-shadow: inset 0 3px 0 var(--accent); }
+.day .dh { font-size: 13px; color: var(--muted); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 4px; }
+.day .dh b { color: var(--ink); font-size: 15px; }
+.ev { border-radius: 8px; padding: 8px; font-size: 14px; display: grid; gap: 4px; overflow-wrap: anywhere; hyphens: auto; }
+.ev.tr { background: var(--accent-soft); border: 1px dashed var(--accent); }
+.ev.tr.filled { border-style: solid; }
+.ev.tr.over { outline: 3px solid var(--accent); }
+.ev.tr.pick { cursor: copy; outline: 2px dashed var(--game); }
+.ev.gm { background: var(--game-soft); border: 1px solid var(--game); color: var(--ink); }
+.ev .t { font-weight: 700; }
+.ev .u { background: var(--panel); border-radius: 6px; padding: 4px 6px; display: flex; justify-content: space-between; gap: 6px; align-items: center; }
+.ev .u button { border: 0; background: none; cursor: pointer; color: var(--muted); padding: 0 2px; }
+.ev .empty { color: var(--muted); font-size: 13px; }
+.inv { position: sticky; top: 16px; }
+.unit { border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 8px; padding: 8px 10px; background: var(--panel); cursor: grab; display: grid; gap: 2px; }
+.unit.sel { outline: 2px solid var(--game); }
+.unit small { color: var(--muted); }
+.month { display: grid; grid-template-columns: repeat(7, minmax(90px, 1fr)); gap: 4px; }
+.month .mh { font-size: 13px; color: var(--muted); padding: 2px 6px; }
+.mday { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; min-height: 92px; padding: 4px 6px; font-size: 13px; display: grid; gap: 3px; align-content: start; }
+.mday.out { opacity: .45; }
+.mday.today { border-color: var(--accent); }
+.chip { border-radius: 4px; padding: 1px 5px; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.chip.tr { background: var(--accent-soft); color: var(--accent); }
+.chip.tr.open { background: transparent; border: 1px dashed var(--accent); }
+.chip.gm { background: var(--game-soft); color: var(--game); }
+
+/* Aufstellung */
+.lineup { display: grid; grid-template-columns: minmax(0, 1fr) 260px; gap: 16px; align-items: start; }
+.pitch { position: relative; background: var(--pitch); border-radius: 10px; aspect-ratio: 105 / 68; overflow: hidden; }
+.pitch::before { content: ""; position: absolute; inset: 4%; border: 2px solid rgba(255,255,255,.55); border-radius: 2px; }
+.pitch::after { content: ""; position: absolute; left: 50%; top: 4%; bottom: 4%; border-left: 2px solid rgba(255,255,255,.55); }
+.pitch .circle { position: absolute; left: 50%; top: 50%; width: 17%; aspect-ratio: 1; border: 2px solid rgba(255,255,255,.55); border-radius: 50%; transform: translate(-50%, -50%); }
+.pitch .box { position: absolute; top: 25%; bottom: 25%; width: 15%; border: 2px solid rgba(255,255,255,.55); }
+.pitch .box.l { left: 4%; border-left: 0; } .pitch .box.r { right: 4%; border-right: 0; }
+.spot { position: absolute; transform: translate(-50%, -50%); display: grid; justify-items: center; gap: 2px; z-index: 1; background: none; border: 0; cursor: pointer; padding: 0; }
+.spot .dot { width: 36px; height: 36px; border-radius: 50%; background: #fff; color: #17221d; display: grid; place-items: center; font-weight: 700; font-size: 14px; border: 2px solid #17221d; }
+.spot.active .dot { background: #ffd34d; }
+.spot .nm { color: #fff; font-size: 13px; font-weight: 600; text-shadow: 0 1px 2px rgba(0,0,0,.6); white-space: nowrap; }
+.bench { display: grid; gap: 6px; }
+.bench button { text-align: left; border: 1px solid var(--line); background: var(--panel); border-radius: 6px; padding: 5px 8px; cursor: pointer; display: flex; justify-content: space-between; }
+.bench button.out { opacity: .5; cursor: not-allowed; }
+
+/* Bewertung */
+.rate { display: inline-flex; gap: 4px; }
+.rate button { width: 30px; height: 30px; border: 1px solid var(--line); background: var(--panel); border-radius: 6px; cursor: pointer; }
+.rate button.on { background: var(--accent); color: #fff; border-color: var(--accent); }
+.q { background: var(--accent-soft); border-radius: 8px; padding: 10px 12px; }
+
+/* Analytics */
+.bars { display: grid; gap: 6px; }
+.bar { display: grid; grid-template-columns: 170px 1fr 40px; gap: 8px; align-items: center; font-size: 14px; }
+.bar .track { background: var(--bg); border-radius: 4px; height: 14px; overflow: hidden; border: 1px solid var(--line); }
+.bar .fill { height: 100%; background: var(--accent); }
+.bar .fill.alt { background: var(--game); }
+.spark { width: 100%; height: 60px; }
+.spark polyline { fill: none; stroke: var(--accent); stroke-width: 2; }
+.spark .grid { stroke: var(--line); stroke-width: 1; }
+.spark circle { fill: var(--accent); }
+.spark text { fill: var(--muted); font-size: 10px; }
+
+@media (max-width: 1150px) { .cal-wrap { grid-template-columns: 1fr; } .inv { position: static; } }
+@media (max-width: 900px) {
+  .app { grid-template-columns: 1fr; background: var(--bg); }
+  .side { position: static; height: auto; flex-direction: row; flex-wrap: wrap; align-items: center; padding: 10px 16px; gap: 6px; }
+  .team { border: 0; padding: 0 10px 0 0; margin: 0; }
+  .nav { display: flex; flex-wrap: wrap; gap: 4px; width: 100%; }
+  .who { display: none; }
+  main { padding: 16px; }
+  .cal-wrap, .lineup { grid-template-columns: 1fr; }
+  .inv { position: static; }
+  .week { grid-template-columns: 1fr; }
+  .day { min-height: 0; }
+  .bar { grid-template-columns: 120px 1fr 34px; }
+}
+@media (prefers-reduced-motion: no-preference) { .nav a, .btn, .seg button { transition: background .15s; } }
+/* ---- Runde 2 ---- */
+.tabs { display: flex; flex-wrap: wrap; gap: 4px; border-bottom: 1px solid var(--line); }
+.tabs a, .tabs button { padding: 8px 14px; border: 0; background: none; color: var(--muted); text-decoration: none; border-bottom: 3px solid transparent; margin-bottom: -1px; cursor: pointer; }
+.tabs .on { color: var(--ink); border-bottom-color: var(--accent); font-weight: 600; }
+.crumb { font-size: 14px; color: var(--muted); }
+.crumb a { color: var(--accent); }
+.strip-wrap { overflow-x: auto; }
+.strip { display: grid; grid-template-columns: repeat(7, minmax(130px, 1fr)); gap: 8px; min-width: 920px; }
+.sday { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 8px; display: grid; gap: 6px; align-content: start; min-height: 120px; }
+.sday.today { border-color: var(--accent); box-shadow: inset 0 3px 0 var(--accent); }
+.sday.rest { background: transparent; }
+.avail { font-size: 12px; }
+.abs { font-size: 12px; color: var(--muted); border-top: 1px dotted var(--line); padding-top: 4px; }
+.abs b { color: var(--game); font-weight: 600; }
+.ev select { font-size: 13px; padding: 3px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); width: 100%; }
+.explain { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; }
+.explain div { border: 1px solid var(--line); border-radius: 8px; padding: 10px; background: var(--panel); }
+.explain b { display: block; font-family: var(--display); font-size: 18px; }
+.chain { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.chain span.box { border: 1px solid var(--accent); border-radius: 8px; padding: 6px 12px; background: var(--accent-soft); }
+.chain span.arr { color: var(--muted); }
+.gantt { min-width: 980px; display: grid; gap: 4px; }
+.grow { display: grid; grid-template-columns: 200px repeat(15, minmax(44px, 1fr)); gap: 2px; align-items: stretch; }
+.grow .lab { font-size: 14px; padding: 6px 4px; font-weight: 600; }
+.grow .hc { font-size: 12px; color: var(--muted); text-align: center; padding: 4px 0; border-radius: 4px; }
+.grow .hc.now { background: var(--accent); color: #fff; }
+.grow .hc.pause { font-style: italic; }
+.grow .cell { background: var(--bg); border-radius: 4px; min-height: 40px; }
+.blk { border-radius: 6px; padding: 4px 8px; font-size: 13px; line-height: 1.25; background: var(--accent); color: #fff; z-index: 1; display: grid; align-content: center; }
+.blk.done { background: var(--muted); }
+.blk.plan { background: var(--accent-soft); color: var(--accent); border: 1px dashed var(--accent); }
+.slide { border: 1px solid var(--line); border-radius: 10px; background: var(--panel); display: grid; }
+.slide.off { opacity: .55; }
+.slide-h { display: flex; flex-wrap: wrap; gap: 8px; justify-content: space-between; align-items: center; padding: 10px 16px; border-bottom: 1px solid var(--line); }
+.slide-h .no { display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: var(--accent); color: #fff; font: 700 14px/1 var(--body); margin-right: 10px; vertical-align: 2px; }
+.slide-b { padding: 14px 16px; display: grid; gap: 12px; }
+.fact { display: grid; grid-template-columns: 1fr auto; gap: 8px; border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 8px; padding: 8px 10px; align-items: start; }
+.fact.opp { border-left-color: var(--game); }
+.fact small { color: var(--muted); display: block; margin-top: 2px; }
+.icons { display: flex; gap: 2px; }
+.ib { width: 30px; height: 30px; display: grid; place-items: center; border: 1px solid var(--line); background: var(--panel); border-radius: 6px; cursor: pointer; color: var(--muted); }
+.ib:hover { color: var(--ink); border-color: var(--muted); }
+.ib svg { width: 16px; height: 16px; }
+.tb { display: grid; gap: 4px; }
+.tb .tbh { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; }
+.mic { display: inline-flex; align-items: center; gap: 4px; border: 1px solid var(--line); background: var(--panel); border-radius: 20px; padding: 2px 10px; font-size: 13px; cursor: pointer; color: var(--muted); }
+.mic svg { width: 14px; height: 14px; }
+.flash { background: var(--accent-soft); color: var(--accent); border-radius: 8px; padding: 8px 12px; font-size: 14px; }
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+.tile { border: 1px solid var(--line); border-radius: 8px; padding: 10px; background: var(--panel); }
+.tile .v { font-family: var(--display); font-size: 28px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.tile .c { font-size: 13px; color: var(--muted); }
+.tile .c b { color: var(--ink); }
+.minibar { display: grid; grid-template-columns: 70px 1fr; gap: 8px; align-items: center; font-size: 13px; }
+.minibar .pair { display: grid; gap: 2px; }
+.minibar .b1, .minibar .b2 { height: 10px; border-radius: 3px; }
+.minibar .b1 { background: var(--game); }
+.minibar .b2 { background: var(--muted); opacity: .5; }
+.legend { display: flex; gap: 14px; font-size: 13px; color: var(--muted); flex-wrap: wrap; }
+.legend i { display: inline-block; width: 12px; height: 10px; border-radius: 2px; margin-right: 4px; vertical-align: middle; }
+.prin { display: grid; grid-template-columns: 1fr 120px 150px; gap: 10px; align-items: center; border-bottom: 1px solid var(--line); padding: 8px 0; }
+.prin:last-child { border-bottom: 0; }
+.score { font-family: var(--display); font-size: 22px; font-variant-numeric: tabular-nums; }
+.games { display: grid; gap: 8px; }
+.gamerow { display: grid; grid-template-columns: 90px 1fr 70px auto; gap: 10px; align-items: center; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; }
+.droplist { display: grid; gap: 8px; }
+.drop { border: 1px dashed var(--accent); border-radius: 8px; padding: 8px 10px; background: var(--accent-soft); display: grid; gap: 2px; font-size: 14px; }
+.drop.filled { border-style: solid; }
+.drop.over { outline: 3px solid var(--accent); }
+.drop.pick { outline: 2px dashed var(--game); cursor: copy; }
+@media (max-width: 900px) {
+  .prin { grid-template-columns: 1fr; }
+  .gamerow { grid-template-columns: 1fr; }
+}
+/* ---- Runde 6 ---- */
+:root { --tr: #2563a8; --tr-soft: #e3edf9; }
+:root[data-theme="dark"] { --tr: #8fb8ea; --tr-soft: #1b2a3d; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --tr: #8fb8ea; --tr-soft: #1b2a3d; } }
+.ev { border-left-width: 5px !important; border-left-style: solid !important; }
+.ev.tr { background: var(--tr-soft); border-color: var(--tr); }
+.ev.tr .t, .chip.tr { color: var(--tr); }
+.chip.tr { background: var(--tr-soft); }
+.chip.tr.open { background: transparent; border-color: var(--tr); }
+.ev.gm .t { color: var(--game); }
+.ev.xv .t { color: var(--ev); }
+.ev.tr[data-open] { cursor: pointer; }
+.ev.tr[data-open]:hover { box-shadow: 0 0 0 2px var(--tr); }
+.ev .open-link { font-size: 13px; color: var(--tr); }
+.cal-legend { display: flex; gap: 14px; font-size: 13px; color: var(--muted); flex-wrap: wrap; }
+.cal-legend i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
+.tcard { border-left: 5px solid var(--tr) !important; }
+.tday a { color: inherit; text-decoration: none; }
+.tday a:hover { text-decoration: underline; }
+.pt.t-tr { border-left: 4px solid var(--tr); } .pt.t-gm { border-left: 4px solid var(--game); } .pt.t-ev { border-left: 4px solid var(--ev); }
+.late { font-size: 14px; background: var(--warn-soft); color: var(--ink); border-radius: 6px; padding: 6px 8px; }
+select.need { outline: 2px solid var(--game); }
+.flowed { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+.flowlist { display: grid; gap: 6px; }
+.flowrow { display: grid; grid-template-columns: minmax(0, 1fr) 120px auto; gap: 8px; align-items: center; }
+.flowrow.head { font-size: 13px; color: var(--muted); font-weight: 600; }
+.flowrow .dur { display: flex; align-items: center; gap: 6px; white-space: nowrap; color: var(--muted); font-size: 14px; }
+.flowrow .dur input { width: 70px; }
+.flowrow .ib { font-size: 18px; line-height: 1; }
+.flowprev { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; background: var(--bg); display: grid; gap: 6px; }
+.flowprev td { padding: 4px 6px; }
+.flowprev tr.ko td { font-weight: 700; border-bottom: 0; }
+.planpick { max-width: 220px; font-size: 13px; padding: 2px 4px; }
+.head svg, .crumb svg, .sub svg { width: 14px; height: 14px; vertical-align: -2px; }
+/* Einzeltraining */
+.unitview { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 16px; align-items: start; }
+.timeline { display: grid; gap: 8px; }
+.tl { display: grid; grid-template-columns: 64px minmax(0, 1fr) auto; gap: 12px; align-items: start; border: 1px solid var(--line); border-left: 5px solid var(--tr); border-radius: 8px; padding: 10px 12px; background: var(--panel); }
+.tl.warm { border-left-color: var(--muted); }
+.tl .tm { font-variant-numeric: tabular-nums; font-weight: 700; }
+.tl h4 { margin: 0; font-size: 17px; }
+.exdrop { border: 2px dashed var(--tr); border-radius: 8px; padding: 10px; text-align: center; color: var(--tr); font-size: 14px; }
+.exdrop.over { background: var(--tr-soft); }
+.side-pick { display: grid; gap: 6px; }
+.side-pick .it { border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; background: var(--panel); cursor: grab; display: grid; gap: 2px; font-size: 14px; }
+.side-pick .it small { color: var(--muted); }
+.att { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.att ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 3px; font-size: 14px; }
+.att h4 { margin: 0 0 4px; font-size: 15px; }
+@media (max-width: 900px) { .unitview, .flowed, .att { grid-template-columns: 1fr; } }
+/* ---- Runde 5 ---- */
+:root { --ev: #6b4fa0; --ev-soft: #efe9f8; }
+:root[data-theme="dark"] { --ev: #b9a0e6; --ev-soft: #2a2238; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --ev: #b9a0e6; --ev-soft: #2a2238; } }
+.ev.xv { background: var(--ev-soft); border: 1px solid var(--ev); }
+.chip.xv { background: var(--ev-soft); color: var(--ev); }
+.duty { font-size: 12px; border-left: 3px solid var(--ev); padding: 2px 6px; background: var(--ev-soft); border-radius: 4px; }
+.duty.open { border-left-color: var(--warn); }
+.xp { display: block; font-size: 12.5px; color: var(--ink); background: var(--warn-soft); border-radius: 4px; padding: 2px 6px; margin-top: 3px; }
+.xp.unit { margin-top: 6px; }
+.xp-box { font-size: 14px; background: var(--accent-soft); border-radius: 6px; padding: 6px 10px; }
+.review { display: grid; gap: 8px; border-top: 1px solid var(--line); padding-top: 8px; }
+.rv-ex { display: grid; gap: 4px; }
+.rv-ex > span { font-size: 14px; font-weight: 600; }
+.seg.small button { padding: 3px 8px; font-size: 13px; }
+.seg.wrap { flex-wrap: wrap; }
+.tc-ctl.one { grid-template-columns: auto; justify-content: start; }
+.plan td { padding: 3px 4px; }
+.plan input { width: 100%; }
+.kitshow { display: flex; gap: 12px; align-items: center; }
+.kitsvg { width: 84px; height: 84px; color: var(--muted); flex: none; }
+.kitshow img, .kitphoto { width: 84px; height: 84px; object-fit: cover; border-radius: 8px; border: 1px solid var(--line); }
+.visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+.readbox summary { list-style: none; cursor: pointer; flex-wrap: nowrap; }
+.readbox summary::-webkit-details-marker { display: none; }
+.readbar { width: 160px; height: 10px; border-radius: 5px; background: var(--bg); border: 1px solid var(--line); overflow: hidden; flex: none; }
+.readbar span { display: block; height: 100%; background: var(--accent); }
+.finish { border: 2px solid var(--accent); }
+.msg textarea { font-size: 14px; }
+.spot { touch-action: none; }
+.pt.mine { border-color: var(--ev); background: var(--ev-soft); }
+/* ---- Runde 4 ---- */
+.tgrid { grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)) !important; align-items: stretch; }
+.tcard { display: flex !important; flex-direction: column; gap: 10px; min-width: 0; }
+.tcard.past { opacity: .7; }
+.tc-body { min-width: 0; }
+.tc-ctl { margin-top: auto; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: center; }
+.tc-ctl select { width: 100%; min-width: 0; }
+.tcard .q { margin: 0; }
+.tcard .abs { margin-top: 0; }
+.ltab tr.own td { background: var(--accent-soft); font-weight: 700; }
+.ltab tr.up td:first-child { box-shadow: inset 4px 0 0 var(--accent); }
+.ltab tr.down td:first-child { box-shadow: inset 4px 0 0 var(--game); }
+.ltab td, .ltab th { padding: 5px 8px; }
+.kit { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.kit input[type="color"] { width: 38px; height: 34px; padding: 2px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); flex: none; }
+.shirt { display: flex; gap: 0; width: 120px; height: 14px; border-radius: 4px; overflow: hidden; border: 1px solid var(--line); }
+.shirt span { flex: 1; }
+.ptabs { display: flex; gap: 4px; flex-wrap: wrap; }
+.ptabs button { flex: 1; border: 1px solid var(--line); background: var(--panel); border-radius: 6px; padding: 5px 4px; cursor: pointer; font-size: 14px; }
+.ptabs button.on { background: var(--accent); color: #fff; border-color: var(--accent); }
+.tiles.mini { grid-template-columns: repeat(3, 1fr); }
+.tiles.mini .tile { padding: 6px; } .tiles.mini .v { font-size: 22px; }
+.pt .ltab { font-size: 13px; }
+/* ---- Runde 3 ---- */
+.strip { display: grid; gap: 8px; min-width: 0; }
+.sday { min-width: 0; }
+.sday.rest { display: grid; justify-items: center; align-content: start; gap: 2px; padding: 8px 2px; font-size: 13px; }
+.sday .ev { overflow-wrap: anywhere; }
+.navsep { display: block; height: 1px; background: var(--line); margin: 8px 4px; }
+.todo { display: grid; gap: 6px; align-content: start; }
+.todo h4 { margin: 0; font-family: var(--display); font-size: 17px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+.todo-i { display: grid; grid-template-columns: 20px 1fr; gap: 6px; align-items: start; font-size: 15px; }
+.todo-i input { margin-top: 4px; }
+.todo-i a { color: var(--ink); }
+.todo-i.done a { color: var(--muted); text-decoration: line-through; }
+input[type="number"].f, input[type="time"].f { width: 100%; border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; background: var(--panel); }
+.focus { border-left: 5px solid var(--accent); }
+.focus h2 { margin: 2px 0; }
+.tgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; }
+.tcard { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; display: grid; gap: 10px; align-content: start; }
+.tcard.open { border-style: dashed; }
+.tcard.over { outline: 3px solid var(--accent); }
+.tcard-h { display: flex; justify-content: space-between; align-items: start; gap: 8px; flex-wrap: wrap; }
+.tcard-h > div { display: grid; }
+.tday { font-family: var(--display); font-size: 20px; font-weight: 600; }
+.note svg, .tcard svg { width: 13px; height: 13px; vertical-align: -2px; }
+.btn svg { width: 14px; height: 14px; vertical-align: -2px; }
+.exl { margin: 4px 0 0; padding-left: 18px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chipbtn { border: 1px solid var(--line); background: var(--panel); border-radius: 20px; padding: 3px 12px; cursor: pointer; font-size: 14px; }
+.chipbtn.on { background: var(--accent); color: #fff; border-color: var(--accent); }
+h4.grp, h3.grp { margin: 6px 0 0; font-family: var(--display); font-weight: 600; }
+h4.grp { font-size: 16px; color: var(--muted); }
+.gd { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; }
+.gd.next { border: 2px solid var(--accent); box-shadow: 0 2px 10px rgba(31,111,74,.12); }
+.gd summary { display: grid; grid-template-columns: 110px 1fr auto; gap: 12px; align-items: center; padding: 10px 14px; cursor: pointer; list-style: none; }
+.gd summary::-webkit-details-marker { display: none; }
+.gd summary::before { content: "▸"; position: absolute; margin-left: -10px; color: var(--muted); }
+.gd[open] summary::before { content: "▾"; }
+.gd summary { position: relative; padding-left: 24px; }
+.gd-title { display: grid; }
+.gd-state { display: flex; gap: 6px; flex-wrap: wrap; justify-content: end; }
+.gd-body { padding: 0 14px 14px 24px; display: grid; gap: 10px; }
+.steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 8px; }
+.step { border: 1px solid var(--line); border-left: 4px solid var(--warn); border-radius: 6px; padding: 6px 10px; display: grid; font-size: 14px; }
+.step.ok { border-left-color: var(--accent); }
+.step span { color: var(--muted); font-size: 13px; }
+.phone { border: 10px solid var(--ink); border-radius: 28px; background: var(--bg); padding: 14px; display: grid; gap: 10px; max-width: 380px; }
+.phone-h { display: flex; justify-content: space-between; align-items: baseline; }
+.pt { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 10px; display: grid; gap: 8px; }
+.yn { flex: 1; border: 1px solid var(--accent); background: var(--panel); color: var(--accent); border-radius: 8px; padding: 6px; cursor: pointer; }
+.yn.on { background: var(--accent); color: #fff; }
+.yn.no { border-color: var(--game); color: var(--game); }
+.yn.no.on { background: var(--game); color: #fff; }
+.label-src { font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
+@media (max-width: 760px) {
+  .strip { grid-template-columns: 1fr !important; }
+  .sday.rest { display: none; }
+  .gd summary { grid-template-columns: 1fr; }
+  .gd-state { justify-content: start; }
+  #einh { grid-template-columns: 1fr !important; }
+  .grid[style*="380px"] { grid-template-columns: 1fr !important; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="side">
+    <div class="brand">Coach.AI</div>
+    <div class="team">TSG Wilhelmshöhe · 1. Herren</div>
+    <nav class="nav" id="nav"></nav>
+    <div class="who">
+      <label for="who">Angemeldet als</label>
+      <select id="who"><option>Trainer</option><option>Co-Trainer</option></select>
+      <span>Beide sehen und bearbeiten dieselben Daten.</span>
+    </div>
+  </aside>
+  <main id="main"></main>
+</div>
+
+<script>
+// ======================= Beispieldaten (erfunden) =======================
+const TODAY = '2026-11-11';
+const players = [
+  [1,'Jonas Brandt','TW','fit'],[22,'Felix Haas','TW','fit'],
+  [2,'Lukas Becker','RV','fit'],[4,'Tim Krämer','IV','fit'],[5,'Ben Schulte','IV','fit'],[3,'Niklas Vogel','LV','fit'],
+  [15,'Moritz Lang','IV','verletzt'],[13,'Paul Werner','AV','fit'],
+  [6,'David Roth','ZM','fit'],[8,'Leon Fischer','ZM','fit'],[16,'Erik Sommer','ZM','Urlaub'],
+  [7,'Jan Albers','RA','fit'],[10,'Max Hoffmann','ZOM','fit'],[11,'Simon Keller','LA','fit'],[17,'Noah Weber','LA','fit'],
+  [9,'Luca Neumann','ST','fit'],[19,'Tom Richter','ST','fit'],[14,'Kai Lorenz','ZM','angeschlagen']
+].map(([nr,name,pos,status],i)=>({id:'p'+i,nr,name,pos,status,
+  games:[11,2,10,12,11,9,4,6,12,11,7,10,12,8,5,11,9,6][i], starts:[11,1,9,12,10,8,3,2,12,10,5,9,12,6,1,10,4,3][i],
+  goals:[0,0,1,2,0,0,0,0,1,2,0,3,5,2,1,7,3,0][i], grade:[2.5,3,3,2.5,3,3.5,3,3.5,2,2.5,3,3,2,3,3.5,2.5,3,3][i]}));
+const P = id => players.find(p=>p.id===id);
+const isTW = p => p.pos === 'TW';
+
+const absences = [
+  {pid:'p6', from:'2026-11-08', to:'2026-11-22', why:'verletzt'},
+  {pid:'p10', from:'2026-11-09', to:'2026-11-20', why:'Urlaub'},
+  {pid:'p17', from:'2026-11-11', to:'2026-11-13', why:'angeschlagen'},
+  {pid:'p16', from:'2026-11-12', to:'2026-11-12', why:'Schicht'},
+  {pid:'p16', from:'2026-11-19', to:'2026-11-19', why:'Schicht'},
+  {pid:'p1', from:'2026-11-12', to:'2026-11-12', why:'Arbeit'},
+  {pid:'p7', from:'2026-11-17', to:'2026-11-17', why:'Uni'},
+  {pid:'p11', from:'2026-11-22', to:'2026-11-22', why:'Hochzeit'},
+  {pid:'p15', from:'2026-11-26', to:'2026-11-30', why:'Urlaub'},
+  {pid:'p3', from:'2026-11-15', to:'2026-11-15', why:'Familie'},
+];
+const absentOn = iso => absences.filter(a=>a.from<=iso && iso<=a.to);
+const availOn = iso => players.length - new Set(absentOn(iso).map(a=>a.pid)).size;
+function counts(iso) {
+  const out = new Set(absentOn(iso).map(a=>a.pid));
+  const tw = players.filter(isTW), fp = players.filter(p=>!isTW(p));
+  return { tw: tw.filter(p=>!out.has(p.id)).length, twAll: tw.length, fp: fp.filter(p=>!out.has(p.id)).length, fpAll: fp.length };
+}
+
+// Verwaltung: Trainingsrhythmus und Grenzen
+const settings = {
+  rhythm: [ {wd:2, time:'19:00', dur:90, place:'Sportplatz Schulstraße'}, {wd:4, time:'19:00', dur:90, place:'Sportplatz Schulstraße'} ],
+  minFpTr: 12, minFpGm: 13, minTw: 1,
+  home: 'Sportplatz Schulstraße (Kunstrasen)',
+  flow: {
+    heim: [['Treffpunkt: ankommen und umziehen',20],['Kabinenansprache',10],['Aufwärmen',35],['Zurück in die Kabine',10]],
+    auswärts: [['Abfahrt Sportplatz Schulstraße',45],['Ankunft: umziehen',20],['Kabinenansprache',10],['Aufwärmen',35],['Zurück in die Kabine',10]],
+  },
+  kit: {
+    'Heim': [['Trikot','grün','#1f6f4a'],['Hose','weiß','#ffffff'],['Stutzen','grün','#1f6f4a']],
+    'Auswärts': [['Trikot','weiß','#ffffff'],['Hose','schwarz','#222222'],['Stutzen','weiß','#ffffff']],
+  },
+  warmup: 'Aufwärmshirt grün, Trainingsjacke schwarz',
+  dossierModel: 'beides',
+  // Absagefrist je Terminart: Stunden vorher, Uhrzeit am Termintag oder am Vortag
+  deadline: { tr: {mode:'hours', val:'6'}, gm: {mode:'prevday', val:'20:00'}, ev: {mode:'hours', val:'24'} },
+  phone: '',
+};
+const DL_TYPES = [['tr','Training'],['gm','Spiel'],['ev','Event']];
+const DL_MODES = [['hours','Stunden vorher'],['sameday','Uhrzeit am Termintag'],['prevday','Uhrzeit am Vortag']];
+function deadlineOf(e) {
+  const d = settings.deadline[e.type], start = new Date(`${e.date}T${e.time}:00`);
+  if (d.mode === 'hours') return new Date(start.getTime() - (+d.val||0)*3600e3);
+  const day = new Date(`${e.date}T${d.val||'00:00'}:00`); if (d.mode === 'prevday') day.setDate(day.getDate()-1); return day;
+}
+const fmtDT = dte => `${['So','Mo','Di','Mi','Do','Fr','Sa'][dte.getDay()]} ${String(dte.getDate()).padStart(2,'0')}.${String(dte.getMonth()+1).padStart(2,'0')}. ${String(dte.getHours()).padStart(2,'0')}:${String(dte.getMinutes()).padStart(2,'0')}`;
+const REASONS = ['Verletzt','Krank','Arbeit','Uni oder Schule','Urlaub','Familie','Sonstiges'];
+const minus = (t, m) => { const [h,mm] = t.split(':').map(Number), x = h*60+mm-m; return `${String(Math.floor(x/60)).padStart(2,'0')}:${String(x%60).padStart(2,'0')}`; };
+/** Ablauf rückwärts vom Anstoß rechnen: jede Zeile hat eine Dauer, die letzte endet mit dem Anstoß. */
+function flowTimes(rows, kickoff) {
+  let total = rows.reduce((s,[,m])=>s+(+m||0),0), out = [];
+  for (const [l,m] of rows) { out.push([minus(kickoff,total), l, +m||0]); total -= (+m||0); }
+  return out.concat([[kickoff,'Anstoß',0]]);
+}
+const flowText = g => flowTimes(settings.flow[g.home?'heim':'auswärts'], g.time).map(([t,l])=>`${t} ${l}`).join('\n');
+const flowText_old = g => settings.flow[g.home?'heim':'auswärts'].map(([l,m])=>`${minus(g.time,m)} ${l}`).join('\n') + `\n${g.time} Anstoß`;
+const kitText = g => settings.kit[g.home?'Heim':'Auswärts'].map(([k,c])=>`${k} ${c}`).join(', ') + `. Aufwärmen: ${settings.warmup}.`;
+const RIGHTS = ['Spieltag vorbereiten und nachbereiten','Spielernoten vergeben','Training planen','Kader und Abwesenheiten pflegen','Einstellungen ändern'];
+const PV = [['termine','Termine mit Zu- und Absage',true],['kalender','Kalender',false],['training','Geplante Trainingsinhalte (Einheit, Schwerpunkt)',false],
+  ['vorbereitung','Spielvorbereitung (Dossier ohne interne Notizen)',false],['nachbereitung','Spielnachbereitung (ohne Noten)',false],
+  ['note','Eigene Note mit Begründung, wenn ihr sie freigebt',false],['analyticsTeam','Analytics der Mannschaft und Tabelle',false],['analyticsSelf','Eigene Statistik (Einsätze, Tore)',false]];
+const NOTIFY = [['vorb','Spielvorbereitung freigegeben'],['nachb','Spielnachbereitung freigegeben'],['erinn','Erinnerung an Zu- und Absage (48 h vorher, nur ohne Antwort)'],['aend','Training verlegt oder abgesagt']];
+const CHANNELS = [['push','Push aufs Handy'],['mail','E-Mail'],['wa','WhatsApp-Gruppe (Text zum Teilen)']];
+const LEAGUE = [
+  [1,'SG Nordheim',9,1,2,31,12],[2,'FC Talblick',8,2,2,27,14],[3,'SC Testfeld',8,1,3,24,15],[4,'TSG Wilhelmshöhe',7,1,4,25,18],
+  [5,'SV Musterdorf',6,2,4,22,19],[6,'VfB Altstadt',5,4,3,20,17],[7,'SC Neuberg',5,3,4,21,20],[8,'FC Beispielstadt',5,1,6,19,21],
+  [9,'TuS Probehausen',4,3,5,19,14],[10,'FV Vorlage',4,1,7,16,22],[11,'TSV Mittelbach',3,3,6,15,21],[12,'Eintracht Hügelland',3,2,7,14,20],
+  [13,'FSV Waldrand',3,1,8,13,22],[14,'SV Ostfeld',2,3,7,12,20],[15,'TuS Kleinstadt',2,2,8,11,23],[16,'SC Randgebiet',1,2,9,10,21]];
+function leagueTable(rows) {
+  return `<div class="scroll"><table class="ltab"><thead><tr><th class="num">Pl.</th><th>Mannschaft</th><th class="num">Sp.</th><th class="num">S</th><th class="num">U</th><th class="num">N</th><th class="num">Tore</th><th class="num">Diff.</th><th class="num">Pkt.</th></tr></thead><tbody>
+    ${rows.map(([pl,n,w,d,l,gf,ga])=>`<tr class="${n.startsWith('TSG')?'own':''} ${pl<=2?'up':''} ${pl>=15?'down':''}"><td class="num">${pl}</td><td>${n}</td><td class="num">12</td><td class="num">${w}</td><td class="num">${d}</td><td class="num">${l}</td><td class="num">${gf}:${ga}</td><td class="num">${gf-ga>0?'+':''}${gf-ga}</td><td class="num"><b>${3*w+d}</b></td></tr>`).join('')}</tbody></table></div>`;
+}
+const DAYNAMES = ['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'];
+const endTime = (t, dur) => { const [h,m] = t.split(':').map(Number), x = h*60+m+dur; return `${String(Math.floor(x/60)).padStart(2,'0')}:${String(x%60).padStart(2,'0')}`; };
+const rhythmText = () => settings.rhythm.map(r=>`${DAYNAMES[r.wd].slice(0,2)} ${r.time}–${endTime(r.time,r.dur)}`).join(', ') + ` · ${[...new Set(settings.rhythm.map(r=>r.place))].join(', ')}`;
+
+// Spielphilosophie → Prinzipien (je Spielphase)
+const PHASES = ['Ballbesitz','Umschalten nach Ballverlust','Gegen den Ball','Umschalten nach Ballgewinn','Standards'];
+const principles = [
+  {id:'b1',phase:'Ballbesitz',name:'Flach aufbauen, auch unter Druck',hist:[3,4,3,4,3,4]},
+  {id:'b2',phase:'Ballbesitz',name:'Breite halten, beide Flügel besetzt',hist:[4,4,3,4,4,4]},
+  {id:'v1',phase:'Umschalten nach Ballverlust',name:'Sofort Gegenpressing, 5 Sekunden',hist:[3,2,3,2,1,2]},
+  {id:'v2',phase:'Umschalten nach Ballverlust',name:'Wer nicht presst, sichert die Mitte',hist:[3,3,2,3,2,3]},
+  {id:'g1',phase:'Gegen den Ball',name:'Mittelfeldpressing, Mitte zu',hist:[4,3,4,4,3,3]},
+  {id:'g2',phase:'Gegen den Ball',name:'Kompakt: höchstens 35 m von hinten bis vorn',hist:[4,4,4,3,3,4]},
+  {id:'n1',phase:'Umschalten nach Ballgewinn',name:'Erster Pass nach vorn, wenn möglich',hist:[2,3,3,4,3,4]},
+  {id:'n2',phase:'Umschalten nach Ballgewinn',name:'Mit vier Spielern in die Tiefe',hist:[2,2,3,3,3,4]},
+  {id:'s1',phase:'Standards',name:'Ecken defensiv: Raum plus drei Manndecker',hist:[3,3,2,3,3,2]},
+];
+const PR = id => principles.find(p=>p.id===id);
+const avg = a => a.reduce((s,x)=>s+x,0)/a.length;
+const de = (x,d=1) => x.toFixed(d).replace('.',',');
+
+const WEEKS = ['KW 44','KW 45','KW 46','KW 47','KW 48','KW 49','KW 50','KW 51','Pause','KW 3','KW 4','KW 5','KW 6','KW 7','KW 8'];
+const NOW_W = 2;
+const ROWS = [...PHASES, 'Athletik'];
+const blocks = [
+  {row:'Gegen den Ball', from:0, to:1, title:'Mitte zu', pr:'g1', state:'done'},
+  {row:'Umschalten nach Ballverlust', from:2, to:4, title:'Sofort Gegenpressing', pr:'v1', state:'now'},
+  {row:'Standards', from:5, to:6, title:'Ecken defensiv', pr:'s1', state:'plan'},
+  {row:'Athletik', from:9, to:10, title:'Grundlagenausdauer mit Ball', pr:null, state:'plan'},
+  {row:'Ballbesitz', from:9, to:11, title:'Flach aufbauen unter Druck', pr:'b1', state:'plan'},
+  {row:'Umschalten nach Ballgewinn', from:12, to:13, title:'Erster Pass nach vorn', pr:'n1', state:'plan'},
+];
+const currentFocus = blocks.find(b=>b.state==='now');
+
+const KINDS = ['Spielform','Übungsform','Standard','Athletik','Sonstige'];
+const exercises = [
+  {id:'x1',name:'Rondo 5 gegen 2 mit Konter',pr:'v1',kind:'Übungsform',players:'7–12',field:'20 × 20 m',min:15,src:'Trainer'},
+  {id:'x2',name:'Gegenpressing 5 gegen 5 + 2 Neutrale',pr:'v1',kind:'Spielform',players:'12',field:'40 × 30 m',min:20,src:'Trainer'},
+  {id:'x3',name:'Aufbau 4+TW gegen 3 Pressingspieler',pr:'b1',kind:'Spielform',players:'8–10',field:'Halbes Feld',min:20,src:'Trainer'},
+  {id:'x4',name:'Torabschluss nach Flanke in 3 Zonen',pr:'b2',kind:'Übungsform',players:'10–16',field:'Strafraum + Flügel',min:20,src:'Co-Trainer'},
+  {id:'x5',name:'Ecken defensiv: Raum und Mann',pr:'s1',kind:'Standard',players:'alle',field:'Strafraum',min:15,src:'Trainer'},
+  {id:'x6',name:'4 gegen 4 Intervalle (4 × 4 min)',pr:'g2',kind:'Athletik',players:'8–16',field:'30 × 25 m',min:25,src:'Trainer'},
+  {id:'x7',name:'Umschalten 3 gegen 2 nach Ballgewinn',pr:'n1',kind:'Spielform',players:'10–14',field:'2/3 Feld',min:20,src:'Co-Trainer'},
+  {id:'x8',name:'Abschlussspiel 11 gegen 11 mit Aufgabe',pr:null,kind:'Spielform',players:'22',field:'ganzes Feld',min:25,src:'Trainer'},
+  {id:'x9',name:'Pressing-Auslöser Rückpass 6 gegen 6',pr:'g1',kind:'Spielform',players:'12',field:'50 × 40 m',min:20,src:'Trainer'},
+  {id:'x10',name:'Passstern mit Gegenpressing-Reaktion',pr:'v1',kind:'Übungsform',players:'10–14',field:'25 × 25 m',min:15,src:'Trainer'},
+];
+const X = id => exercises.find(e=>e.id===id);
+// Erfahrungswerte aus der Trainingsnachbereitung (je Übung und je Einheit)
+const exNotes = {
+  x2: [{date:'2026-10-27', who:'Co-Trainer', mood:'okay', text:'Mit 12 Spielern besser als mit 14. Feld auf 35 × 30 m verkleinern.'}],
+  x9: [{date:'2026-10-29', who:'Trainer', mood:'schlecht', text:'Auslöser Rückpass zu selten, Trainer muss Rückpässe vorgeben.'}],
+  x6: [{date:'2026-11-05', who:'Trainer', mood:'gut', text:'Hohe Intensität, Pausen genau 2 Minuten einhalten.'}],
+};
+const unitNotes = {
+  u4: [{date:'2026-11-05', who:'Trainer', text:'Gut am Donnerstag vor dem Spiel? Eher nicht, Beine waren am Sonntag schwer.'}],
+  u3: [{date:'2026-11-03', who:'Co-Trainer', text:'Standards brauchen mehr Zeit, 25 statt 15 Minuten einplanen.'}],
+};
+const planHistory = {
+  'Ballbesitz': [['SV Musterdorf, 08.11.','Flach über die Innenverteidiger aufbauen, Sechser kippt ab. Gegen Pressing lieber lang auf die Neun und zweite Bälle sichern.'],['FC Beispielstadt, 01.11.','Über die Außen spielen, Außenverteidiger hoch, Flanken auf den zweiten Pfosten.']],
+  'Umschalten nach Ballverlust': [['SV Musterdorf, 08.11.','Sofort Gegenpressing, fünf Sekunden. Wer nicht presst, schließt die Mitte.'],['SC Neuberg, 25.10.','Bei Ballverlust im Aufbau sofort foulen vermeiden, erst die Passwege zumachen.']],
+  'Gegen den Ball': [['SV Musterdorf, 08.11.','Mittelfeldpressing, Mitte zu, auf die Seite lenken. Auslöser: Rückpass zum Innenverteidiger.']],
+  'Umschalten nach Ballgewinn': [['FC Beispielstadt, 01.11.','Erster Pass in die Tiefe, mit vier Spielern nachrücken.']],
+  'Standards': [['SV Musterdorf, 08.11.','Ecken defensiv: Raum mit sechs, drei Manndecker auf die Kopfballstarken.']],
+};
+const MOOD = {gut:'lief gut', okay:'ging so', schlecht:'lief nicht'};
+const noteLine = (arr, cls='') => arr && arr.length ? `<span class="xp ${cls}">Erfahrung ${fmt(arr[arr.length-1].date)}: ${esc(arr[arr.length-1].text)}${arr.length>1?` <span class="note">(+${arr.length-1} weitere)</span>`:''}</span>` : '';
+const units = [
+  {id:'u1',name:'Gegenpressing nach Ballverlust',pr:'v1',ex:['x10','x2','x8']},
+  {id:'u2',name:'Spielaufbau gegen hohes Pressing',pr:'b1',ex:['x1','x3','x8']},
+  {id:'u3',name:'Abschluss und Standards (Spielvorbereitung)',pr:'s1',ex:['x4','x5','x8']},
+  {id:'u4',name:'Fitness mit Ball',pr:'g2',ex:['x1','x6','x8']},
+  {id:'u5',name:'Konter nach Ballgewinn',pr:'n1',ex:['x7','x2','x8']},
+  {id:'u6',name:'Gegenpressing II: Absichern',pr:'v2',ex:['x1','x2','x9']},
+  {id:'u7',name:'Gegenpressing III: in Unterzahl',pr:'v1',ex:['x1','x2','x8']},
+];
+const U = id => units.find(u=>u.id===id);
+const unitMin = u => u.ex.reduce((s,id)=>s+X(id).min,0) + 15;
+
+// Termine: Trainings nach Rhythmus, Spiele mit Wettbewerb
+const events = [];
+const GAMES = {
+  '2026-10-18':['VfB Altstadt',true,'3:0','Gruppenliga, 9. Spieltag'],
+  '2026-10-21':['SG Beispieltal',true,'4:1','Kreispokal, 2. Runde','19:30'],
+  '2026-10-25':['SC Neuberg',false,'2:1','Gruppenliga, 10. Spieltag'],
+  '2026-11-01':['FC Beispielstadt',false,'1:3','Gruppenliga, 11. Spieltag'],
+  '2026-11-08':['SV Musterdorf',true,'2:2','Gruppenliga, 12. Spieltag'],
+  '2026-11-15':['TuS Probehausen',false,null,'Gruppenliga, 13. Spieltag'],
+  '2026-11-18':['SV Pokalheim',false,null,'Kreispokal, 3. Runde','19:30'],
+  '2026-11-22':['SC Testfeld',true,null,'Gruppenliga, 14. Spieltag'],
+  '2026-11-29':['FV Vorlage',false,null,'Gruppenliga, 15. Spieltag'],
+};
+for (let d = new Date('2026-10-12T12:00:00'); d <= new Date('2026-12-06T12:00:00'); d.setDate(d.getDate()+1)) {
+  const iso = d.toISOString().slice(0,10), wd = d.getDay(), r = settings.rhythm.find(x=>x.wd===wd);
+  const g = GAMES[iso];
+  if (r && !g) events.push({id:'e'+iso,date:iso,type:'tr',time:r.time,dur:r.dur,place:r.place,unit:null});
+  if (g) events.push({id:'g'+iso,date:iso,type:'gm',time:g[4]||'14:30',opp:g[0],home:g[1],res:g[2],comp:g[3],
+    place:g[1]?settings.home:`auswärts in ${g[0].split(' ').slice(1).join(' ')}`,
+    post:g[2]?(iso==='2026-11-08'?'offen':'erledigt'):null, prep:g[2]?null:(iso==='2026-11-15'?'2 von 8':'nicht begonnen')});
+}
+// Events (Mannschaftsabend, Sitzungen, Einsätze) und Dienste
+events.push(
+  {id:'v2026-11-14', date:'2026-11-14', type:'ev', time:'19:00', title:'Mannschaftsabend', place:'Vereinsheim'},
+  {id:'v2026-11-20', date:'2026-11-20', type:'ev', time:'19:30', title:'Abteilungssitzung', place:'Vereinsheim'},
+  {id:'v2026-11-28', date:'2026-11-28', type:'ev', time:'10:00', title:'Arbeitseinsatz: Küche Weihnachtsmarkt abbauen', place:'Vereinsheim'},
+);
+const duties = [
+  {id:'d1', title:'Materialdienst (Bälle, Leibchen, Hütchen)', from:'2026-11-09', to:'2026-11-15', slots:1, who:['p12']},
+  {id:'d2', title:'Materialdienst (Bälle, Leibchen, Hütchen)', from:'2026-11-16', to:'2026-11-22', slots:1, who:[]},
+  {id:'d3', title:'Einkauf Grill und Getränke', ev:'v2026-11-14', slots:2, who:['p12']},
+  {id:'d4', title:'Spieltagsdienst (Kasse und Getränke)', ev:'g2026-11-22', slots:2, who:['p7']},
+  {id:'d5', title:'Küche abbauen', ev:'v2026-11-28', slots:4, who:['p3','p9']},
+];
+const dutyDate = d => d.ev ? events.find(e=>e.id===d.ev).date : d.from;
+const dutyWhen = d => d.ev ? (()=>{const e=events.find(x=>x.id===d.ev);return `${WD[new Date(e.date+'T12:00:00').getDay()]} ${e.date.slice(8)}.${e.date.slice(5,7)}. · ${e.type==='gm'?'Heimspiel':e.title}`;})() : `Woche ${d.from.slice(8)}.${d.from.slice(5,7)}.–${d.to.slice(8)}.${d.to.slice(5,7)}.`;
+// Wochendienste erscheinen an den Trainingstagen der Woche, an Tagen ohne Termin gibt es keine Dienste
+const dutiesOn = iso => duties.filter(d => d.ev ? events.find(e=>e.id===d.ev).date===iso : (d.from<=iso && iso<=d.to && events.some(e=>e.date===iso && e.type==='tr')));
+// Dossier: freigegeben und gelesen
+const dossierRead = {'g2026-11-15': [['p12','Mi 11.11. 08:12'],['p15','Mi 11.11. 08:40'],['p0','Mi 11.11. 09:05'],['p8','Mi 11.11. 10:31'],['p2','Mi 11.11. 12:02'],['p9','Mi 11.11. 12:15'],['p4','Mi 11.11. 13:48'],['p11','Mi 11.11. 17:20'],['p13','Mi 11.11. 18:03'],['p5','Mi 11.11. 18:55'],['p16','Mi 11.11. 19:30']]};
+const EV = id => events.find(e=>e.id===id);
+EV('e2026-11-10').unit='u6'; EV('e2026-11-12').unit='u1'; EV('e2026-11-05').unit='u4'; EV('e2026-11-03').unit='u3'; EV('e2026-11-17').unit='u2';
+
+const factPool = {
+  opp: [
+    ['TuS Probehausen hat 9 seiner 14 Gegentore nach der 70. Minute kassiert.','fussball.de, 12 Spielberichte'],
+    ['Auswärts holte der Gegner nur 4 Punkte aus 6 Spielen.','fussball.de, Tabelle'],
+    ['Gegen Teams aus der oberen Tabellenhälfte hat der Gegner noch nicht gewonnen.','fussball.de, Ergebnisse'],
+    ['Die Nummer 9 hat 8 der 19 Tore des Gegners erzielt.','fussball.de, Spielberichte'],
+    ['Der Gegner ging in 7 von 12 Spielen zuerst in Führung.','fussball.de, Spielberichte'],
+    ['6 der 19 Tore des Gegners fielen nach Standards.','eigene Beobachtung, Spiel vom 25.10.'],
+  ],
+  own: [
+    ['Wir sind seit 2 Spielen ohne Sieg, davor 3 Siege in Folge.','fussball.de, Ergebnisse'],
+    ['Zu Hause haben wir 13 von 18 möglichen Punkten geholt.','fussball.de, Heimtabelle'],
+    ['In 4 von 12 Spielen lagen wir zur Halbzeit hinten und haben davon 2 noch gedreht.','fussball.de, Spielberichte'],
+    ['Umschalten nach Ballverlust: in 4 der letzten 6 Spiele mit 2 oder schlechter bewertet.','eure Nachbereitungen'],
+    ['Max Hoffmann war an 9 unserer 25 Tore beteiligt.','fussball.de, Spielberichte'],
+  ],
+};
+const facts = { opp: [0,1,2].map(i=>({id:'fo'+i,kind:'opp',i})), own: [0,1,2].map(i=>({id:'fw'+i,kind:'own',i})) };
+const factText = f => f.custom ?? factPool[f.kind][f.i][0];
+const factSrc = f => f.custom!=null ? 'von Hand geändert' : factPool[f.kind][f.i][1];
+
+const todos = {
+  'Spiel': [
+    {id:'t1',text:'Gegnervorbereitung TuS Probehausen (2 von 8 Seiten)',href:'#spiel-vorbereitung',set:{game:'g2026-11-15'}},
+    {id:'t2',text:'Aufstellung gegen TuS Probehausen festlegen',href:'#spiel-aufstellung',set:{game:'g2026-11-15'}},
+    {id:'t3',text:'Nachbereitung SV Musterdorf: Fragebogen und Noten',href:'#spiel-nachbereitung',set:{post:'g2026-11-08'}},
+    {id:'t4',text:'Pokal gegen SV Pokalheim (Mi 18.11.) vorbereiten',href:'#spiel-vorbereitung',set:{game:'g2026-11-18'}},
+  ],
+  'Training': [
+    {id:'t5',text:'Einheit für Do 19.11. fehlt',href:'#training'},
+    {id:'t6',text:'Block „Ecken defensiv“ ab KW 49 bestätigen',href:'#training'},
+    {id:'t7',text:'Neue Übung vom Co-Trainer ansehen',href:'#training'},
+  ],
+  'Administratives': [
+    {id:'t8',text:'Kai Lorenz (angeschlagen): Einsatz am Sonntag klären',href:'#kader'},
+    {id:'t9',text:'Trainingszeiten in der Winterpause festlegen',href:'#einstellungen'},
+    {id:'t10',text:'Pokalspiel Mi 18.11.: Dienstag-Training kürzen?',href:'#einstellungen'},
+    {id:'t11',text:'Spieltagsdienst 22.11.: 1 von 2 Plätzen offen',href:'#kalender'},
+  ],
+};
+const comments = [
+  {who:'Co-Trainer', when:'gestern 21:14', text:'Habe die Übung „Umschalten 3 gegen 2 nach Ballgewinn“ angelegt. Lief am Dienstag gut, eher mit 12 als mit 14 Spielern.'},
+  {who:'Trainer', when:'Mo 18:02', text:'Gegen Probehausen würde ich wieder 4-2-3-1 spielen. Meinung?'},
+  {who:'Co-Trainer', when:'So 19:40', text:'Moritz Lang als verletzt eingetragen, Bänderdehnung, ca. 2 Wochen.'},
+];
+
+const state = { calView:'week', weekStart:'2026-11-09', showAbs:true, picked:null, formation:'4-2-3-1', activeSpot:null,
+  trainTab:'aktuell', unitFilter:'alle', exFilter:'alle', exKind:'alle', publish:false, rating:{}, game:'g2026-11-15', post:'g2026-11-08', model:'beides',
+  include:{}, trainEv:'e2026-11-12', kickoff:'14:30', pvNow:'2026-11-11T11:00', absForm:false, declining:null, review:{}, released:{'g2026-11-15':true}, msg:false, plan:{}, kitPhoto:{}, showEv:true, dragged:false, sysName:'', editing:null, texts:{}, flash:null, anaTab:'team', anaPlayer:'p12', done:{}, suggest:{}, reply:{},
+  weekFocus:null, focusSug:false, setTab:'training', pvTab:'termine', rights:{0:true,1:true,2:true,3:true,4:false},
+  pv:{termine:true,kalender:true,training:true,vorbereitung:true,nachbereitung:true,note:false,analyticsTeam:true,analyticsSelf:true},
+  notify:{'vorb-push':true,'nachb-push':true,'erinn-push':true,'aend-push':true,'vorb-wa':true,'nachb-wa':true} };
+
+// ======================= Hilfen =======================
+const WD = ['So','Mo','Di','Mi','Do','Fr','Sa'];
+const fmt = iso => { const [,m,d] = iso.split('-'); return `${d}.${m}.`; };
+const dt = iso => new Date(iso+'T12:00:00');
+const addDays = (iso,n) => { const d = dt(iso); d.setDate(d.getDate()+n); return d.toISOString().slice(0,10); };
+const games = () => events.filter(e=>e.type==='gm').sort((a,b)=>a.date.localeCompare(b.date));
+const trainings = () => events.filter(e=>e.type==='tr').sort((a,b)=>a.date.localeCompare(b.date));
+const nextTrainings = n => trainings().filter(e=>e.date>=TODAY).slice(0,n);
+const nextGame = () => games().find(g=>g.date>=TODAY);
+const gameTitle = g => g.home ? `TSG – ${g.opp}` : `${g.opp} – TSG`;
+const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
+const ICON = {
+  edit:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M11 2.5l2.5 2.5L6 12.5H3.5V10z"/></svg>',
+  refresh:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M13 8a5 5 0 1 1-1.5-3.5M13 2.5v3h-3"/></svg>',
+  x:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 4l8 8M12 4l-8 8"/></svg>',
+  mic:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="5.5" y="1.5" width="5" height="8" rx="2.5"/><path d="M3 7.5a5 5 0 0 0 10 0M8 12.5v2"/></svg>',
+  spark:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 1.5v3M8 11.5v3M1.5 8h3M11.5 8h3M3.5 3.5l2 2M10.5 10.5l2 2M12.5 3.5l-2 2M5.5 10.5l-2 2"/></svg>',
+  pin:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 14.5s4.5-4.2 4.5-7.5a4.5 4.5 0 0 0-9 0c0 3.3 4.5 7.5 4.5 7.5z"/><circle cx="8" cy="7" r="1.6"/></svg>',
+};
+/** Verfügbarkeit getrennt nach Torhütern und Feldspielern. */
+function availPill(iso, type) {
+  const c = counts(iso), low = c.tw < settings.minTw || c.fp < (type==='gm' ? settings.minFpGm : settings.minFpTr);
+  return `<span class="pill ${low?'warn':''} avail num" title="verfügbare Spieler">TW ${c.tw}/${c.twAll} · Feld ${c.fp}/${c.fpAll}</span>`;
+}
+const demo = `<div class="demo">Entwurf mit Beispieldaten: Spieler, Gegner, Termine, Fakten und Noten sind erfunden. Die Seite speichert noch nichts.</div>`;
+function bar(label,v,max,txt,alt) { return `<div class="bar"><span>${label}</span><div class="track"><div class="fill ${alt?'alt':''}" style="width:${Math.round(v/max*100)}%"></div></div><span class="num">${txt}</span></div>`; }
+function spark(vals,labels,h=60) {
+  const w=300,max=5,min=1,xs=i=>14+i*(w-28)/(vals.length-1),ys=v=>8+(max-v)/(max-min)*(h-24);
+  return `<svg class="spark" style="height:${h}px" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" role="img" aria-label="Verlauf">
+    ${[1,3,5].map(v=>`<line class="grid" x1="0" x2="${w}" y1="${ys(v)}" y2="${ys(v)}"/>`).join('')}
+    <polyline points="${vals.map((v,i)=>`${xs(i)},${ys(v)}`).join(' ')}"/>
+    <circle cx="${xs(vals.length-1)}" cy="${ys(vals[vals.length-1])}" r="3.5"/>
+    ${labels?labels.map((l,i)=>`<text x="${xs(i)}" y="${h-2}" text-anchor="middle">${l}</text>`).join(''):''}</svg>`;
+}
+const GL = ['4.10.','11.10.','18.10.','25.10.','1.11.','8.11.'];
+function textBox(key, label, ph, rows=2) {
+  return `<div class="tb"><div class="tbh"><label for="t-${key}">${label}</label><button class="mic" data-flash="Sprachnachricht: aufnehmen, Coach.AI schreibt den Text in dieses Feld. Im Entwurf ohne Funktion.">${ICON.mic} Sprechen</button></div>
+    <textarea id="t-${key}" data-text="${key}" rows="${rows}" placeholder="${esc(ph)}">${esc(state.texts[key] ?? '')}</textarea></div>`;
+}
+const flashBox = () => state.flash ? `<div class="flash">${state.flash}</div>` : '';
+
+const NAV = [['dashboard','Dashboard'],['training','Training'],['kalender','Kalender'],['spieltag','Spieltag'],['kader','Kader'],['analytics','Analytics'],['philosophie','Spielphilosophie']];
+const NAV2 = [['einstellungen','Einstellungen'],['spielersicht','Spielersicht (Vorschau)']];
+function nav(cur) {
+  const top = cur.startsWith('spiel-') ? 'spieltag' : cur === 'einheit' ? 'training' : cur;
+  const a = ([k,l]) => `<a href="#${k}" class="${k===top?'on':''}">${l}${k==='spieltag'?'<span class="badge" title="1 Nachbereitung offen">1</span>':''}</a>`;
+  document.getElementById('nav').innerHTML = NAV.map(a).join('') + `<span class="navsep"></span>` + NAV2.map(a).join('');
+}
+
+// ======================= Dashboard =======================
+function weekStrip(start) {
+  const days = [0,1,2,3,4,5,6].map(i=>addDays(start,i));
+  const cols = days.map(iso => events.some(e=>e.date===iso) ? 'minmax(0,1fr)' : '52px').join(' ');
+  return `<div class="strip" style="grid-template-columns:${cols}">${days.map(iso=>{
+    const evs = events.filter(e=>e.date===iso), abs = absentOn(iso);
+    if (!evs.length) return `<div class="sday rest ${iso===TODAY?'today':''}"><b>${WD[dt(iso).getDay()]}</b><span class="note num">${fmt(iso)}</span></div>`;
+    return `<div class="sday ${iso===TODAY?'today':''}"><b>${WD[dt(iso).getDay()]} ${fmt(iso)}</b>
+      ${evs.map(e=>e.type==='ev' ? `<div class="ev xv"><span class="t">${e.time} ${e.title}</span></div>` : e.type==='gm'
+        ? `<div class="ev gm"><span class="t">${e.time} Spiel · ${e.comp.split(',')[0]}</span><span>${gameTitle(e)}</span>${e.res?`<span class="pill game" style="justify-self:start">${e.res}</span>`:availPill(iso,'gm')}</div>`
+        : `<div class="ev tr ${e.unit?'filled':''}"><span class="t">${e.time} Training</span>${e.unit?`<span>${U(e.unit).name}</span><span class="note">${PR(U(e.unit).pr).phase}</span>`:`<span class="empty">Einheit offen</span>`}${e.date>=TODAY?availPill(iso,'tr'):''}</div>`).join('')}
+      ${abs.length && iso>=TODAY ? `<div class="abs"><b>fehlen:</b> ${abs.map(a=>P(a.pid).name.split(' ')[1]).join(', ')}</div>` : ''}
+    </div>`;}).join('')}</div>`;
+}
+function vDashboard() {
+  const open = Object.values(todos).flat().filter(t=>!state.done[t.id]).length;
+  return `${demo}
+  <div class="head"><div><h1>Dashboard</h1><p>KW 46 · 09.11. bis 15.11.2026 · Schwerpunkt: <b>${currentFocus.row}: ${currentFocus.title}</b></p></div><a class="btn ghost small" href="#kalender">Kalender öffnen</a></div>
+  ${weekStrip('2026-11-09')}
+  <div class="card"><div class="row between"><h3>Offene Aufgaben</h3><span class="pill warn">${open} offen</span></div>
+    <div class="grid g3">${Object.entries(todos).map(([cat,list])=>`<div class="todo"><h4>${cat}</h4>${list.map(t=>`<div class="todo-i ${state.done[t.id]?'done':''}">
+      <input type="checkbox" id="td-${t.id}" data-done="${t.id}" ${state.done[t.id]?'checked':''} aria-label="erledigt">
+      <a href="${t.href}" ${t.set?.game?`data-setgame="${t.set.game}"`:''} ${t.set?.post?`data-setpost="${t.set.post}"`:''}>${t.text}</a></div>`).join('')}</div>`).join('')}</div></div>
+  <div class="card"><h3>Trainerteam</h3>
+    <div class="row" style="flex-wrap:nowrap"><input type="text" id="cmt" placeholder="Kommentar oder Notiz für das Trainerteam" aria-label="Kommentar"><button class="btn small" data-comment="1">Senden</button></div>
+    <ul class="list">${comments.map(c=>`<li><span><b>${c.who}:</b> ${esc(c.text)}</span><span class="note" style="white-space:nowrap">${c.when}</span></li>`).join('')}</ul></div>`;
+}
+
+// ======================= Training =======================
+function vTraining() {
+  const T = state.trainTab;
+  return `${demo}
+  <div class="head"><div><h1>Training</h1><p>${rhythmText()} · <a href="#einstellungen">ändern</a></p></div></div>
+  <div class="tabs">${[['aktuell','Aktuell'],['einheiten','Trainingseinheiten'],['uebungen','Übungspool'],['periode','Periodisierung']].map(([k,l])=>`<button data-ttab="${k}" class="${T===k?'on':''}">${l}</button>`).join('')}</div>
+  ${flashBox()}
+  ${T==='aktuell' ? aktuell() : T==='periode' ? periode() : T==='einheiten' ? einheiten() : uebungen()}`;
+}
+const focusPr = () => state.weekFocus || currentFocus.pr;
+function suggestFor(e) {
+  const fp = focusPr(), prev = trainings().filter(t=>t.date<e.date && t.unit).slice(-2).map(t=>t.unit);
+  const cand = units.filter(u=>u.id!==e.unit && !prev.includes(u.id));
+  const best = cand.find(u=>u.pr===fp) || cand.find(u=>PR(u.pr).phase===PR(fp).phase) || cand[0];
+  const why = best.pr===fp ? `passt zum Schwerpunkt der Woche „${PR(fp).name}“` : `gleiche Spielphase wie der Schwerpunkt (${PR(fp).phase})`;
+  const c = counts(e.date);
+  return { unit: best.id, why: `${why}, in den letzten zwei Trainings nicht dran${c.fp < settings.minFpTr ? `. Achtung: nur ${c.fp} Feldspieler, Übungen ggf. kleiner` : ''}.` };
+}
+function trainingCard(e) {
+  const u = e.unit && U(e.unit), abs = absentOn(e.date), s = state.suggest[e.id], past = e.date < TODAY, rv = state.review[e.id], exl = e.unit ? exListOf(e) : [];
+  const exList = u ? `<ol class="note exl">${exl.map(id=>`<li>${X(id).name} (${X(id).min} min)${past?'':noteLine(exNotes[id])}</li>`).join('')}</ol>${past?'':noteLine(unitNotes[u.id],'unit')}` : '';
+  let review = '';
+  if (past && u && rv === 'open') review = `<div class="review"><b>Training nachbereiten</b>
+      ${exl.map(id=>`<div class="rv-ex"><span>${X(id).name}</span><div class="seg small">${Object.entries(MOOD).map(([k,l])=>`<button data-mood="${e.id}|${id}" data-v="${k}" class="${state.texts['mood-'+e.id+id]===k?'on':''}">${l}</button>`).join('')}</div>
+        <input type="text" data-text="rv-${e.id}-${id}" value="${esc(state.texts['rv-'+e.id+'-'+id]??'')}" placeholder="Erfahrung, z. B. Feld kleiner machen" aria-label="Notiz zu ${esc(X(id).name)}"></div>`).join('')}
+      ${textBox('rvu-'+e.id,'Notiz zur ganzen Einheit','z. B. Rondo zu lang, Gegenpressing-Teil top', 2)}
+      <div class="row"><button class="btn small" data-rvsave="${e.id}">Speichern</button><button class="btn ghost small" data-rvcancel="${e.id}">Abbrechen</button></div></div>`;
+  else if (past && u && rv === 'done') review = `<div class="xp-box"><b>Nachbereitet.</b> Die Notizen erscheinen künftig bei diesen Übungen und dieser Einheit.</div>`;
+  return `<div class="tcard ${e.unit?'':'open'} ${past?'past':''}" ${past?'':`data-drop="${e.id}"`}>
+    <div class="tcard-h"><div><b class="tday"><a href="#einheit" data-settrain="${e.id}">${DAYNAMES[dt(e.date).getDay()]}, ${fmt(e.date)} ›</a></b><span class="note">${e.time}–${endTime(e.time,e.dur)} · ${ICON.pin} ${e.place}</span></div>${past?'<span class="pill grey">vorbei</span>':availPill(e.date,'tr')}</div>
+    <div class="tc-body">${u ? `<div class="row between" style="flex-wrap:nowrap;align-items:start"><b>${u.name}</b><span class="pill">${PR(u.pr).phase}</span></div>${exList}`
+        : `<p class="empty" style="margin:0">Noch keine Einheit geplant.</p>`}</div>
+    ${review}
+    ${s ? `<div class="q"><b>Vorschlag:</b> ${U(s.unit).name}. ${s.why}<div class="row" style="margin-top:6px"><button class="btn small" data-take="${e.id}">Übernehmen</button><button class="btn ghost small" data-nosug="${e.id}">Verwerfen</button></div></div>` : ''}
+    ${past ? (u && !rv ? `<div class="tc-ctl one"><button class="btn ghost small" data-rvopen="${e.id}">Training nachbereiten</button></div>` : '') : `<a class="btn ghost small" href="#einheit" data-settrain="${e.id}" style="justify-self:start;align-self:start">Training öffnen</a><div class="tc-ctl"><select class="f" data-assign="${e.id}" aria-label="Einheit wählen"><option value="">${u?'Andere Einheit wählen …':'Einheit wählen …'}</option>${units.map(x=>`<option value="${x.id}">${x.name}</option>`).join('')}</select>
+      <button class="btn ghost small" data-suggest="${e.id}">${ICON.spark} KI-Vorschlag</button></div>`}
+    ${abs.length && !past ? `<div class="abs"><b>fehlen:</b> ${abs.map(a=>`${P(a.pid).name}${isTW(P(a.pid))?' (TW)':''} · ${a.why}`).join(', ')}</div>` : ''}
+  </div>`;
+}
+function focusSuggestion() {
+  const ranked = principles.map(p=>({p, a:avg(p.hist.slice(-3))})).sort((x,y)=>x.a-y.a);
+  return ranked;
+}
+function aktuell() {
+  const b = currentFocus, wk = NOW_W - b.from + 1, len = b.to - b.from + 1, fp = PR(focusPr()), own = !state.weekFocus;
+  const ranked = focusSuggestion(), alt = ranked.find(x=>x.p.id!==fp.id);
+  const week = (from, to) => trainings().filter(t=>t.date>=from && t.date<=to);
+  return `<div class="card focus"><div class="row between" style="align-items:start"><div><span class="note">Schwerpunkt für die Woche · KW 46</span><h2>${fp.phase}: ${own?b.title:fp.name}</h2>
+      <p class="sub">Prinzip „${fp.name}“ · ${own?`laut Periodisierung, Woche ${wk} von ${len} (KW 46–48)`:`abweichend von der Periodisierung („${b.title}“)`}</p></div>
+      <div class="row"><button class="btn ghost small" data-focussug="1">${ICON.spark} KI-Vorschlag</button><button class="btn ghost small" data-ttab="periode">Periodisierung</button></div></div>
+    ${state.focusSug ? `<div class="q"><b>Aus den Spielbeobachtungen:</b> Am schwächsten bewertet waren zuletzt „${ranked[0].p.name}“ (Ø ${de(ranked[0].a)}) und „${ranked[1].p.name}“ (Ø ${de(ranked[1].a)}), beide Gegentore gegen SV Musterdorf fielen nach eigenem Ballverlust.
+      ${ranked[0].p.id===fp.id ? `Das bestätigt den Schwerpunkt der Woche. Oder soll diese Woche „${alt.p.name}“ dran sein?` : `Soll der Schwerpunkt diese Woche auf „${ranked[0].p.name}“ wechseln?`}
+      <div class="row" style="margin-top:6px">${ranked[0].p.id===fp.id ? `<button class="btn small" data-keepfocus="1">Beibehalten</button><button class="btn ghost small" data-setfocus="${alt.p.id}">„${alt.p.name}“ übernehmen</button>` : `<button class="btn small" data-setfocus="${ranked[0].p.id}">Übernehmen</button><button class="btn ghost small" data-keepfocus="1">Beibehalten</button>`}</div></div>` : ''}
+    <div class="row"><label class="note" for="wf">Schwerpunkt selbst festlegen</label><select class="f" id="wf" style="width:auto;max-width:100%">${principles.map(p=>`<option value="${p.id}" ${p.id===fp.id?'selected':''}>${p.phase}: ${p.name}</option>`).join('')}</select>
+      ${own?'':'<button class="btn ghost small" data-resetfocus="1">Zurück zur Periodisierung</button>'}</div></div>
+  <h3 class="grp">Aktuelle Trainingswoche · KW 46</h3>
+  <div class="tgrid">${week('2026-11-09','2026-11-15').map(trainingCard).join('')}</div>
+  <h3 class="grp">Kommende Trainingswoche · KW 47</h3>
+  <div class="tgrid">${week('2026-11-16','2026-11-22').map(trainingCard).join('')}</div>
+  <p class="note">Die KI erfindet keine Trainings. Sie wählt aus euren Einheiten die passende zum Schwerpunkt der Woche, achtet auf Abwechslung und auf die Zahl verfügbarer Spieler. Einheiten lassen sich auch aus dem Reiter Trainingseinheiten auf ein Training ziehen.</p>`;
+}
+function periode() {
+  const head = `<div class="grow"><div></div>${WEEKS.map((w,i)=>`<div class="hc ${i===NOW_W?'now':''} ${w==='Pause'?'pause':''}">${w}</div>`).join('')}</div>`;
+  const rows = ROWS.map(r => `<div class="grow"><div class="lab">${r}</div>${WEEKS.map((_,i)=>`<div class="cell" style="grid-row:1;grid-column:${i+2}"></div>`).join('')}
+      ${blocks.filter(b=>b.row===r).map(b=>`<div class="blk ${b.state}" style="grid-row:1;grid-column:${b.from+2} / ${b.to+3}" title="${esc(b.pr?PR(b.pr).name:b.title)}">${b.title}</div>`).join('')}</div>`).join('');
+  return `<div class="card"><div class="row between"><h3>Periodisierung Hinrunde und Rückrunden-Vorbereitung</h3><button class="btn small">Block anlegen</button></div>
+    <p class="sub">Zeilen sind die Spielphasen. Ein Block ist ein Trainingsschwerpunkt: Thema innerhalb der Phase, verknüpft mit einem Prinzip aus der Spielphilosophie.</p>
+    <div class="scroll"><div class="gantt">${head}${rows}</div></div>
+    <div class="legend"><span><i style="background:var(--muted)"></i>abgeschlossen</span><span><i style="background:var(--accent)"></i>läuft</span><span><i style="background:var(--accent-soft);border:1px dashed var(--accent)"></i>geplant</span></div></div>
+  <div class="card"><h3>Vorschlag von Coach.AI</h3><div class="q">Das Prinzip „Ecken defensiv“ lag in den letzten 6 Spielen bei Ø ${de(avg(PR('s1').hist))}. Soll der geplante Block in KW 49 vorgezogen werden?</div>
+    <div class="row"><button class="btn small">Vorziehen</button><button class="btn ghost small">So lassen</button></div></div>`;
+}
+function einheiten() {
+  const phs = state.unitFilter==='alle' ? PHASES : [state.unitFilter];
+  return `<div class="row between"><div class="chips">${['alle',...PHASES].map(p=>`<button class="chipbtn ${state.unitFilter===p?'on':''}" data-ufilter="${p}">${p==='alle'?'Alle Phasen':p}</button>`).join('')}</div><button class="btn small">Einheit skizzieren</button></div>
+  <div class="grid" style="grid-template-columns:minmax(0,1fr) 280px;align-items:start" id="einh">
+    <div class="grid">${phs.map(ph=>{const list=units.filter(u=>PR(u.pr).phase===ph);if(!list.length)return '';return `<div class="card"><h3>${ph} <span class="note">(${list.length})</span></h3>
+      ${list.map(u=>{const last=trainings().filter(t=>t.unit===u.id&&t.date<TODAY).pop();return `<div class="unit ${state.picked===u.id?'sel':''}" draggable="true" data-unit="${u.id}" tabindex="0">
+        <div class="row between"><b>${u.name}</b><span class="note">${unitMin(u)} min</span></div>
+        <small>Prinzip: ${PR(u.pr).name} · zuletzt: ${last?fmt(last.date):'noch nie'}</small>${noteLine(unitNotes[u.id])}
+        <small>${u.ex.map(id=>X(id).name).join(' → ')}</small></div>`;}).join('')}</div>`;}).join('')}</div>
+    <div class="card"><h3>Nächste Trainings</h3><p class="sub">Einheit hierher ziehen oder antippen und dann das Training antippen.</p><div class="droplist">${nextTrainings(4).map(e=>`<div class="drop ${e.unit?'filled':''} ${state.picked?'pick':''}" data-drop="${e.id}">
+      <b>${WD[dt(e.date).getDay()]} ${fmt(e.date)} · ${e.time}</b>
+      ${e.unit?`<div class="row between"><span>${U(e.unit).name}</span><button class="ib" data-clear="${e.id}" aria-label="Einheit entfernen">${ICON.x}</button></div>`:`<span class="note">noch offen</span>`}</div>`).join('')}</div></div>
+  </div>`;
+}
+function uebungen() {
+  const list = exercises.filter(e=>(state.exFilter==='alle'||(e.pr&&PR(e.pr).phase===state.exFilter)) && (state.exKind==='alle'||e.kind===state.exKind));
+  const groups = [...PHASES, 'ohne Prinzip'].map(ph=>[ph, list.filter(e=> ph==='ohne Prinzip' ? !e.pr : e.pr && PR(e.pr).phase===ph)]).filter(([,l])=>l.length);
+  return `<div class="card"><div class="row between"><h3>Übungspool (${exercises.length})</h3>
+      <div class="row"><select class="f" id="exf" aria-label="Spielphase" style="width:auto">${['alle',...PHASES].map(p=>`<option value="${p}" ${state.exFilter===p?'selected':''}>${p==='alle'?'Alle Spielphasen':p}</option>`).join('')}</select>
+      <select class="f" id="exk" aria-label="Art" style="width:auto">${['alle',...KINDS].map(p=>`<option value="${p}" ${state.exKind===p?'selected':''}>${p==='alle'?'Alle Arten':p}</option>`).join('')}</select></div></div>
+    ${groups.length ? groups.map(([ph,l])=>`<h4 class="grp">${ph}</h4><div class="scroll"><table><tbody>
+      ${l.map(e=>`<tr><td><b>${e.name}</b><br><span class="note">${e.pr?PR(e.pr).name:'Spielform zum Abschluss'}</span>${noteLine(exNotes[e.id])}</td><td><span class="pill grey">${e.kind}</span></td><td>${e.players} Sp.</td><td>${e.field}</td><td class="num">${e.min} min</td><td class="note">${e.src}</td></tr>`).join('')}</tbody></table></div>`).join('') : '<p class="sub">Keine Übung passt zu diesem Filter.</p>'}</div>
+  <div class="card"><div class="row between"><h3>Übung erfassen</h3><button class="mic" data-flash="Sprachnachricht: erzählen, Coach.AI füllt die Felder. Im Entwurf ohne Funktion.">${ICON.mic} Sprachnachricht</button></div><p class="sub">Erzählen oder schreiben, dazu ein Foto der Skizze. Die KI erfindet keine Übungen, sie ordnet eure ein.</p>
+    <div class="grid g3">
+      <label class="fl" for="ue-n">Name<input id="ue-n" type="text" placeholder="z. B. Pressing-Auslöser Rückpass"></label>
+      <label class="fl" for="ue-p">Prinzip<select class="f" id="ue-p">${principles.map(p=>`<option>${p.phase}: ${p.name}</option>`).join('')}</select></label>
+      <label class="fl" for="ue-k">Art<select class="f" id="ue-k">${KINDS.map(k=>`<option>${k}</option>`).join('')}</select></label>
+    </div>
+    <div class="grid g3">
+      <label class="fl" for="ue-o">Organisation und Ablauf<textarea id="ue-o" rows="3"></textarea></label>
+      <label class="fl" for="ue-c">Coachingpunkte<textarea id="ue-c" rows="3"></textarea></label>
+      <label class="fl" for="ue-v">So lief es, Varianten<textarea id="ue-v" rows="3"></textarea></label>
+    </div></div>`;
+}
+
+const exListOf = e => e.ex || (e.unit ? U(e.unit).ex : []);
+function attendance(e) {
+  const out = new Map(absentOn(e.date).map(a=>[a.pid, a.why]));
+  const yes = [], no = [], none = [];
+  players.forEach((p, i) => { if (out.has(p.id)) no.push([p, out.get(p.id)]); else if (state.reply[e.id]==='ja' && p.id===ME || (i % 5 !== 4)) yes.push(p); else none.push(p); });
+  return {yes, no, none};
+}
+function vEinheit() {
+  const e = EV(state.trainEv) || nextTrainings(1)[0], u = e.unit && U(e.unit), fp = PR(focusPr()), list = exListOf(e), a = attendance(e);
+  let t = e.time;
+  const rows = [[t, 'Aufwärmen', 15, null]]; t = endTime(t, 15);
+  for (const id of list) { rows.push([t, X(id).name, X(id).min, id]); t = endTime(t, X(id).min); }
+  const total = rows.reduce((s,r)=>s+r[2],0), all = trainings(), idx = all.findIndex(x=>x.id===e.id), prev = all[idx-1], next = all[idx+1];
+  const pName = p => `${p.name}${isTW(p)?' (TW)':''}`;
+  return `${demo}
+  <div class="crumb"><a href="#training">Training</a> › ${DAYNAMES[dt(e.date).getDay()]}, ${fmt(e.date)}</div>
+  <div class="head"><div><h1>Training ${DAYNAMES[dt(e.date).getDay()]}, ${fmt(e.date)}2026</h1><p>${e.time}–${endTime(e.time,e.dur)} · ${ICON.pin} ${e.place} · Schwerpunkt der Woche: <b>${fp.phase}: ${fp.name}</b></p></div>
+    <div class="row">${prev?`<a class="btn ghost small" href="#einheit" data-settrain="${prev.id}">‹ ${WD[dt(prev.date).getDay()]} ${fmt(prev.date)}</a>`:''}${next?`<a class="btn ghost small" href="#einheit" data-settrain="${next.id}">${WD[dt(next.date).getDay()]} ${fmt(next.date)} ›</a>`:''}</div></div>
+  <div class="unitview">
+    <div class="grid">
+      <div class="card"><div class="row between"><div><span class="note">Einheit</span><h2>${u?u.name:'Noch keine Einheit'}</h2>${u?`<p class="sub">Prinzip „${PR(u.pr).name}“ · ${total} min geplant von ${e.dur} min${total>e.dur?' <span class="pill warn">zu lang</span>':''}${e.ex?' · für dieses Training angepasst':''}</p>`:''}</div>
+          <button class="btn ghost small" data-suggest="${e.id}">${ICON.spark} KI-Vorschlag</button></div>
+        ${state.suggest[e.id]?`<div class="q"><b>Vorschlag:</b> ${U(state.suggest[e.id].unit).name}. ${state.suggest[e.id].why}<div class="row" style="margin-top:6px"><button class="btn small" data-take="${e.id}">Übernehmen</button><button class="btn ghost small" data-nosug="${e.id}">Verwerfen</button></div></div>`:''}
+        ${noteLine(u && unitNotes[u.id], 'unit')}
+        <div class="timeline">${rows.map(([tm,name,min,id],i)=>`<div class="tl ${id?'':'warm'}"><span class="tm">${tm}</span>
+          <div><h4>${esc(name)}</h4>${id?`<span class="note">${X(id).kind} · ${X(id).players} Spieler · ${X(id).field} · ${min} min${X(id).pr?` · ${PR(X(id).pr).name}`:''}</span>${noteLine(exNotes[id])}`:`<span class="note">${min} min</span>`}</div>
+          ${id?`<span class="row" style="flex-wrap:nowrap;gap:4px">${i>1?`<button class="ib" data-exup="${e.id}|${i-1}" title="nach oben" aria-label="nach oben">↑</button>`:''}<button class="ib" data-exremove="${e.id}|${i-1}" title="entfernen" aria-label="Übung entfernen">${ICON.x}</button></span>`:''}</div>`).join('')}
+          <div class="exdrop" data-exdrop="${e.id}">Übung oder Einheit von rechts hierher ziehen oder dort antippen</div></div></div>
+      <div class="card"><div class="row between"><h3>Teilnahme</h3>${availPill(e.date,'tr')}</div>
+        <div class="att"><div><h4>Zugesagt (${a.yes.length})</h4><ul>${a.yes.map(p=>`<li>${pName(p)}</li>`).join('')}</ul></div>
+          <div><h4>Abgesagt (${a.no.length})</h4><ul>${a.no.map(([p,w])=>`<li>${pName(p)} <span class="note">· ${esc(w)}</span></li>`).join('')}</ul></div>
+          <div><h4>Keine Antwort (${a.none.length})</h4><ul>${a.none.map(p=>`<li>${pName(p)}</li>`).join('')}</ul><button class="btn ghost small" data-flash="Im Entwurf: Die Spieler ohne Antwort bekämen eine Erinnerung per Push.">Erinnern</button></div></div>
+        <p class="note">Zugesagt und keine Antwort sind im Entwurf Beispielwerte, Abgesagt kommt aus den Abwesenheiten.</p></div>
+      ${flashBox()}
+    </div>
+    <aside class="card" style="position:sticky;top:16px"><h3>Passend zum Schwerpunkt</h3><p class="sub">${fp.phase}: ${fp.name}</p>
+      <b>Einheiten</b><div class="side-pick">${[...units].sort((x,y)=>(y.pr===fp.id)-(x.pr===fp.id)||(PR(y.pr).phase===fp.phase)-(PR(x.pr).phase===fp.phase)).slice(0,4).map(x=>`<div class="it" draggable="true" data-dragunit="${x.id}" data-useunit="${x.id}" role="button" tabindex="0"><b>${x.name}</b><small>${PR(x.pr).name} · ${unitMin(x)} min</small></div>`).join('')}</div>
+      <b>Übungen</b><div class="side-pick">${[...exercises].sort((x,y)=>(y.pr===fp.id)-(x.pr===fp.id)||((y.pr&&PR(y.pr).phase===fp.phase)?1:0)-((x.pr&&PR(x.pr).phase===fp.phase)?1:0)).map(x=>`<div class="it" draggable="true" data-dragex="${x.id}" data-exadd="${x.id}" role="button" tabindex="0"><b>${x.name}</b><small>${x.kind} · ${x.min} min${exNotes[x.id]?' · mit Erfahrung':''}</small></div>`).join('')}</div>
+      <p class="note">Antippen fügt hinzu, eine Einheit ersetzt den Ablauf.</p></aside>
+  </div>`;
+}
+// ======================= Kalender =======================
+function vKalender() {
+  return `${demo}
+  <div class="head"><div><h1>Kalender</h1><p>Spiele und Trainings mit Ort. Einheiten wählt ihr hier oder im Bereich Training.</p></div>
+    <div class="row"><label class="row" for="absbox"><input type="checkbox" id="absbox" ${state.showAbs?'checked':''}> Abwesenheiten</label>
+    <label class="row" for="evbox"><input type="checkbox" id="evbox" ${state.showEv?'checked':''}> Events und Dienste</label>
+    <button class="btn ghost small" data-flash="Event anlegen: Titel, Datum, Ort und optional Dienste mit Anzahl der Plätze. Im Entwurf ohne Funktion.">Event anlegen</button>
+    <div class="seg"><button data-cal="week" class="${state.calView==='week'?'on':''}">Woche</button><button data-cal="month" class="${state.calView==='month'?'on':''}">Monat</button></div>
+    ${state.calView==='week'?`<button class="btn ghost small" data-wk="-7" aria-label="Vorige Woche">‹</button><span class="num">${fmt(state.weekStart)} – ${fmt(addDays(state.weekStart,6))}</span><button class="btn ghost small" data-wk="7" aria-label="Nächste Woche">›</button>`:'<span>November 2026</span>'}</div></div>
+  ${flashBox()}
+  <div class="cal-legend"><span><i style="background:var(--tr)"></i>Training</span><span><i style="background:var(--game)"></i>Spiel</span><span><i style="background:var(--ev)"></i>Event</span><span>Doppelklick auf ein Training öffnet es.</span></div>
+  ${state.calView==='week' ? weekGrid() : monthGrid()}
+  ${state.showEv ? dutyTable() : ''}
+  ${state.showAbs?`<p class="note">Gelb: weniger als ${settings.minFpTr} Feldspieler im Training, weniger als ${settings.minFpGm} am Spieltag oder kein Torhüter. Die Grenzen stellst du in den Einstellungen ein.</p>`:''}`;
+}
+function weekGrid() {
+  return `<div class="week">${[0,1,2,3,4,5,6].map(i=>{
+    const iso = addDays(state.weekStart,i), evs = events.filter(e=>e.date===iso), abs = absentOn(iso);
+    return `<div class="day ${iso===TODAY?'today':''}"><div class="dh"><b>${WD[dt(iso).getDay()]}</b><span class="num">${fmt(iso)}</span></div>
+      ${evs.filter(e=>e.type!=='ev'||state.showEv).map(e=> e.type==='ev' ? evBlock(e) : e.type==='gm'
+        ? `<div class="ev gm"><span class="t">${e.time} Spiel</span><span>${gameTitle(e)}</span><span class="note">${e.comp}</span><span class="note">${ICON.pin} ${e.place}</span>${e.res?`<span class="pill game" style="justify-self:start">${e.res}</span>`:`${state.showAbs?availPill(iso,'gm'):''}<a href="#spiel-vorbereitung" data-setgame="${e.id}">Vorbereitung</a>`}</div>`
+        : `<div class="ev tr ${e.unit?'filled':''}" data-open="${e.id}" title="Doppelklick öffnet das Training"><span class="t">${e.time}–${endTime(e.time,e.dur)} Training</span><span class="note">${ICON.pin} ${e.place.replace('Sportplatz ','')}</span>
+            <select data-assign="${e.id}" aria-label="Einheit für ${fmt(iso)}"><option value="">Einheit wählen …</option>${units.map(u=>`<option value="${u.id}" ${e.unit===u.id?'selected':''}>${u.name}</option>`).join('')}</select>
+            ${state.showAbs && iso>=TODAY?availPill(iso,'tr'):''}<a class="open-link" href="#einheit" data-settrain="${e.id}">Training öffnen ›</a></div>`).join('')}
+      ${state.showEv ? dutiesOn(iso).map(d=>dutyChip(d)).join('') : ''}
+      ${state.showAbs && abs.length && evs.some(e=>e.type!=='ev'||state.showEv) ? `<div class="abs">${abs.map(a=>`<div><b>${P(a.pid).name}</b> · ${a.why}</div>`).join('')}</div>`:''}
+    </div>`;}).join('')}</div>`;
+}
+function monthGrid() {
+  const start = '2026-10-26';
+  let h = `<div class="month">${['Mo','Di','Mi','Do','Fr','Sa','So'].map(x=>`<div class="mh">${x}</div>`).join('')}`;
+  for (let i=0;i<35;i++) {
+    const iso = addDays(start,i), evs = events.filter(e=>e.date===iso), c = counts(iso), n = absentOn(iso).length;
+    h += `<div class="mday ${iso.slice(5,7)!=='11'?'out':''} ${iso===TODAY?'today':''}"><span class="num">${+iso.slice(8)}</span>${evs.filter(e=>e.type!=='ev'||state.showEv).map(e=>e.type==='ev'?`<span class="chip xv" title="${esc(e.title)}">${e.time} ${esc(e.title)}</span>`:e.type==='gm'
+      ? `<span class="chip gm" title="${gameTitle(e)}, ${e.comp}">${e.time} ${e.opp}</span>`
+      : `<span class="chip tr ${e.unit?'':'open'}" title="${e.unit?U(e.unit).name:'offen'} · ${e.place}">${e.unit?U(e.unit).name:'Training (offen)'}</span>`).join('')}
+      ${state.showAbs && n && evs.length ? `<span class="chip" style="color:var(--warn)">TW ${c.tw} · Feld ${c.fp}</span>`:''}</div>`;
+  }
+  return h + '</div>';
+}
+
+function evBlock(e) {
+  return `<div class="ev xv"><span class="t">${e.time} ${esc(e.title)}</span><span class="note">${ICON.pin} ${e.place}</span></div>`;
+}
+function dutyChip(d) {
+  const open = d.slots - d.who.length;
+  return `<div class="duty ${open?'open':''}"><b>${esc(d.title.split(' (')[0])}</b> ${d.who.map(id=>P(id).name.split(' ')[1]).join(', ')}${open?` <span class="pill warn">${open} offen</span>`:''}</div>`;
+}
+function dutyTable() {
+  return `<div class="card"><div class="row between"><h3>Dienste</h3><button class="btn ghost small" data-flash="Dienst anlegen: Titel, Zeitraum oder Event, Anzahl Plätze. Spieler können sich in ihrer Ansicht selbst eintragen.">Dienst anlegen</button></div>
+    <p class="sub">Spieler sehen ihre Dienste in ihrer Ansicht und können sich für offene Plätze eintragen.</p>
+    <div class="scroll"><table><thead><tr><th>Dienst</th><th>Wann</th><th>Eingeteilt</th><th>Offen</th><th></th></tr></thead><tbody>
+    ${duties.map(d=>{const open=d.slots-d.who.length;return `<tr><td><b>${esc(d.title)}</b></td><td class="note">${dutyWhen(d)}</td><td>${d.who.map(id=>P(id).name).join(', ')||'–'}</td><td>${open?`<span class="pill warn">${open} von ${d.slots}</span>`:'<span class="pill">voll</span>'}</td>
+      <td>${open?`<select class="f" data-dutyadd="${d.id}" aria-label="Spieler einteilen" style="width:auto"><option value="">Spieler einteilen …</option>${players.filter(p=>!d.who.includes(p.id)).map(p=>`<option value="${p.id}">${p.name}</option>`).join('')}</select>`:''}</td></tr>`;}).join('')}</tbody></table></div></div>`;
+}
+// ======================= Spieltag (Übersicht) =======================
+function gameStatus(g) {
+  if (g.res) return [
+    ['Spieldaten von fussball.de', 'geladen', true],
+    ['Fragebogen', g.post==='offen' ? 'offen' : 'erledigt', g.post!=='offen'],
+    ['Spielernoten', g.post==='offen' ? '0 von 11' : '11 von 11', g.post!=='offen'],
+  ];
+  return [
+    ['Gegnervorbereitung', g.prep==='nicht begonnen' ? 'nicht begonnen' : `${g.prep} Seiten`, false],
+    ['Aufstellung', g.prep==='nicht begonnen' ? 'offen' : 'Entwurf', false],
+    ['Mannschaftsnachricht', 'offen', false],
+  ];
+}
+function gameRow(g, isNext) {
+  const todo = g.res ? g.post==='offen' : (isNext || g.date <= addDays(TODAY, 7));
+  return `<details class="gd ${isNext?'next':''}" ${todo?'open':''}>
+    <summary><span class="num gd-date"><b>${WD[dt(g.date).getDay()]} ${fmt(g.date)}</b> <span class="note">${g.time}</span></span>
+      <span class="gd-title"><span class="note">${g.comp}</span><b>${gameTitle(g)}</b></span>
+      <span class="gd-state">${isNext?'<span class="pill">nächstes Spiel</span>':''}${g.res?`<span class="pill game">${g.res}</span>`:''}${todo?'<span class="pill warn">offen</span>':g.res?'<span class="pill grey">erledigt</span>':''}</span></summary>
+    <div class="gd-body">
+      <div class="steps">${gameStatus(g).map(([l,s,ok])=>`<div class="step ${ok?'ok':''}"><span>${l}</span><b>${s}</b></div>`).join('')}</div>
+      <div class="row">${g.res
+        ? `<a class="btn ${g.post==='offen'?'':'ghost'} small" href="#spiel-nachbereitung" data-setpost="${g.id}">Nachbereitung ${g.post==='offen'?'ausfüllen':'ansehen'}</a>`
+        : `<a class="btn small" href="#spiel-vorbereitung" data-setgame="${g.id}">Gegnervorbereitung</a><a class="btn ghost small" href="#spiel-aufstellung" data-setgame="${g.id}">Aufstellung</a>${availPill(g.date,'gm')}`}</div>
+    </div></details>`;
+}
+function vSpieltag() {
+  const up = games().filter(g=>!g.res), past = games().filter(g=>g.res).reverse(), nx = nextGame();
+  return `${demo}
+  <div class="head"><div><h1>Spieltag</h1><p>Aufgeklappt ist, wo noch etwas zu tun ist.</p></div></div>
+  <h3 class="grp">Kommende Spiele</h3><div class="games">${up.map(g=>gameRow(g, g.id===nx.id)).join('')}</div>
+  <h3 class="grp">Gespielt</h3><div class="games">${past.map(g=>gameRow(g, false)).join('')}</div>`;
+}
+
+// ======================= Spieltag =======================
+function spielHead(g, cur) {
+  const tabs = g.res ? [['spiel-nachbereitung','Nachbereitung']] : [['spiel-vorbereitung','Gegnervorbereitung'],['spiel-aufstellung','Aufstellung']];
+  return `<div class="crumb"><a href="#spieltag">Spieltag</a> › ${gameTitle(g)}</div>
+  <div class="head"><div><h1>${gameTitle(g)}${g.res?` ${g.res}`:''}</h1><p>${['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'][dt(g.date).getDay()]}, ${fmt(g.date)}2026 · ${g.time} Uhr · ${g.comp} · ${g.place}</p></div>
+  ${g.res?'':`<div class="row"><button class="btn ghost" data-msg="1">Mannschaftsnachricht</button><button class="btn" data-pdf="1">Dossier als PDF</button></div>`}</div>
+  <div class="tabs">${tabs.map(([k,l])=>`<a href="#${k}" class="${k===cur?'on':''}">${l}</a>`).join('')}</div>
+  ${state.flash?`<div class="flash">${state.flash}</div>`:''}
+  ${!g.res && state.msg ? teamMessage(g) : ''}`;
+}
+function planRows(g) {
+  if (!state.plan[g.id]) state.plan[g.id] = flowTimes(settings.flow[g.home?'heim':'auswärts'], g.time).map(([t,l])=>[t,l]);
+  return state.plan[g.id];
+}
+function kitSvg(k) {
+  const [[,,c1],[,,c2],[,,c3]] = settings.kit[k];
+  return `<svg class="kitsvg" viewBox="0 0 120 120" role="img" aria-label="Spielkleidung ${k}">
+    <path d="M38 8 L50 4 Q60 12 70 4 L82 8 L104 22 L96 40 L84 34 L84 66 L36 66 L36 34 L24 40 L16 22 Z" fill="${c1}" stroke="currentColor" stroke-width="1.5"/>
+    <path d="M38 70 L82 70 L84 92 L64 92 L60 80 L56 92 L36 92 Z" fill="${c2}" stroke="currentColor" stroke-width="1.5"/>
+    <path d="M42 96 L52 96 L52 114 L40 114 Z M68 96 L78 96 L80 114 L68 114 Z" fill="${c3}" stroke="currentColor" stroke-width="1.5"/></svg>`;
+}
+function teamMessage(g) {
+  const out = new Set(absentOn(g.date).map(a=>a.pid));
+  const squad = players.filter(p=>!out.has(p.id)).map(p=>p.name.split(' ')[1]).join(', ');
+  const txt = `Hallo zusammen,\nSonntag, ${fmt(g.date)} ${g.home?'Heimspiel gegen':'auswärts bei'} ${g.opp}, Anstoß ${g.time} Uhr.\n\n${planRows(g).map(([t,l])=>`${t} ${l}`).join('\n')}\n\nKleidung: ${state.texts['kleidung-'+g.id] ?? kitText(g)}\nKader: ${squad}\n\nDas Dossier steht in Coach.AI. Bitte bis Freitag zu- oder absagen.`;
+  return `<div class="card msg"><div class="row between"><h3>Mannschaftsnachricht</h3><button class="ib" data-msg="1" aria-label="Schließen">${ICON.x}</button></div>
+    <textarea id="msgtxt" rows="11" aria-label="Text der Mannschaftsnachricht">${esc(txt)}</textarea>
+    <div class="row"><button class="btn small" data-flash="Im Entwurf: ${players.length} Spieler bekämen eine Push-Nachricht aufs Handy, wer keine Push-Nachrichten erlaubt hat, eine E-Mail.">Als Push an alle Spieler</button>
+      <button class="btn ghost small" data-flash="Öffnet WhatsApp mit diesem Text, du wählst die Gruppe. Im Entwurf ohne Funktion.">In WhatsApp teilen</button>
+      <button class="btn ghost small" data-copy="msgtxt">Text kopieren</button></div></div>`;
+}
+function readBox(g) {
+  if (!state.released[g.id]) return `<div class="card readbox"><div class="row between"><div><h3>Für Spieler freigeben</h3><p class="sub">Noch nicht freigegeben. Spieler sehen das Dossier erst nach der Freigabe.</p></div><button class="btn small" data-release="${g.id}">Freigeben</button></div></div>`;
+  const read = dossierRead[g.id] || [], ids = new Set(read.map(r=>r[0])), not = players.filter(p=>!ids.has(p.id));
+  return `<details class="card readbox"><summary class="row between"><div><h3>Dossier freigegeben · gelesen von ${read.length} von ${players.length}</h3><p class="sub">Tippen für die Namen. Gezählt wird, wer es über seinen Link geöffnet hat.</p></div>
+      <div class="readbar" aria-hidden="true"><span style="width:${Math.round(read.length/players.length*100)}%"></span></div></summary>
+    <div class="grid g2"><div><b>Gelesen</b><ul class="list">${read.map(([id,t])=>`<li><span>${P(id).name}</span><span class="note">${t}</span></li>`).join('')}</ul></div>
+      <div><b>Noch nicht</b><ul class="list">${not.map(p=>`<li><span>${p.name}</span></li>`).join('')}</ul><button class="btn ghost small" data-flash="Im Entwurf: Die ${not.length} Spieler bekämen eine Erinnerung per Push.">Erinnern</button></div></div></details>`;
+}
+function factCard(f) {
+  if (state.editing === f.id) return `<div class="fact ${f.kind==='opp'?'opp':''}"><textarea id="edit-${f.id}" rows="2" aria-label="Fakt bearbeiten">${esc(factText(f))}</textarea>
+    <div class="icons"><button class="btn small" data-save="${f.id}">Übernehmen</button></div></div>`;
+  return `<div class="fact ${f.kind==='opp'?'opp':''}"><div>${esc(factText(f))}<small>Quelle: ${factSrc(f)}</small></div>
+    <div class="icons"><button class="ib" data-edit="${f.id}" title="Von Hand ändern" aria-label="Von Hand ändern">${ICON.edit}</button>
+    <button class="ib" data-regen="${f.id}" title="Neuen Fakt ziehen" aria-label="Neuen Fakt ziehen">${ICON.refresh}</button>
+    <button class="ib" data-del="${f.id}" title="Entfernen" aria-label="Entfernen">${ICON.x}</button></div></div>`;
+}
+const SECTIONS = [
+  ['s-spiel','Spiel und Treffpunkt'],['s-tabelle','Tabelle und Form'],['s-rahmen','Rahmen: Zeitplan und Kleidung'],
+  ['s-gegner','Fakten zum Gegner'],['s-wir','Fakten zu uns'],['s-gphasen','So spielt der Gegner'],['s-plan','Unser Plan'],['s-aufst','Aufstellung und Kader']];
+function slide(i, [id, title], body) {
+  const on = state.include[id] !== false;
+  return `<section class="slide ${on?'':'off'}"><div class="slide-h"><h3><span class="no">${i+1}</span>${title}</h3>
+    <label class="row note" for="inc-${id}"><input type="checkbox" id="inc-${id}" data-inc="${id}" ${on?'checked':''}> im Dossier</label></div>
+    <div class="slide-b">${body}</div></section>`;
+}
+function vVorbereitung() {
+  const g = EV(state.game) && !EV(state.game).res ? EV(state.game) : nextGame();
+  if (state.texts['zeitplan-'+g.id] == null) state.texts['zeitplan-'+g.id] = flowText(g);
+  if (state.texts['kleidung-'+g.id] == null) state.texts['kleidung-'+g.id] = kitText(g);
+  const showOpp = state.model!=='wir', showOwn = state.model!=='gegner';
+  const tbl = [[3,'SC Testfeld',12,25],[4,'TSG Wilhelmshöhe',12,22],[5,'SV Musterdorf',12,20],[9,'TuS Probehausen',12,15],[10,'FV Vorlage',12,13]];
+  const phaseBoxes = (pre, phs) => phs.map(ph=>{ const box = textBox(pre+ph, ph, pre==='g-'?'Was macht der Gegner in dieser Phase?':'Was wollen wir in dieser Phase?');
+    if (pre!=='w-' || !planHistory[ph]) return box;
+    return box.replace('<button class="mic"', `<select class="f planpick" data-planpick="${pre+ph}" aria-label="Aus früherem Spiel übernehmen"><option value="">Aus früherem Spiel …</option>${planHistory[ph].map(([g,t])=>`<option value="${esc(t)}">${g}</option>`).join('')}</select><button class="mic"`); }).join('');
+  const bodies = [
+    `<div class="grid g3"><label class="fl" for="tp">Treffpunkt<input id="tp" type="text" value="${esc(planRows(g)[0][0]+' '+planRows(g)[0][1])}"></label><label class="fl" for="ak">Anstoß<input id="ak" type="text" value="${g.time} Uhr"></label><label class="fl" for="pl">Spielort<input id="pl" type="text" value="${esc(g.place)}"></label></div>`,
+    `<div class="row between"><span class="note">Von fussball.de, Stand 10.11.2026</span><button class="ib" data-flash="Tabelle und Form werden auf Klick neu von fussball.de geladen." title="Neu laden" aria-label="Neu laden">${ICON.refresh}</button></div>
+     <div class="scroll"><table><thead><tr><th>Pl.</th><th>Mannschaft</th><th class="num">Sp.</th><th class="num">Pkt.</th><th>Form</th></tr></thead><tbody>${tbl.map(([pl,n,s,p])=>`<tr ${n.startsWith('TSG')||n.startsWith('TuS')?'style="font-weight:700"':''}><td class="num">${pl}</td><td>${n}</td><td class="num">${s}</td><td class="num">${p}</td><td class="note">${n.startsWith('TuS')?'N S N U N':n.startsWith('TSG')?'S S S N U':''}</td></tr>`).join('')}</tbody></table></div>`,
+    `<p class="note" style="margin:0">Vorbelegt aus den Einstellungen (Ablauf und Spielkleidung), hier für dieses Spiel änderbar.</p>
+     <div class="grid g2" style="align-items:start"><div class="tb"><div class="tbh"><span>Zeitplan</span><button class="btn ghost small" data-planadd="${g.id}">Zeile hinzufügen</button></div>
+       <table class="plan"><thead><tr><th style="width:110px">Uhrzeit</th><th>Programmpunkt</th><th></th></tr></thead><tbody>${planRows(g).map(([t,l],i)=>`<tr><td><input type="text" inputmode="numeric" class="f num" data-plan="${g.id}" data-i="${i}" data-k="0" value="${t}" aria-label="Uhrzeit"></td><td><input type="text" data-plan="${g.id}" data-i="${i}" data-k="1" value="${esc(l)}" aria-label="Programmpunkt"></td><td><button class="ib" data-plandel="${g.id}|${i}" aria-label="Zeile löschen">${ICON.x}</button></td></tr>`).join('')}</tbody></table></div>
+       <div class="tb">${textBox('kleidung-'+g.id,'Kleidung','')}<div class="kitshow">${state.kitPhoto[g.home?'Heim':'Auswärts'] ? `<img src="${state.kitPhoto[g.home?'Heim':'Auswärts']}" alt="Foto Spielkleidung">` : kitSvg(g.home?'Heim':'Auswärts')}<span class="note">${g.home?'Heim':'Auswärts'}: ${settings.kit[g.home?'Heim':'Auswärts'].map(([a,b])=>`${a} ${b}`).join(', ')}${state.kitPhoto[g.home?'Heim':'Auswärts']?'':'<br>Eigenes Foto: Einstellungen › Spieltag und Dossier'}</span></div></div></div>`,
+    `${facts.opp.map(factCard).join('')}<button class="btn ghost small" data-addfact="opp" style="justify-self:start">Fakt hinzufügen</button>`,
+    `${facts.own.map(factCard).join('')}<button class="btn ghost small" data-addfact="own" style="justify-self:start">Fakt hinzufügen</button>`,
+    `<div class="grid g2">${phaseBoxes('g-', PHASES)}</div>`,
+    `<div class="grid g2">${phaseBoxes('w-', PHASES)}</div>`,
+    `${(()=>{const ab=absentOn(g.date), out=new Set(ab.map(x=>x.pid)), clash=lineup.filter(id=>out.has(id));
+      return `<p class="sub">${lineup.length} in der Startelf, ${players.filter(x=>!lineup.includes(x.id)&&!out.has(x.id)).length} auf der Bank, ${ab.length} fehlen (${ab.map(x=>`${P(x.pid).name.split(' ')[1]}: ${x.why}`).join(', ')}).</p>`
+      + (clash.length?`<div class="q"><b>Hinweis:</b> ${clash.map(id=>P(id).name).join(', ')} steht in der Startelf, ist an diesem Tag aber abwesend. Soll die Position neu besetzt werden?</div>`:'');})()}<a class="btn ghost small" href="#spiel-aufstellung" style="justify-self:start">Aufstellung bearbeiten</a>`,
+  ];
+  const sl = SECTIONS.map((s,i)=>({s,i})).filter(({s})=> (s[0]!=='s-gphasen'||showOpp) && (s[0]!=='s-plan'||showOwn));
+  return `${demo}${spielHead(g,'spiel-vorbereitung')}
+  <div class="row between"><p class="sub" style="margin:0">Aufgebaut wie das Dossier. Was hier steht, kommt ins PDF. KI-Fakten lassen sich ändern, neu ziehen oder entfernen.</p>
+    <div class="row"><span class="note">Spielphasen:</span><div class="seg">${[['gegner','Gegner'],['wir','Wir'],['beides','Beides']].map(([k,l])=>`<button data-model="${k}" class="${state.model===k?'on':''}">${l}</button>`).join('')}</div></div></div>
+  <div class="q"><b>Rückfrage von Coach.AI:</b> 6 der 19 Tore des Gegners fielen nach Standards. Soll Standards defensiv in „Unser Plan“?</div>
+  ${readBox(g)}
+  ${sl.map(({s,i},n)=>slide(n,s,bodies[i])).join('')}
+  <div class="card finish"><div class="row between"><div><h3>Fertig?</h3><p class="sub">Das PDF enthält genau die Seiten mit Haken „im Dossier“.</p></div>
+    <div class="row"><button class="btn ghost" data-msg="1">Mannschaftsnachricht</button>${state.released[g.id]?'':`<button class="btn ghost" data-release="${g.id}">Für Spieler freigeben</button>`}<button class="btn" data-pdf="1">Dossier als PDF erzeugen</button></div></div></div>`;
+}
+
+const FORMATIONS = {
+  '4-2-3-1': [['TW',7,50],['RV',27,82],['IV',23,62],['IV',23,38],['LV',27,18],['ZM',43,62],['ZM',43,38],['RA',62,82],['ZOM',62,50],['LA',62,18],['ST',82,50]],
+  '4-4-2': [['TW',7,50],['RV',27,82],['IV',23,62],['IV',23,38],['LV',27,18],['RM',52,84],['ZM',48,60],['ZM',48,40],['LM',52,16],['ST',78,62],['ST',78,38]],
+};
+const UNSAVED = 'Eigenes System';
+let lineup = ['p0','p2','p3','p4','p5','p8','p9','p11','p12','p13','p15'];
+function vAufstellung() {
+  const g = EV(state.game) && !EV(state.game).res ? EV(state.game) : nextGame();
+  const F = FORMATIONS[state.formation], used = new Set(lineup);
+  const unsaved = state.formation === UNSAVED;
+  return `${demo}${spielHead(g,'spiel-aufstellung')}
+  <div class="card"><div class="row between"><h3>Aufstellung</h3><div class="seg wrap">${Object.keys(FORMATIONS).map(f=>`<button data-form="${esc(f)}" class="${state.formation===f?'on':''}">${esc(f)}</button>`).join('')}</div></div>
+    <p class="sub">System wählen oder Spieler auf dem Feld verschieben. Position antippen, dann einen Spieler aus der Liste wählen. Wer an diesem Tag abwesend ist, ist gesperrt.</p>
+    ${unsaved ? `<div class="row q"><span>Eigenes System. Unter welchem Namen speichern?</span><input type="text" id="sysname" value="${esc(state.sysName)}" placeholder="z. B. 3-5-2 gegen Probehausen" style="flex:1;min-width:180px"><button class="btn small" data-savesys="1">System speichern</button></div>` : ''}
+    <div class="lineup">
+      <div class="pitch" id="pitch"><div class="circle"></div><div class="box l"></div><div class="box r"></div>
+        ${F.map(([pos,x,y],i)=>{const p=P(lineup[i]);return `<button class="spot ${state.activeSpot===i?'active':''}" data-spot="${i}" style="left:${x}%;top:${y}%"><span class="dot">${p?p.nr:pos}</span><span class="nm">${p?p.name.split(' ')[1]:pos}</span></button>`;}).join('')}
+      </div>
+      <div class="bench"><b>Bank und Kader</b>${players.filter(p=>!used.has(p.id)).map(p=>{const a=absentOn(g.date).find(x=>x.pid===p.id);return `<button data-bench="${p.id}" class="${a?'out':''}" ${a?'disabled':''}><span>${p.nr} ${p.name}</span><span class="note">${a?a.why:p.pos}</span></button>`;}).join('')}</div>
+    </div></div>
+  <div class="card finish"><div class="row between"><div><h3>Aufstellung fertig?</h3><p class="sub">Sie kommt als letzte Seite ins Dossier.</p></div>
+    <div class="row"><button class="btn ghost" data-msg="1">Mannschaftsnachricht</button><button class="btn" data-pdf="1">Dossier als PDF erzeugen</button></div></div></div>`;
+}
+function vNachbereitung() {
+  const g = EV(state.post) && EV(state.post).res ? EV(state.post) : games().find(x=>x.post==='offen');
+  const xi = lineup.map(P);
+  return `${demo}${spielHead(g,'spiel-nachbereitung')}
+  <div class="grid g2">
+    <div class="card"><span class="label-src">Von fussball.de</span><h3>Spielverlauf</h3><p class="sub">Für dieses Beispiel sind die Tore erfunden.</p>
+      <ul class="list"><li><span>12′ 1:0 Luca Neumann</span></li><li><span>38′ 1:1 Gegner</span></li><li><span>67′ 2:1 Max Hoffmann</span></li><li><span>88′ 2:2 Gegner</span></li></ul></div>
+    <div class="card"><span class="label-src">Fragebogen</span><h3>Trainingsschwerpunkt</h3>
+      <div class="q"><b>Vorschlag von Coach.AI:</b> Beide Gegentore fielen kurz nach eigenem Ballverlust. Soll der laufende Block „Sofort Gegenpressing“ um zwei Wochen verlängert werden?</div>
+      <div class="row"><button class="btn small">Verlängern</button><button class="btn ghost small">Anderer Schwerpunkt</button></div>
+      ${textBox('nb-sp','Dein Schwerpunkt aus dem Spiel','z. B. Abstände im Mittelfeld gegen den Ball')}</div>
+  </div>
+  <div class="card"><span class="label-src">Fragebogen</span><h3>Prinzipien bewerten</h3><p class="sub">1 = gar nicht umgesetzt, 5 = sehr gut. Gegliedert nach Spielphasen. Daraus entsteht die Ausprägung in der Spielphilosophie.</p>
+    ${PHASES.map(ph=>`<div style="display:grid;gap:4px"><b>${ph}</b>${principles.filter(p=>p.phase===ph).map(p=>`<div class="row between"><span>${p.name}</span><span class="rate">${[1,2,3,4,5].map(n=>`<button data-rate="${p.id}" data-v="${n}" class="${state.rating[p.id]===n?'on':''}">${n}</button>`).join('')}</span></div>`).join('')}</div>`).join('')}
+    ${textBox('nb-gegner','Wie hat der Gegner gespielt?','z. B. hohes Pressing in den ersten 20 Minuten, danach tief')}</div>
+  <div class="card"><span class="label-src">Spielernoten</span><div class="row between"><h3>Noten mit Begründung</h3><label class="row note" for="pub"><input id="pub" type="checkbox" ${state.publish&&state.pv.note?'checked':''} ${state.pv.note?'':'disabled'}> ${state.pv.note?'Jedem Spieler seine eigene Note zeigen':'Für Spieler ausgeschaltet (Einstellungen › Spielersicht)'}</label></div>
+    <p class="sub">Schulnoten 1 bis 6 mit kurzer Begründung. ${state.publish&&state.pv.note?'Jeder Spieler sieht nur seine eigene Note.':'Nur das Trainerteam sieht die Noten.'}</p>
+    <div class="scroll"><table><thead><tr><th>Spieler</th><th>Note</th><th>Begründung</th></tr></thead><tbody>
+    ${xi.map(p=>`<tr><td><b>${p.nr} ${p.name}</b> <span class="note">${p.pos}</span></td><td><select class="f" id="g-${p.id}" aria-label="Note ${p.name}" style="width:80px">${['–','1','1,5','2','2,5','3','3,5','4','4,5','5','6'].map(n=>`<option>${n}</option>`).join('')}</select></td><td><input type="text" id="r-${p.id}" aria-label="Begründung ${p.name}" placeholder="kurz, z. B. sicher im Aufbau, Ballverlust vor dem 2:2"></td></tr>`).join('')}
+    </tbody></table></div></div>`;
+}
+
+// ======================= Kader =======================
+function vKader() {
+  const st = s => s==='fit'?'<span class="pill">fit</span>':s==='verletzt'?'<span class="pill game">verletzt</span>':s==='Urlaub'?'<span class="pill grey">Urlaub</span>':'<span class="pill warn">angeschlagen</span>';
+  return `${demo}
+  <div class="head"><div><h1>Kader</h1><p>${players.length} Spieler · Einsätze und Noten kommen aus den Nachbereitungen.</p></div><div class="row"><button class="btn ghost">Abwesenheit eintragen</button><button class="btn">Spieler anlegen</button></div></div>
+  <div class="card scroll"><table><thead><tr><th>Nr.</th><th>Name</th><th>Position</th><th>Status</th><th class="num">Einsätze</th><th class="num">Tore</th><th class="num">Ø Note</th><th>Abwesend</th></tr></thead><tbody>
+  ${players.map(p=>{const a=absences.filter(x=>x.pid===p.id&&x.to>=TODAY);return `<tr><td class="num">${p.nr}</td><td><b>${p.name}</b></td><td>${p.pos}</td><td>${st(p.status)}</td><td class="num">${p.games}</td><td class="num">${p.goals}</td><td class="num">${de(p.grade)}</td><td class="note">${a.map(x=>`${fmt(x.from)}${x.to!==x.from?`–${fmt(x.to)}`:''} ${x.why}`).join('; ')}</td></tr>`;}).join('')}
+  </tbody></table></div>`;
+}
+
+// ======================= Analytics =======================
+function vAnalytics() {
+  return `${demo}
+  <div class="head"><div><h1>Analytics</h1><p>Mannschaft im Vergleich zum Ligaschnitt, und jeder Spieler einzeln.</p></div></div>
+  <div class="tabs">${[['team','Mannschaft'],['spieler','Spieler']].map(([k,l])=>`<button data-atab="${k}" class="${state.anaTab===k?'on':''}">${l}</button>`).join('')}</div>
+  ${state.anaTab==='team' ? anaTeam() : anaPlayer()}`;
+}
+function anaTeam() {
+  const bins = ['1–15','16–30','31–45','46–60','61–75','76–90'], own=[1,2,3,2,4,6], lg=[2.4,2.6,3.1,2.8,3.3,3.8], max=6;
+  const tile = (v,l,c) => `<div class="tile"><div class="v">${v}</div><div class="c">${l}</div><div class="c">${c}</div></div>`;
+  return `<div class="tiles">
+    ${tile('1,83','Punkte pro Spiel','Liga: <b>1,34</b>')}${tile('2,08','Tore pro Spiel','Liga: <b>1,56</b>')}${tile('1,50','Gegentore pro Spiel','Liga: <b>1,56</b>')}${tile('4.','Tabellenplatz','von 16')}${tile('13 / 9','Punkte Heim / Auswärts','aus je 6 Spielen')}</div>
+  <div class="grid g2">
+    <div class="card"><h3>Wann fallen die Gegentore?</h3><p class="sub">Unsere 18 Gegentore je Viertelstunde, daneben der Ligaschnitt auf 12 Spiele umgerechnet</p>
+      ${bins.map((b,i)=>`<div class="minibar"><span class="num">${b}</span><div class="pair"><div class="b1" style="width:${own[i]/max*100}%"></div><div class="b2" style="width:${lg[i]/max*100}%"></div></div></div>`).join('')}
+      <div class="legend"><span><i style="background:var(--game)"></i>wir</span><span><i style="background:var(--muted);opacity:.5"></i>Ligaschnitt</span></div>
+      <div class="q">6 Gegentore nach der 75. Minute, im Ligaschnitt wären es knapp 4. Ist das ein Fitness-Thema oder eines der Wechsel?</div></div>
+    <div class="card"><h3>Spielphasen im Verlauf</h3><p class="sub">Ø eurer Prinzip-Bewertungen je Phase, letzte 6 Spiele</p>
+      ${PHASES.map(ph=>{const ps=principles.filter(p=>p.phase===ph);const v=[0,1,2,3,4,5].map(i=>avg(ps.map(p=>p.hist[i])));return `<div class="row between" style="flex-wrap:nowrap"><span style="min-width:160px;font-size:14px">${ph}</span><div style="flex:1">${spark(v,null,34)}</div><b class="num">${de(v[5])}</b></div>`;}).join('')}
+      <p class="note">Den kompletten Saisonblick mit sieben Seiten gibt es zusätzlich als PDF.</p></div>
+  </div>
+  <div class="card"><div class="row between"><h3>Tabelle Gruppenliga</h3><span class="note">von fussball.de, Stand 10.11.2026</span></div>${leagueTable(LEAGUE)}
+    <div class="legend"><span><i style="background:var(--accent)"></i>Aufstieg</span><span><i style="background:var(--game)"></i>Abstieg</span></div></div>`;
+}
+function anaPlayer() {
+  const p = P(state.anaPlayer), hist = [2.5,3,2,3,3,2].map(x=>6-x), teamAvg = avg(players.map(x=>x.grade));
+  const tile = (v,l,c) => `<div class="tile"><div class="v">${v}</div><div class="c">${l}</div><div class="c">${c}</div></div>`;
+  return `<div class="row"><label class="row" for="anap">Spieler <select class="f" id="anap" style="width:auto">${players.map(x=>`<option value="${x.id}" ${x.id===p.id?'selected':''}>${x.nr} ${x.name}</option>`).join('')}</select></label></div>
+  <div class="tiles">${tile(p.games,'Einsätze','von 12 Spielen')}${tile(p.starts,'Startelf','')}${tile(p.goals,'Tore','')}${tile(de(p.grade),'Ø Note',`Mannschaft: <b>${de(teamAvg)}</b>`)}</div>
+  <div class="grid g2">
+    <div class="card"><h3>Noten im Verlauf</h3><p class="sub">Höher heißt besser (Note 1 oben)</p>${spark(hist,GL,90)}</div>
+    <div class="card"><h3>Begründungen</h3><ul class="list"><li><span>08.11. <b>2</b> „Zwei Torvorlagen, im Pressing sehr aktiv.“</span></li><li><span>01.11. <b>3</b> „Gute erste Halbzeit, danach kaum Ballkontakte.“</span></li><li><span>25.10. <b>3</b> „Viele Ballverluste im Zentrum.“</span></li></ul>
+      <p class="note">Beispieltexte, gleich für jeden Spieler.</p></div>
+  </div>`;
+}
+
+// ======================= Spielphilosophie =======================
+// ======================= Spielphilosophie =======================
+function vPhilosophie() {
+  const nEx = id => exercises.filter(e=>e.pr===id).length;
+  const blk = id => blocks.filter(b=>b.pr===id);
+  return `${demo}
+  <div class="head"><div><h1>Spielphilosophie</h1><p>Die Vorarbeit für alles andere. Einmal festlegen, selten ändern.</p></div></div>
+  <div class="card"><div class="chain"><span class="box">1 Philosophie</span><span class="arr">→</span><span class="box">2 Prinzipien je Spielphase</span><span class="arr">→</span><span class="box">3 Schwerpunkte in der Periodisierung</span><span class="arr">→</span><span class="box">4 Einheiten und Übungen</span></div>
+    <p class="note">Die Nachbereitung bewertet die Prinzipien nach jedem Spiel. So siehst du unten, wie ausgeprägt jedes Prinzip gerade ist.</p></div>
+  <div class="card"><h3>Schritt 1: Wie wollen wir spielen?</h3><p class="sub">Leitfragen. Antworten gern per Sprachnachricht. Coach.AI hilft danach, daraus Prinzipien zu formulieren.</p>
+    <div class="grid g2">
+      ${textBox('ph-ball','Was wollen wir mit dem Ball?','z. B. den Ball haben, flach von hinten heraus, Geduld bis zur Lücke')}
+      ${textBox('ph-gegen','Was wollen wir gegen den Ball?','z. B. früh stören, Mitte zu, Gegner auf die Seite lenken')}
+      ${textBox('ph-werte','Was soll uns ausmachen?','z. B. Mentalität, Laufbereitschaft, Mut, Zusammenhalt')}
+      ${textBox('ph-kader','Was passt zu unserem Kader?','z. B. schnelle Außen, kopfballstarke Innenverteidiger, junger Kader')}
+    </div>
+    ${textBox('philo','Unser Leitsatz in einem Satz','z. B. Wir wollen den Ball haben, und wenn wir ihn verlieren, holen wir ihn sofort zurück.',1)}
+    <div class="row"><button class="btn ghost small" data-flash="Coach.AI formuliert aus euren Antworten Vorschläge für Prinzipien je Spielphase. Ihr entscheidet, was übernommen wird. Im Entwurf ohne Funktion.">${ICON.spark} Prinzipien vorschlagen lassen</button></div>
+    ${flashBox()}</div>
+  <h3 class="grp">Schritt 2: Prinzipien je Spielphase und wie ausgeprägt sie sind</h3>
+  ${PHASES.map(ph=>`<div class="card"><div class="row between"><h3>${ph}</h3><button class="btn ghost small">Prinzip hinzufügen</button></div>
+    ${principles.filter(p=>p.phase===ph).map(p=>{const a=avg(p.hist.slice(-3));const bl=blk(p.id);return `<div class="prin">
+      <div><b>${p.name}</b><br><span class="note">${bl.length?bl.map(b=>`Schwerpunkt „${b.title}“ (${WEEKS[b.from]}–${WEEKS[b.to]}, ${b.state==='now'?'läuft':b.state==='done'?'abgeschlossen':'geplant'})`).join('; '):'noch kein Schwerpunkt geplant'} · ${nEx(p.id)} Übungen</span></div>
+      <div>${spark(p.hist,null,34)}</div>
+      <div><span class="score" style="color:${a<2.5?'var(--game)':a<3.5?'var(--warn)':'var(--accent)'}">${de(a)}</span> <span class="note">Ø letzte 3 Spiele</span></div></div>`;}).join('')}
+  </div>`).join('')}`;
+}
+
+// ======================= Verwaltung =======================
+function vEinstellungen() {
+  const T = state.setTab, tabs = [['training','Training'],['fristen','Zu- und Absagen'],['spieltag','Spieltag und Dossier'],['team','Mannschaft, Rollen und Rechte'],['spieler','Spielersicht'],['notify','Benachrichtigungen'],['daten','Datenquellen']];
+  return `${demo}
+  <div class="head"><div><h1>Einstellungen</h1><p>Grundeinstellungen der Mannschaft. Was hier steht, nutzen Kalender, Dossier und Spielersicht automatisch.</p></div></div>
+  <div class="tabs">${tabs.map(([k,l])=>`<button data-stab="${k}" class="${T===k?'on':''}">${l}</button>`).join('')}</div>
+  ${({fristen:setFristen,training:setTraining,spieltag:setSpieltag,team:setTeam,spieler:setSpieler,notify:setNotify,daten:setDaten})[T]()}`;
+}
+function setTraining() {
+  return `<div class="card"><div class="row between"><h3>Trainingsrhythmus</h3><span class="note">Aktuell: ${rhythmText()}</span></div>
+    <p class="sub">Daraus entstehen die Trainingstermine im Kalender. Einzelne Termine lassen sich dort verschieben oder absagen.</p>
+    <div class="scroll"><table><thead><tr><th>Tag</th><th>Beginn</th><th>Dauer</th><th>Ort</th><th></th></tr></thead><tbody>
+    ${settings.rhythm.map((r,i)=>`<tr><td><select class="f" data-rh="${i}" data-k="wd" aria-label="Tag" style="width:auto">${[1,2,3,4,5,6,0].map(w=>`<option value="${w}" ${w===r.wd?'selected':''}>${DAYNAMES[w]}</option>`).join('')}</select></td>
+      <td><input type="text" inputmode="numeric" class="f num" style="width:90px" data-rh="${i}" data-k="time" value="${r.time}" aria-label="Beginn"></td>
+      <td><select class="f" data-rh="${i}" data-k="dur" aria-label="Dauer" style="width:auto">${[60,75,90,105,120].map(m=>`<option value="${m}" ${m===r.dur?'selected':''}>${m} min</option>`).join('')}</select></td>
+      <td><input type="text" data-rh="${i}" data-k="place" value="${esc(r.place)}" aria-label="Ort"></td>
+      <td><button class="ib" data-rhdel="${i}" aria-label="Zeile entfernen">${ICON.x}</button></td></tr>`).join('')}</tbody></table></div>
+    <button class="btn ghost small" data-rhadd="1" style="justify-self:start">Trainingstag hinzufügen</button>
+    <p class="note">Im Entwurf wirken Änderungen an Beginn, Dauer und Ort sofort auf die kommenden Termine.</p></div>
+  <div class="card"><h3>Grenzen für Hinweise</h3><p class="sub">Ab wann Dashboard, Training und Kalender gelb warnen.</p>
+    <div class="grid g3">
+      <label class="fl" for="mi-1">Feldspieler im Training mind.<input id="mi-1" type="number" min="0" data-min="minFpTr" value="${settings.minFpTr}" class="f"></label>
+      <label class="fl" for="mi-2">Feldspieler am Spieltag mind.<input id="mi-2" type="number" min="0" data-min="minFpGm" value="${settings.minFpGm}" class="f"></label>
+      <label class="fl" for="mi-3">Torhüter mind.<input id="mi-3" type="number" min="0" data-min="minTw" value="${settings.minTw}" class="f"></label></div></div>`;
+}
+function setSpieltag() {
+  const flow = k => { const rows = settings.flow[k], times = flowTimes(rows, state.kickoff);
+    return `<div class="card"><h3>Ablauf ${k==='heim'?'Heimspiel':'Auswärtsspiel'}</h3>
+    <p class="sub">Programmpunkte in ihrer Reihenfolge mit Dauer. Coach.AI rechnet vom Anstoß zurück, daraus ergeben sich Treffpunkt und Zeitplan im Dossier und in der Mannschaftsnachricht.</p>
+    <div class="flowed"><div class="flowlist"><div class="flowrow head"><span>Programmpunkt</span><span>Dauer</span><span></span></div>
+      ${rows.map(([l,m],i)=>`<div class="flowrow"><input type="text" data-flow="${k}" data-i="${i}" data-k="0" value="${esc(l)}" aria-label="Programmpunkt ${i+1}">
+        <span class="dur"><input type="number" class="f" min="0" step="5" data-flow="${k}" data-i="${i}" data-k="1" value="${m}" aria-label="Dauer in Minuten"> min</span>
+        <span class="row" style="flex-wrap:nowrap;gap:4px"><button class="ib" data-flowadd="${k}|${i}" title="Zeile darunter einfügen" aria-label="Zeile darunter einfügen">+</button><button class="ib" data-flowdel="${k}|${i}" title="Zeile entfernen" aria-label="Zeile entfernen">−</button></span></div>`).join('')}
+      <div class="flowrow"><span class="note">danach Anstoß</span></div></div>
+    <div class="flowprev"><div class="row between"><b>So sieht es aus</b><label class="note row" for="ko-${k}">Anstoß <input type="text" inputmode="numeric" id="ko-${k}" data-kickoff="1" value="${state.kickoff}" style="width:70px"></label></div>
+      <table><tbody>${times.map(([t,l,m],i)=>`<tr class="${i===0?'first':''} ${l==='Anstoß'?'ko':''}"><td class="num"><b>${t}</b></td><td>${esc(l)}${i===0?' <span class="pill">Treffpunkt</span>':''}</td><td class="note num">${m?m+' min':''}</td></tr>`).join('')}</tbody></table></div></div></div>`; };
+  const kit = k => `<div class="card"><h3>Spielkleidung ${k}</h3><div class="kit">${settings.kit[k].map(([part,name,col],i)=>`<label class="fl" for="kit-${k}-${i}">${part}
+      <span class="row" style="flex-wrap:nowrap"><input type="color" id="kit-${k}-${i}c" data-kit="${k}" data-i="${i}" data-k="2" value="${col}" aria-label="Farbe ${part}"><input type="text" id="kit-${k}-${i}" data-kit="${k}" data-i="${i}" data-k="1" value="${esc(name)}"></span></label>`).join('')}</div>
+    <div class="row" style="align-items:center">${state.kitPhoto[k] ? `<img class="kitphoto" src="${state.kitPhoto[k]}" alt="Foto Spielkleidung ${k}">` : kitSvg(k)}
+      <label class="btn ghost small" for="kitfile-${k}">Foto hochladen</label><input type="file" accept="image/*" id="kitfile-${k}" data-kitfile="${k}" class="visually-hidden">
+      <span class="note">Ohne Foto zeichnet Coach.AI die Kleidung aus den Farben.</span></div></div>`;
+  return `${flow('heim')}${flow('auswärts')}
+  <div class="grid g2">${kit('Heim')}${kit('Auswärts')}</div>
+  <div class="grid g2"><div class="card"><h3>Aufwärmkleidung</h3><input type="text" data-warm="1" value="${esc(settings.warmup)}" aria-label="Aufwärmkleidung"></div>
+    <div class="card"><h3>Dossier-Vorgaben</h3><label class="fl" for="dm">Spielphasen im Dossier standardmäßig
+      <select class="f" id="dm">${[['gegner','Gegner'],['wir','Wir'],['beides','Beides']].map(([k,l])=>`<option value="${k}" ${settings.dossierModel===k?'selected':''}>${l}</option>`).join('')}</select></label>
+      <p class="note">Welche Seiten standardmäßig ins Dossier kommen, legst du beim ersten Dossier fest, danach gilt es für alle.</p></div></div>`;
+}
+function setTeam() {
+  return `<div class="grid g2"><div class="card"><h3>Mannschaft</h3>
+      <label class="fl" for="vw-n">Name<input id="vw-n" type="text" value="TSG Wilhelmshöhe, 1. Herren"></label>
+      <label class="fl" for="vw-l">Liga und Saison<input id="vw-l" type="text" value="Gruppenliga, Saison 2026/27"></label>
+      <label class="fl" for="vw-h">Heimspielstätte<input id="vw-h" type="text" value="${esc(settings.home)}"></label></div>
+    <div class="card"><h3>Trainerteam</h3>
+      <ul class="list"><li><span><b>Trainer</b></span><span class="pill">aktiv</span></li><li><span><b>Co-Trainer</b></span><span class="pill">aktiv</span></li></ul>
+      <button class="btn ghost small" style="justify-self:start">Person einladen</button></div></div>
+  <div class="card"><h3>Rollen und Rechte</h3><div class="scroll"><table><thead><tr><th>Recht</th><th>Trainer</th><th>Co-Trainer</th></tr></thead><tbody>
+    ${RIGHTS.map((r,i)=>`<tr><td>${r}</td><td><input type="checkbox" checked disabled aria-label="Trainer: ${r}"></td><td><input type="checkbox" data-right="${i}" ${state.rights[i]?'checked':''} aria-label="Co-Trainer: ${r}"></td></tr>`).join('')}</tbody></table></div>
+    <p class="note">Was Spieler sehen, steht im Reiter Spielersicht.</p></div>`;
+}
+function setSpieler() {
+  return `<div class="card"><h3>Was die Spieler sehen</h3><p class="sub">Gilt für alle Spieler. Die Vorschau unter „Spielersicht“ zeigt das Ergebnis.</p>
+    ${PV.map(([k,l,lock])=>`<label class="row" for="pv-${k}"><input type="checkbox" id="pv-${k}" data-pv="${k}" ${state.pv[k]?'checked':''} ${lock?'disabled':''}> ${l}${lock?' <span class="note">(immer an)</span>':''}</label>`).join('')}
+    <p class="note">Nie sichtbar: Noten anderer Spieler, Kommentare im Trainerteam, Gegnervorbereitung in Arbeit, Prinzip-Bewertungen.</p>
+    <a class="btn ghost small" href="#spielersicht" style="justify-self:start">Vorschau ansehen</a></div>`;
+}
+function setNotify() {
+  return `<div class="card"><h3>Benachrichtigungen an die Spieler</h3><p class="sub">Worüber und auf welchem Weg.</p>
+    <div class="scroll"><table><thead><tr><th>Anlass</th>${CHANNELS.map(([,l])=>`<th>${l}</th>`).join('')}</tr></thead><tbody>
+    ${NOTIFY.map(([k,l])=>`<tr><td>${l}</td>${CHANNELS.map(([c,cl])=>`<td><input type="checkbox" data-notify="${k}-${c}" ${state.notify[k+'-'+c]?'checked':''} aria-label="${l}: ${cl}"></td>`).join('')}</tr>`).join('')}</tbody></table></div>
+    <ul class="list"><li><span><b>Push aufs Handy:</b> Der Spieler legt die Seite einmal auf den Startbildschirm und erlaubt Mitteilungen. Kostenlos, läuft über euren Server.</span></li>
+    <li><span><b>WhatsApp-Gruppe:</b> Coach.AI bereitet den Text mit Link vor, ihr tippt auf „In WhatsApp teilen“ und wählt die Gruppe. Kostenlos, aber ein Klick von euch.</span></li>
+    <li><span><b>E-Mail:</b> für alle ohne Push. Kostenlos über euren Server.</span></li></ul></div>`;
+}
+function setFristen() {
+  return `<div class="card"><h3>Absagefrist</h3><p class="sub">Bis wann Spieler in ihrer Ansicht selbst absagen können. Danach erscheint der Hinweis, persönlich beim Trainer anzurufen.</p>
+    <div class="scroll"><table><thead><tr><th>Termin</th><th>Frist</th><th>Wert</th><th>Beispiel</th></tr></thead><tbody>
+    ${DL_TYPES.map(([k,l])=>{const d=settings.deadline[k], ex=events.find(e=>e.type===k&&e.date>='2026-11-12');return `<tr><td><b>${l}</b></td>
+      <td><select class="f" data-deadline="${k}" data-k="mode" aria-label="Frist ${l}" style="width:auto">${DL_MODES.map(([m,ml])=>`<option value="${m}" ${d.mode===m?'selected':''}>${ml}</option>`).join('')}</select></td>
+      <td><input type="text" inputmode="numeric" data-deadline="${k}" data-k="val" value="${esc(d.val)}" aria-label="Wert ${l}" style="width:80px"> <span class="note">${d.mode==='hours'?'Stunden':'Uhr'}</span></td>
+      <td class="note">${ex?`${ex.type==='gm'?gameTitle(ex):ex.type==='ev'?ex.title:'Training'} ${fmt(ex.date)} ${ex.time}: absagen bis <b>${fmtDT(deadlineOf(ex))}</b>`:''}</td></tr>`;}).join('')}</tbody></table></div>
+    <label class="fl" for="phone">Telefonnummer für späte Absagen<input id="phone" type="text" value="${esc(settings.phone)}" placeholder="Nummer des Trainers, erscheint im Hinweis"></label>
+    <div class="q"><b>Text nach Fristende:</b> Die Absagefrist ist vorbei. Bitte ruf persönlich beim Trainer an${settings.phone?` (${esc(settings.phone)})`:''} und sag ab.</div></div>`;
+}
+function setDaten() {
+  return `<div class="card"><h3>Datenquellen</h3>
+    <ul class="list"><li><span>fussball.de: Tabelle, Spielplan, Spielberichte</span><span class="pill">verbunden</span></li>
+    <li><span>FuPa: Spielerfotos</span><span class="pill">verbunden</span></li>
+    <li><span>SpielerPlus: Termine per Kalender-Abo</span><span class="pill grey">noch offen</span></li>
+    <li><span>Spielersicht: Zu- und Absagen per Link</span><span class="pill grey">geplant</span></li></ul></div>`;
+}
+// ======================= Spielersicht (Vorschau) =======================
+const ME = 'p12';
+function vSpielersicht() {
+  const me = P(ME), pv = state.pv;
+  const tabs = [['termine','Termine',true],['dienste','Dienste',true],['kalender','Kalender',pv.kalender],['spiel','Spiel',pv.vorbereitung||pv.nachbereitung],['analytics','Analytics',pv.analyticsTeam||pv.analyticsSelf]].filter(t=>t[2]);
+  if (!tabs.find(t=>t[0]===state.pvTab)) state.pvTab = 'termine';
+  const ng = nextGame(), lg = games().filter(g=>g.res).pop();
+  const body = {
+    termine: () => { const now = new Date(state.pvNow), mine = absences.filter(a=>a.pid===ME && !a.src);
+      return `<p style="margin:0">Hallo ${me.name.split(' ')[0]}, sag bitte für die nächsten Termine zu oder ab.</p>
+      <div class="pt abs-box"><div class="row between"><b>Abwesenheiten</b><button class="btn ghost small" data-absform="1">${state.absForm?'Schließen':'Eintragen'}</button></div>
+        ${state.absForm?`<div class="grid" style="gap:6px"><div class="row" style="flex-wrap:nowrap"><label class="fl" for="af-from" style="flex:1">von<input type="date" id="af-from" value="2026-11-16" class="f"></label><label class="fl" for="af-to" style="flex:1">bis<input type="date" id="af-to" value="2026-11-22" class="f"></label></div>
+          <label class="fl" for="af-why">Grund<select class="f" id="af-why">${REASONS.map(r=>`<option>${r}</option>`).join('')}</select></label>
+          <input type="text" id="af-note" placeholder="Notiz, optional"><button class="btn small" data-abssave="1">Speichern</button>
+          <span class="note">Für alle Termine in diesem Zeitraum gilt dann automatisch „nicht dabei“.</span></div>`:''}
+        ${mine.map((a,i)=>`<div class="row between"><span>${fmt(a.from)}${a.to!==a.from?`–${fmt(a.to)}`:''} · ${esc(a.why)}</span><button class="ib" data-absdel="${absences.indexOf(a)}" aria-label="Abwesenheit löschen">${ICON.x}</button></div>`).join('') || (state.absForm?'':'<span class="note">Keine eingetragen. Für Verletzung oder Urlaub einmal eintragen statt jeden Termin einzeln absagen.</span>')}</div>
+      ${events.filter(e=>e.date>=TODAY).sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time)).slice(0,6).map(e=>{
+        const r=state.reply[e.id], dl=deadlineOf(e), late=now>dl, cover=absences.find(a=>a.pid===ME&&!a.src&&a.from<=e.date&&e.date<=a.to);
+        return `<div class="pt t-${e.type}"><div><b>${e.type==='gm'?gameTitle(e):e.type==='ev'?esc(e.title):'Training'}</b><br><span class="note">${DAYNAMES[dt(e.date).getDay()].slice(0,2)} ${fmt(e.date)} · ${e.time} · ${e.place.replace('Sportplatz ','')}</span></div>
+        ${cover ? `<span class="pill grey" style="justify-self:start">nicht dabei · ${esc(cover.why)} (Abwesenheit)</span>`
+        : late ? `<div class="late">${r?`Deine Antwort: <b>${r==='ja'?'dabei':'nicht dabei'}</b>. `:''}Die Absagefrist ist vorbei (${fmtDT(dl)}). Bitte ruf persönlich beim Trainer an${settings.phone?` (${esc(settings.phone)})`:''} und sag ab.</div>`
+        : state.declining===e.id ? `<div class="grid" style="gap:6px"><label class="fl" for="rs-${e.id}">Grund (Pflicht)<select class="f" id="rs-${e.id}"><option value="">Bitte wählen …</option>${REASONS.map(x=>`<option>${x}</option>`).join('')}</select></label>
+            <input type="text" id="rn-${e.id}" placeholder="Notiz, optional"><div class="row"><button class="btn small" data-decline="${e.id}">Absagen</button><button class="btn ghost small" data-declinecancel="1">Abbrechen</button></div></div>`
+        : `<div class="row"><button class="yn ${r==='ja'?'on':''}" data-reply="${e.id}" data-v="ja">Dabei</button><button class="yn no ${r==='nein'?'on':''}" data-reply="${e.id}" data-v="nein">Nicht dabei</button></div>
+           <span class="note">Absagen bis ${fmtDT(dl)}${r==='nein'?` · Grund: ${esc((absences.find(a=>a.src===e.id)||{}).why||'')}`:''}</span>`}</div>`;}).join('')}`; },
+    dienste: () => { const mine = duties.filter(d=>d.who.includes(ME)), open = duties.filter(d=>!d.who.includes(ME) && d.who.length<d.slots);
+      return `<b>Deine Dienste</b>${mine.length?mine.map(d=>`<div class="pt mine"><b>${esc(d.title)}</b><span class="note">${dutyWhen(d)}</span><button class="btn ghost small" data-dutyleave="${d.id}" style="justify-self:start">Austragen</button></div>`).join(''):'<p class="note">Gerade keine.</p>'}
+        <b>Noch offen</b>${open.map(d=>`<div class="pt"><b>${esc(d.title)}</b><span class="note">${dutyWhen(d)} · ${d.slots-d.who.length} von ${d.slots} frei</span><button class="btn small" data-dutyjoin="${d.id}" style="justify-self:start">Ich übernehme das</button></div>`).join('')||'<p class="note">Alles vergeben.</p>'}`; },
+    kalender: () => [0,1,2,3,4,5,6,7,8,9,10,11,12,13].map(i=>addDays('2026-11-09',i)).filter(iso=>events.some(e=>e.date===iso)).map(iso=>`<div class="pt"><b>${DAYNAMES[dt(iso).getDay()]}, ${fmt(iso)}</b>
+      ${events.filter(e=>e.date===iso).map(e=>e.type==='ev'?`<span>${e.time} ${esc(e.title)}</span>`:e.type==='gm'?`<span>${e.time} Spiel: ${gameTitle(e)}${e.res?` (${e.res})`:''}</span>`:`<span>${e.time} Training${pv.training&&e.unit?`: ${U(e.unit).name} <span class="note">(${PR(U(e.unit).pr).phase})</span>`:''}</span>`).join('')}</div>`).join(''),
+    spiel: () => `${pv.vorbereitung?`<div class="pt"><span class="note">Nächstes Spiel · ${ng.comp}</span><b>${gameTitle(ng)}, ${fmt(ng.date)} ${ng.time}</b>
+        <span class="note" style="white-space:pre-line">${esc(state.texts['zeitplan-'+ng.id] ?? flowText(ng))}</span><span class="note">${esc(state.texts['kleidung-'+ng.id] ?? kitText(ng))}</span>
+        <span>${facts.opp.slice(0,2).map(f=>'• '+esc(factText(f))).join('<br>')}</span><button class="btn ghost small" style="justify-self:start">Dossier ansehen</button></div>`:''}
+      ${pv.nachbereitung?`<div class="pt"><span class="note">Letztes Spiel · ${lg.comp}</span><b>${gameTitle(lg)} ${lg.res}</b><span class="note">12′ 1:0 Neumann · 38′ 1:1 · 67′ 2:1 Hoffmann · 88′ 2:2</span>
+        <span>Was wir mitnehmen: Nach Ballverlust sofort ins Gegenpressing. Das trainieren wir diese Woche.</span>
+        ${pv.note&&state.publish?`<span><b>Deine Note: 2</b> „Zwei Torvorlagen, im Pressing sehr aktiv.“</span>`:''}</div>`:''}`,
+    analytics: () => `${pv.analyticsSelf?`<div class="pt"><b>Deine Saison</b><div class="tiles mini"><div class="tile"><div class="v">${me.games}</div><div class="c">Einsätze</div></div><div class="tile"><div class="v">${me.goals}</div><div class="c">Tore</div></div><div class="tile"><div class="v">${me.starts}</div><div class="c">Startelf</div></div></div></div>`:''}
+      ${pv.analyticsTeam?`<div class="pt"><b>Tabelle</b>${leagueTable(LEAGUE.slice(0,6))}<span class="note">Platz 1 bis 6 von 16</span></div>`:''}`,
+  };
+  return `${demo}
+  <div class="head"><div><h1>Spielersicht (Vorschau)</h1><p>So sieht es ein Spieler auf dem Handy. Was sichtbar ist, stellst du in den Einstellungen unter Spielersicht ein.</p></div><a class="btn ghost small" href="#einstellungen" data-settab="spieler">Sichtbarkeit einstellen</a></div>
+  <div class="row"><label class="row note" for="pvnow">Vorschau-Zeitpunkt <select class="f" id="pvnow" style="width:auto"><option value="2026-11-11T11:00" ${state.pvNow==='2026-11-11T11:00'?'selected':''}>Mi 11.11., 11:00 Uhr (heute)</option><option value="2026-11-12T15:00" ${state.pvNow==='2026-11-12T15:00'?'selected':''}>Do 12.11., 15:00 Uhr (nach der Frist fürs Training)</option></select></label></div>
+  <div class="grid" style="grid-template-columns:minmax(0,380px) minmax(0,1fr);align-items:start">
+    <div class="phone"><div class="phone-h"><b>Coach.AI</b><span class="note">${me.name}</span></div>
+      <div class="ptabs">${tabs.map(([k,l])=>`<button data-pvtab="${k}" class="${state.pvTab===k?'on':''}">${l}</button>`).join('')}</div>
+      ${body[state.pvTab]()}
+    </div>
+    <div class="card"><h3>So kommt der Spieler hinein</h3>
+      <ul class="list"><li><span><b>Eigener Link:</b> Jeder Spieler bekommt einmal einen persönlichen Link, etwa per WhatsApp vom Trainer. Der Link ist sein Zugang, ohne Passwort. Er öffnet ihn und kann die Seite als App-Symbol auf den Startbildschirm legen.</span></li>
+      <li><span><b>Wenn ein Link weitergegeben wird:</b> ihr erzeugt in Coach.AI einen neuen, der alte geht dann nicht mehr.</span></li>
+      <li><span><b>Benachrichtigungen:</b> Liegt die Seite auf dem Startbildschirm, kann sie Push-Nachrichten schicken, etwa „Nachbereitung gegen SV Musterdorf ist da“. Wer das nicht will, bekommt E-Mail, oder ihr teilt den Text in der WhatsApp-Gruppe.</span></li>
+      <li><span><b>Absagen</b> hier erscheinen sofort im Kalender und in „TW / Feld“. Probier „Nicht dabei“ aus und schau ins Dashboard.</span></li></ul></div>
+  </div>`;
+}
+// ======================= Router und Ereignisse =======================
+const R = {einheit:vEinheit,dashboard:vDashboard,training:vTraining,kalender:vKalender,spieltag:vSpieltag,'spiel-vorbereitung':vVorbereitung,'spiel-aufstellung':vAufstellung,'spiel-nachbereitung':vNachbereitung,kader:vKader,analytics:vAnalytics,philosophie:vPhilosophie,einstellungen:vEinstellungen,verwaltung:vEinstellungen,spielersicht:vSpielersicht};
+let lastView = null;
+function render() {
+  const k = R[location.hash.slice(1)] ? location.hash.slice(1) : 'dashboard';
+  if (k !== lastView) { state.flash = null; state.picked = null; }
+  lastView = k; nav(k); document.getElementById('main').innerHTML = R[k]();
+}
+function assign(evId, uId) { const e = EV(evId); if (e && e.type==='tr') { e.unit = uId || null; e.ex = null; state.picked = null; delete state.suggest[evId]; render(); } }
+function nextFact(kind) {
+  const shown = new Set(facts[kind].filter(f=>f.custom==null).map(f=>f.i));
+  const free = factPool[kind].map((_,i)=>i).filter(i=>!shown.has(i));
+  return free.length ? free[0] : null;
+}
+function applyRhythm(i) {
+  const r = settings.rhythm[i];
+  for (const e of events) if (e.type==='tr' && e.date>=TODAY && dt(e.date).getDay()===r.wd) { e.time = r.time; e.dur = r.dur; e.place = r.place; }
+}
+
+document.addEventListener('click', e => {
+  const t = e.target.closest('button, a, .unit, [data-drop], [data-useunit], [data-exadd]'); if (!t) return;
+  const d = t.dataset;
+  if (d.setgame) state.game = d.setgame;
+  if (d.setpost) state.post = d.setpost;
+  if (d.settab) state.setTab = d.settab;
+  if (d.settrain) state.trainEv = d.settrain;
+  if (t.tagName === 'A') return;
+  if (d.flash) { state.flash = d.flash; render(); }
+  else if (d.cal) { state.calView = d.cal; render(); }
+  else if (d.wk) { state.weekStart = addDays(state.weekStart, +d.wk); render(); }
+  else if (d.ttab) { state.trainTab = d.ttab; state.flash = null; render(); }
+  else if (d.atab) { state.anaTab = d.atab; render(); }
+  else if (d.ufilter) { state.unitFilter = d.ufilter; render(); }
+  else if (d.clear) { EV(d.clear).unit = null; render(); }
+  else if (d.suggest) { state.suggest[d.suggest] = suggestFor(EV(d.suggest)); render(); }
+  else if (d.take) { assign(d.take, state.suggest[d.take].unit); }
+  else if (d.nosug) { delete state.suggest[d.nosug]; render(); }
+  else if (d.unit) { state.picked = state.picked === d.unit ? null : d.unit; render(); }
+  else if (d.drop && state.picked) { assign(d.drop, state.picked); }
+  else if (d.form) { state.formation = d.form; state.activeSpot = null; render(); }
+  else if (d.spot && state.dragged) { state.dragged = false; }
+  else if (d.spot) { state.activeSpot = state.activeSpot === +d.spot ? null : +d.spot; render(); }
+  else if (d.bench && state.activeSpot !== null) { lineup[state.activeSpot] = d.bench; state.activeSpot = null; render(); }
+  else if (d.rate) { state.rating[d.rate] = +d.v; render(); }
+  else if (d.model) { state.model = d.model; render(); }
+  else if (d.edit) { state.editing = d.edit; render(); }
+  else if (d.save) { const f = [...facts.opp,...facts.own].find(x=>x.id===d.save); f.custom = document.getElementById('edit-'+d.save).value; state.editing = null; render(); }
+  else if (d.regen) { const f = [...facts.opp,...facts.own].find(x=>x.id===d.regen); const n = nextFact(f.kind);
+    if (n === null) state.flash = 'Für diesen Bereich gibt es im Entwurf keine weiteren Fakten.'; else { f.i = n; f.custom = undefined; } render(); }
+  else if (d.del) { for (const k of ['opp','own']) facts[k] = facts[k].filter(x=>x.id!==d.del); render(); }
+  else if (d.addfact) { const n = nextFact(d.addfact); if (n === null) state.flash = 'Für diesen Bereich gibt es im Entwurf keine weiteren Fakten.'; else facts[d.addfact].push({id:'f'+Date.now(),kind:d.addfact,i:n}); render(); }
+  else if (d.comment) { const v = document.getElementById('cmt').value.trim(); if (v) { comments.unshift({who:document.getElementById('who').value, when:'gerade eben', text:v}); render(); } }
+  else if (d.focussug) { state.focusSug = !state.focusSug; render(); }
+  else if (d.setfocus) { state.weekFocus = d.setfocus === currentFocus.pr ? null : d.setfocus; state.focusSug = false; state.suggest = {}; render(); }
+  else if (d.keepfocus) { state.focusSug = false; render(); }
+  else if (d.resetfocus) { state.weekFocus = null; render(); }
+  else if (d.stab) { state.setTab = d.stab; render(); }
+  else if (d.pvtab) { state.pvTab = d.pvtab; render(); }
+  else if (d.rvopen) { state.review[d.rvopen] = 'open'; render(); }
+  else if (d.rvcancel) { delete state.review[d.rvcancel]; render(); }
+  else if (d.mood) { const [ev, ex] = d.mood.split('|'); state.texts['mood-'+ev+ex] = d.v; render(); }
+  else if (d.rvsave) { const e = EV(d.rvsave), u = U(e.unit), who = document.getElementById('who').value;
+    for (const id of exListOf(e)) { const t = (state.texts['rv-'+e.id+'-'+id]||'').trim(), m = state.texts['mood-'+e.id+id];
+      if (t || m) (exNotes[id] ||= []).push({date:e.date, who, mood:m, text: (m?MOOD[m]+'. ':'') + t}); }
+    const ut = (state.texts['rvu-'+e.id]||'').trim(); if (ut) (unitNotes[u.id] ||= []).push({date:e.date, who, text:ut});
+    state.review[e.id] = 'done'; render(); }
+  else if (d.msg) { state.msg = !state.msg; render(); }
+  else if (d.pdf) { state.flash = 'Im Entwurf ohne Funktion: Hier entsteht das PDF genau aus der Gegnervorbereitung, mit den Seiten, die einen Haken „im Dossier“ haben, und der Aufstellung.'; render(); }
+  else if (d.release) { state.released[d.release] = true; state.flash = 'Freigegeben. Die Spieler bekommen eine Push-Nachricht, ab jetzt siehst du, wer es gelesen hat.'; render(); }
+  else if (d.copy) { const v = document.getElementById(d.copy).value; navigator.clipboard?.writeText(v).then(()=>{state.flash='Text kopiert.';render();}, ()=>{state.flash='Kopieren hat der Browser nicht erlaubt. Text bitte markieren und kopieren.';render();}); }
+  else if (d.planadd) { planRows(EV(d.planadd)).push(['','']); render(); }
+  else if (d.plandel) { const [gid, i] = d.plandel.split('|'); state.plan[gid].splice(+i, 1); render(); }
+  else if (d.savesys) { const n = (document.getElementById('sysname').value||'').trim() || 'Eigenes System 1';
+    FORMATIONS[n] = FORMATIONS[UNSAVED].map(r=>[...r]); delete FORMATIONS[UNSAVED]; state.formation = n; state.sysName = ''; render(); }
+  else if (d.dutyjoin) { const du = duties.find(x=>x.id===d.dutyjoin); if (du.who.length < du.slots) du.who.push(ME); render(); }
+  else if (d.dutyleave) { const du = duties.find(x=>x.id===d.dutyleave); du.who = du.who.filter(x=>x!==ME); render(); }
+  else if (d.rhadd) { settings.rhythm.push({wd:5,time:'19:00',dur:90,place:settings.rhythm[0]?.place||''}); render(); }
+  else if (d.rhdel) { settings.rhythm.splice(+d.rhdel,1); render(); }
+  else if (d.reply) { if (d.v==='nein') { state.declining = d.reply; render(); }
+    else { state.reply[d.reply] = 'ja'; for (let i = absences.length-1; i>=0; i--) if (absences[i].pid===ME && absences[i].src===d.reply) absences.splice(i,1); render(); } }
+  else if (d.decline) { const ev = EV(d.decline), why = document.getElementById('rs-'+d.decline).value, note = document.getElementById('rn-'+d.decline).value.trim();
+    if (!why) { document.getElementById('rs-'+d.decline).focus(); document.getElementById('rs-'+d.decline).classList.add('need'); return; }
+    for (let i = absences.length-1; i>=0; i--) if (absences[i].pid===ME && absences[i].src===d.decline) absences.splice(i,1);
+    absences.push({pid:ME, from:ev.date, to:ev.date, why: why + (note?`: ${note}`:''), src:d.decline}); state.reply[d.decline] = 'nein'; state.declining = null; render(); }
+  else if (d.declinecancel) { state.declining = null; render(); }
+  else if (d.absform) { state.absForm = !state.absForm; render(); }
+  else if (d.abssave) { const from = document.getElementById('af-from').value, to = document.getElementById('af-to').value || from, why = document.getElementById('af-why').value, note = document.getElementById('af-note').value.trim();
+    if (from) { absences.push({pid:ME, from, to: to<from?from:to, why: why + (note?`: ${note}`:'')}); state.absForm = false; } render(); }
+  else if (d.absdel) { absences.splice(+d.absdel, 1); render(); }
+  else if (d.flowadd) { const [k,i] = d.flowadd.split('|'); settings.flow[k].splice(+i+1, 0, ['Neuer Programmpunkt',10]); state.plan = {}; render(); }
+  else if (d.flowdel) { const [k,i] = d.flowdel.split('|'); if (settings.flow[k].length>1) settings.flow[k].splice(+i, 1); state.plan = {}; render(); }
+  else if (d.exremove) { const [ev, i] = d.exremove.split('|'), e = EV(ev); e.ex = exListOf(e).filter((_,j)=>j!==+i); render(); }
+  else if (d.exup) { const [ev, i] = d.exup.split('|'), e = EV(ev), l = [...exListOf(e)]; if (+i>0) { [l[+i-1], l[+i]] = [l[+i], l[+i-1]]; e.ex = l; } render(); }
+  else if (d.exadd) { const e = EV(state.trainEv); e.ex = [...exListOf(e), d.exadd]; render(); }
+  else if (d.useunit) { const e = EV(state.trainEv); e.unit = d.useunit; e.ex = null; render(); }
+});
+document.addEventListener('keydown', e => { if ((e.key==='Enter'||e.key===' ') && e.target.dataset && e.target.dataset.unit) { e.preventDefault(); e.target.click(); } });
+document.addEventListener('input', e => { if (e.target.dataset && e.target.dataset.text) state.texts[e.target.dataset.text] = e.target.value; });
+document.addEventListener('change', e => {
+  const t = e.target, d = t.dataset;
+  if (t.id === 'pub') { state.publish = t.checked; render(); }
+  else if (t.id === 'exf') { state.exFilter = t.value; render(); }
+  else if (t.id === 'exk') { state.exKind = t.value; render(); }
+  else if (t.id === 'absbox') { state.showAbs = t.checked; render(); }
+  else if (t.id === 'anap') { state.anaPlayer = t.value; render(); }
+  else if (d.done) { state.done[d.done] = t.checked; render(); }
+  else if (d.assign) { if (t.value) assign(d.assign, t.value); }
+  else if (d.inc) { state.include[d.inc] = t.checked; render(); }
+  else if (t.id === 'evbox') { state.showEv = t.checked; render(); }
+  else if (t.id === 'sysname') { state.sysName = t.value; }
+  else if (d.dutyadd) { if (t.value) { duties.find(x=>x.id===d.dutyadd).who.push(t.value); render(); } }
+  else if (d.plan) { state.plan[d.plan][+d.i][+d.k] = t.value; }
+  else if (d.kitfile) { const f = t.files && t.files[0]; if (f) { state.kitPhoto[d.kitfile] = URL.createObjectURL(f); render(); } }
+  else if (t.id === 'wf') { state.weekFocus = t.value === currentFocus.pr ? null : t.value; state.suggest = {}; render(); }
+  else if (t.id === 'dm') { settings.dossierModel = t.value; state.model = t.value; }
+  else if (d.pv) { state.pv[d.pv] = t.checked; if (d.pv==='note' && !t.checked) state.publish = false; }
+  else if (d.right !== undefined) { state.rights[d.right] = t.checked; }
+  else if (d.notify) { state.notify[d.notify] = t.checked; }
+  else if (d.flow) { const row = settings.flow[d.flow][+d.i]; row[+d.k] = d.k==='1' ? +t.value : t.value; state.plan = {}; render(); }
+  else if (d.kickoff) { if (/^\d{1,2}:\d{2}$/.test(t.value)) state.kickoff = t.value.padStart(5,'0'); render(); }
+  else if (d.deadline) { settings.deadline[d.deadline][d.k] = d.k==='val' ? t.value : t.value; render(); }
+  else if (t.id === 'phone') { settings.phone = t.value; }
+  else if (t.id === 'pvnow') { state.pvNow = t.value; render(); }
+  else if (d.planpick) { if (t.value) { state.texts[d.planpick] = t.value; render(); } }
+  else if (d.kit) { settings.kit[d.kit][+d.i][+d.k] = t.value; for (const k in state.texts) if (k.startsWith('kleidung-')) delete state.texts[k]; render(); }
+  else if (d.warm) { settings.warmup = t.value; for (const k in state.texts) if (k.startsWith('kleidung-')) delete state.texts[k]; }
+  else if (d.min) { settings[d.min] = Math.max(0, +t.value || 0); render(); }
+  else if (d.rh !== undefined) { const r = settings.rhythm[+d.rh]; r[d.k] = (d.k==='wd'||d.k==='dur') ? +t.value : t.value; if (d.k!=='wd') applyRhythm(+d.rh); render(); }
+});
+document.addEventListener('dragstart', e => { const el = e.target.closest && e.target.closest('[data-unit],[data-dragunit],[data-dragex]'); if (!el) return;
+  e.dataTransfer.setData('text/plain', el.dataset.unit || (el.dataset.dragunit ? 'u:'+el.dataset.dragunit : 'x:'+el.dataset.dragex)); });
+document.addEventListener('dblclick', e => { const el = e.target.closest && e.target.closest('[data-open]'); if (el && !e.target.closest('select')) { state.trainEv = el.dataset.open; location.hash = 'einheit'; } });
+document.addEventListener('dragover', e => { const d = e.target.closest && e.target.closest('[data-drop],[data-exdrop]'); if (d) { e.preventDefault(); d.classList.add('over'); } });
+document.addEventListener('dragleave', e => { const d = e.target.closest && e.target.closest('[data-drop],[data-exdrop]'); if (d) d.classList.remove('over'); });
+document.addEventListener('drop', e => {
+  const x = e.target.closest && e.target.closest('[data-exdrop]');
+  if (x) { e.preventDefault(); const v = e.dataTransfer.getData('text/plain'), ev = EV(x.dataset.exdrop);
+    if (v.startsWith('x:')) ev.ex = [...exListOf(ev), v.slice(2)]; else if (v) { ev.unit = v.replace(/^u:/,''); ev.ex = null; } render(); return; }
+  const d = e.target.closest && e.target.closest('[data-drop]'); if (d) { e.preventDefault(); const u = e.dataTransfer.getData('text/plain'); if (u && !u.startsWith('x:')) assign(d.dataset.drop, u.replace(/^u:/,'')); } });
+// Spieler auf dem Feld verschieben: daraus entsteht ein eigenes System
+let drag = null;
+document.addEventListener('pointerdown', e => {
+  const sp = e.target.closest && e.target.closest('.spot'); const pitch = document.getElementById('pitch');
+  if (!sp || !pitch) return;
+  drag = { i: +sp.dataset.spot, el: sp, x0: e.clientX, y0: e.clientY, moved: false, rect: pitch.getBoundingClientRect() };
+});
+document.addEventListener('pointermove', e => {
+  if (!drag) return;
+  if (!drag.moved && Math.hypot(e.clientX-drag.x0, e.clientY-drag.y0) < 5) return;
+  drag.moved = true; e.preventDefault();
+  const x = Math.min(97, Math.max(3, (e.clientX - drag.rect.left) / drag.rect.width * 100));
+  const y = Math.min(96, Math.max(4, (e.clientY - drag.rect.top) / drag.rect.height * 100));
+  drag.el.style.left = x + '%'; drag.el.style.top = y + '%'; drag.x = x; drag.y = y;
+});
+document.addEventListener('pointerup', () => {
+  if (!drag) return;
+  if (drag.moved) {
+    if (state.formation !== UNSAVED) { FORMATIONS[UNSAVED] = FORMATIONS[state.formation].map(r=>[...r]); state.formation = UNSAVED; }
+    FORMATIONS[UNSAVED][drag.i][1] = Math.round(drag.x); FORMATIONS[UNSAVED][drag.i][2] = Math.round(drag.y);
+    state.dragged = true; drag = null; render(); setTimeout(()=>{ state.dragged = false; }, 0); return;
+  }
+  drag = null;
+});
+window.addEventListener('hashchange', render);
+render();
+</script>
+</body>
+</html>
