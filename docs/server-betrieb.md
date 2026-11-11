@@ -18,10 +18,10 @@ Alle Dateien liegen in `deploy/`. Die Einstellungen stehen in `deploy/.env`, die
 
 ## Login
 
-Es gibt keinen fremden Anmeldedienst. Coach.AI verwaltet die zwei Konten selbst:
+Es gibt keinen fremden Anmeldedienst. Coach.AI verwaltet die Konten selbst. Alle im Trainerteam heißen „Trainer“ und haben dieselben Rechte.
 
-1. **Erstes Konto (Cheftrainer):** Beim ersten Aufruf der Adresse fragt Coach.AI nach dem Einrichtungsschlüssel aus `deploy/.env`. Nur wer Zugang zum Server hat, kennt ihn. Danach ist diese Maske für immer zu.
-2. **Co-Trainer:** Der Cheftrainer klickt oben rechts auf den Kreis mit seinen Initialen, dann auf „Co-Trainer einladen“, und schickt den Link weiter. Der Link gilt 7 Tage und nur einmal. Der Co-Trainer legt darüber sein eigenes Konto mit eigenem Passwort an.
+1. **Erstes Konto:** Beim ersten Aufruf der Adresse fragt Coach.AI nach dem Einrichtungsschlüssel aus `deploy/.env`. Nur wer Zugang zum Server hat, kennt ihn. Danach ist diese Maske für immer zu.
+2. **Weitere Trainer:** Ein angemeldeter Trainer klickt oben rechts auf den Kreis mit seinen Initialen, dann auf „Trainer einladen“, und schickt den Link weiter. Der Link gilt 7 Tage und nur einmal. Der Eingeladene legt darüber sein eigenes Konto mit eigenem Passwort an.
 3. **Anmelden:** E-Mail und Passwort. Die Anmeldung gilt 30 Tage auf diesem Gerät. Nach 8 falschen Versuchen in 15 Minuten wird gebremst.
 
 Technisch:
@@ -33,8 +33,8 @@ Technisch:
 ## Gemeinsamer Datenstand
 
 - Beide Konten arbeiten auf demselben Stand. Gespeichert wird automatisch etwa eine Sekunde nach der letzten Änderung.
-- Jeder Speichervorgang trägt die Version, auf der er beruht. Hat das andere Konto inzwischen gespeichert, wird nichts überschrieben. Coach.AI zeigt dann einen Hinweis mit „Neuesten Stand laden“.
-- Neue Stände des anderen Kontos werden alle 30 Sekunden und beim Zurückkehren in den Tab geholt.
+- Jeder Speichervorgang trägt die Version, auf der er beruht. Hat ein anderer Trainer inzwischen gespeichert, wird nichts überschrieben. Coach.AI zeigt dann einen Hinweis mit „Neuesten Stand laden“.
+- Neue Stände der anderen Trainer werden alle 30 Sekunden und beim Zurückkehren in den Tab geholt.
 - Die letzten 50 Stände bleiben in der Datenbank erhalten.
 - Ist der Server beim ersten Anmelden noch leer, übernimmt Coach.AI die vorhandenen Daten aus diesem Browser.
 

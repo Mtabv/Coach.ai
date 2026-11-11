@@ -71,7 +71,7 @@ describe('Server', () => {
     expect((await call('/api/anmelden', { method: 'POST', body: { email: 'm@example.de', passwort: 'sehr-geheim-123' } })).status).toBe(429);
   });
 
-  it('lädt den Co-Trainer per Einladungslink ein, der Link gilt nur einmal', async () => {
+  it('lädt weitere Trainer per Einladungslink ein, der Link gilt nur einmal', async () => {
     const r = await call('/api/einladungen', { method: 'POST', jar: trainer });
     expect(r.status).toBe(201);
     const t = String(r.json.link).split('#einladung/')[1];
@@ -79,9 +79,9 @@ describe('Server', () => {
     expect((await call(`/api/einladungen/${t}`)).json.gueltig).toBe(true);
     const a = await call(`/api/einladungen/${t}/annehmen`, { method: 'POST', jar: co, body: { name: 'Thorsten', email: 't@example.de', passwort: 'auch-sehr-geheim' } });
     expect(a.status).toBe(201);
-    expect(a.json.nutzer.role).toBe('co-trainer');
+    expect(a.json.nutzer.role).toBe('trainer');
     expect((await call(`/api/einladungen/${t}/annehmen`, { method: 'POST', body: { name: 'Y', email: 'y@example.de', passwort: 'auch-sehr-geheim' } })).status).toBe(410);
-    expect((await call('/api/einladungen', { method: 'POST', jar: co })).status).toBe(403);
+    expect((await call('/api/einladungen', { method: 'POST', jar: co })).status).toBe(201);
   });
 
   it('teilt den Zustand und verhindert, dass jemand einen neueren Stand überschreibt', async () => {

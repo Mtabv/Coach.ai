@@ -3,6 +3,7 @@ import type { AppState } from '../../domain/types';
 import { StoreProvider, useStore } from '../../state/store';
 import { localStorageAdapter, migrate } from '../../storage/storage';
 import { initialState } from '../../data/seed';
+import '../design.css';
 import { api, ApiError, loadServerState, serverPersistence, serverStatus, type ServerState, type SessionUser } from '../../storage/server';
 
 /**
@@ -82,15 +83,15 @@ function Abgleich({ persistence, konflikt, setKonflikt }: { persistence: { versi
   });
   if (konflikt)
     return (
-      <div className="sync-hinweis warn" role="alert">
-        Der Co-Trainer hat gerade etwas geändert, deine letzte Änderung ist noch nicht gespeichert.
-        <button className="btn btn-small" onClick={() => void holen(true)}>Neuesten Stand laden</button>
+      <div className="entwurf sync-hinweis warn" role="alert">
+        Im Trainerteam hat gerade jemand anderes gespeichert. Deine letzte Änderung ist deshalb noch nicht gespeichert.
+        <button className="btn small" onClick={() => void holen(true)}>Neuesten Stand laden</button>
       </div>
     );
   if (von)
     return (
-      <div className="sync-hinweis" role="status">
-        Neuer Stand von {von} geladen. <button className="link-btn" onClick={() => setVon(null)}>Ausblenden</button>
+      <div className="entwurf sync-hinweis" role="status">
+        Neuer Stand von {von} geladen. <button className="btn small ghost" onClick={() => setVon(null)}>Ausblenden</button>
       </div>
     );
   return null;
@@ -98,11 +99,11 @@ function Abgleich({ persistence, konflikt, setKonflikt }: { persistence: { versi
 
 function Rahmen({ titel, text, children }: { titel: string; text?: string; children?: ReactNode }) {
   return (
-    <div className="zugang">
+    <div className="entwurf zugang">
       <div className="card zugang-karte">
-        <div className="brand zugang-marke">Coach<span className="brand-dot">.AI</span></div>
-        <h1 className="card-title">{titel}</h1>
-        {text && <p className="muted">{text}</p>}
+        <div className="zugang-marke">Coach<span>.AI</span></div>
+        <h1>{titel}</h1>
+        {text && <p className="note">{text}</p>}
         {children}
       </div>
     </div>
@@ -123,9 +124,9 @@ function useFormular(senden: () => Promise<void>) {
 
 function Feld({ label, ...rest }: { label: string } & React.InputHTMLAttributes<HTMLInputElement>) {
   return (
-    <label className="field">
-      <span className="field-label">{label}</span>
-      <input className="input" required {...rest} />
+    <label className="fl">
+      {label}
+      <input required {...rest} />
     </label>
   );
 }
@@ -140,7 +141,7 @@ function Anmelden({ fertig }: { fertig: () => Promise<void> }) {
         <Feld label="E-Mail" type="email" autoComplete="username" value={email} onChange={(e) => setEmail(e.target.value)} />
         <Feld label="Passwort" type="password" autoComplete="current-password" value={passwort} onChange={(e) => setPasswort(e.target.value)} />
         {f.fehler && <p className="form-fehler" role="alert">{f.fehler}</p>}
-        <button className="btn btn-primary" disabled={f.laeuft}>Anmelden</button>
+        <button className="btn" disabled={f.laeuft}>Anmelden</button>
       </form>
     </Rahmen>
   );
@@ -161,12 +162,12 @@ function Einrichten({ fertig }: { fertig: () => Promise<void> }) {
   const [schluessel, setSchluessel] = useState('');
   const f = useFormular(async () => { await api('/api/einrichten', { method: 'POST', body: { ...v, einrichtungsschluessel: schluessel } }); await fertig(); });
   return (
-    <Rahmen titel="Coach.AI einrichten" text="Einmalig: Konto für den Cheftrainer anlegen. Den Einrichtungsschlüssel findest du in der Datei .env auf dem Server.">
+    <Rahmen titel="Coach.AI einrichten" text="Einmalig: das erste Trainerkonto anlegen. Den Einrichtungsschlüssel findest du in der Datei .env auf dem Server.">
       <form className="zugang-form" onSubmit={f.onSubmit}>
         <Feld label="Einrichtungsschlüssel" autoComplete="off" value={schluessel} onChange={(e) => setSchluessel(e.target.value)} />
         <KontoFelder v={v} set={set} />
         {f.fehler && <p className="form-fehler" role="alert">{f.fehler}</p>}
-        <button className="btn btn-primary" disabled={f.laeuft}>Konto anlegen</button>
+        <button className="btn" disabled={f.laeuft}>Konto anlegen</button>
       </form>
     </Rahmen>
   );
@@ -180,22 +181,22 @@ function Einladung({ token, fertig }: { token: string; fertig: () => Promise<voi
   if (gueltig === null) return <Rahmen titel="Einladung wird geprüft …" />;
   if (!gueltig)
     return (
-      <Rahmen titel="Einladung nicht mehr gültig" text="Der Link wurde schon benutzt oder ist älter als 7 Tage. Bitte den Cheftrainer um einen neuen Link.">
-        <a className="btn" href="#/" onClick={() => window.setTimeout(() => window.location.reload(), 0)}>Zur Anmeldung</a>
+      <Rahmen titel="Einladung nicht mehr gültig" text="Der Link wurde schon benutzt oder ist älter als 7 Tage. Bitte im Trainerteam um einen neuen Link.">
+        <a className="btn ghost" href="#/" onClick={() => window.setTimeout(() => window.location.reload(), 0)}>Zur Anmeldung</a>
       </Rahmen>
     );
   return (
-    <Rahmen titel="Willkommen im Trainerteam" text="Lege dein eigenes Konto an. Danach siehst du dieselben Daten wie der Cheftrainer.">
+    <Rahmen titel="Willkommen im Trainerteam" text="Lege dein eigenes Konto an. Danach arbeitest du auf denselben Daten wie das übrige Trainerteam.">
       <form className="zugang-form" onSubmit={f.onSubmit}>
         <KontoFelder v={v} set={set} />
         {f.fehler && <p className="form-fehler" role="alert">{f.fehler}</p>}
-        <button className="btn btn-primary" disabled={f.laeuft}>Konto anlegen</button>
+        <button className="btn" disabled={f.laeuft}>Konto anlegen</button>
       </form>
     </Rahmen>
   );
 }
 
-/** Kleines Menü oben rechts: wer ist angemeldet, Co-Trainer einladen, abmelden. */
+/** Kleines Menü oben rechts: wer ist angemeldet, Trainer einladen, abmelden. */
 export function KontoMenue({ sitzung }: { sitzung: Sitzung }) {
   const [offen, setOffen] = useState(false);
   const [link, setLink] = useState('');
@@ -205,28 +206,26 @@ export function KontoMenue({ sitzung }: { sitzung: Sitzung }) {
     try { setLink((await api<{ link: string }>('/api/einladungen', { method: 'POST' })).link); } catch (e) { setFehler(e instanceof ApiError ? e.message : 'Server nicht erreichbar'); }
   };
   return (
-    <div className="konto">
+    <div className="entwurf konto">
       <button className="konto-knopf" aria-expanded={offen} onClick={() => setOffen(!offen)} title={sitzung.nutzer.email}>
         {sitzung.nutzer.name.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase()}
       </button>
       {offen && (
         <div className="konto-menue card">
           <strong>{sitzung.nutzer.name}</strong>
-          <span className="muted">{sitzung.nutzer.role === 'trainer' ? 'Cheftrainer' : 'Co-Trainer'} · {sitzung.nutzer.email}</span>
-          {sitzung.nutzer.role === 'trainer' && (
-            <>
-              <button className="btn btn-small" onClick={() => void einladen()}>Co-Trainer einladen</button>
+          <span className="note">Trainer · {sitzung.nutzer.email}</span>
+          <>
+              <button className="btn small" onClick={() => void einladen()}>Trainer einladen</button>
               {link && (
                 <div className="einladung-link">
-                  <input className="input" readOnly value={link} onFocus={(e) => e.target.select()} aria-label="Einladungslink" />
-                  <button className="btn btn-small" onClick={() => void navigator.clipboard?.writeText(link)}>Kopieren</button>
-                  <span className="muted">Gilt 7 Tage und nur einmal. Per WhatsApp oder E-Mail weitergeben.</span>
+                  <input readOnly value={link} onFocus={(e) => e.target.select()} aria-label="Einladungslink" />
+                  <button className="btn small" onClick={() => void navigator.clipboard?.writeText(link)}>Kopieren</button>
+                  <span className="note">Gilt 7 Tage und nur einmal. Per WhatsApp oder E-Mail weitergeben.</span>
                 </div>
               )}
               {fehler && <p className="form-fehler">{fehler}</p>}
-            </>
-          )}
-          <button className="btn btn-small btn-ghost" onClick={sitzung.abmelden}>Abmelden</button>
+          </>
+          <button className="btn small ghost" onClick={sitzung.abmelden}>Abmelden</button>
         </div>
       )}
     </div>

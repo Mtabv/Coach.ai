@@ -1,10 +1,10 @@
 # Bauplan Coach.AI, Version 1: Trainerteam
 
-Stand 11.11.2026. Grundlage ist der klickbare Entwurf in `prototype/`. Version 1 ist nur für das Trainerteam (zwei Logins: Trainer und Co-Trainer). Spieler, Push-Nachrichten und KI-Texte kommen in Version 2.
+Stand 11.11.2026. Grundlage ist der klickbare Entwurf in `prototype/`. Version 1 ist nur für das Trainerteam (zwei gleichberechtigte Trainerkonten: Manuel Viehmann und Thorsten Klemann). Spieler, Push-Nachrichten und KI-Texte kommen in Version 2.
 
 ## Ziel
 
-Trainer und Co-Trainer planen, bereiten vor und nach, gemeinsam und mit denselben Daten, über eine eigene Adresse auf einem eigenen Hetzner-Server. Daten von fussball.de und FuPa werden auf dem Server abgerufen und zwischengespeichert.
+Die beiden Trainer planen, bereiten vor und nach, gemeinsam und mit denselben Daten, über eine eigene Adresse auf einem eigenen Hetzner-Server. Daten von fussball.de und FuPa werden auf dem Server abgerufen und zwischengespeichert.
 
 ## Bereiche in Version 1
 
@@ -26,7 +26,7 @@ Nicht in Version 1: Spielersicht, persönliche Links, Zu- und Absagen durch Spie
 
 ## Technik
 
-- **Oberfläche:** die bestehende React-App aus diesem Repository, um die Bereiche des Entwurfs erweitert.
+- **Oberfläche:** React-App aus diesem Repository, mit Aufbau und Gestaltung des Entwurfs: dunkler Modus, Seitenleiste links, Schriften Barlow Condensed und Source Sans 3 (vom eigenen Server ausgeliefert, nicht von Google). Grundlage ist `src/ui/design.css`. Die älteren, hellgrünen Seiten der Dossier-App werden Stufe für Stufe in diese Gestaltung überführt; hellgrün geht nichts auf den Server.
 - **Server:** ein kleiner Node-Server (TypeScript) mit Login für zwei Konten und einer SQLite-Datenbank (eine Datei, einfache Sicherung).
 - **Datendienst:** `tools/fussballde-dienst` als eigener Container, nur intern erreichbar, mit Zwischenspeicher.
 - **Fahrzeiten:** OpenStreetMap (Nominatim und OSRM), Ergebnis wird gespeichert.
@@ -43,11 +43,13 @@ Nicht in Version 1: Spielersicht, persönliche Links, Zu- und Absagen durch Spie
 3. Spieltag: Vorbereitung (Dossier aus der bestehenden App), Nachbereitung.
 4. Analytics, Kommunikation, Spielphilosophie.
 
-Jede Stufe geht nach Freigabe sofort auf den Server, damit Trainer und Co-Trainer früh testen können.
+Jede Stufe geht nach Freigabe sofort auf den Server, damit beide Trainer früh testen können.
 
 ## Entschieden
 
 - Verantwortlich im Sinne des Datenschutzes ist der Trainer persönlich (Variante A, siehe `docs/datenschutz/avv-hetzner.md`).
+- Beide Trainer heißen „Trainer“ und haben dieselben Rechte, auch beim Einladen.
+- Gestaltung wie im Entwurf, dunkler Modus.
 - Server: Hetzner Cloud CPX22 (2 vCPU, 4 GB RAM), eigenes Projekt, getrennt vom Server mit dem digitalen Assistenten.
 
 ## Offene Entscheidungen

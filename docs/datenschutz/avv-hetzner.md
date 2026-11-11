@@ -47,7 +47,7 @@ Für Version 1 (nur Trainerteam) ist Variante A schnell umsetzbar. Spätestens m
 - Zugriff nur per SSH-Schlüssel. Firewall nur für die Ports 22, 80 und 443.
 - HTTPS, Passwörter nur als Hash gespeichert.
 - Hetzner-Backups und eine tägliche Datenbanksicherung.
-- Gesprächsnotizen nur für die Rolle Trainer und Co-Trainer sichtbar.
+- Gesprächsnotizen nur für das Trainerteam sichtbar.
 - Keine Gesprächsnotizen an KI-Dienste.
 
 ## Schritte für dich

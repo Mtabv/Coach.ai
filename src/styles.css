@@ -2843,15 +2843,3 @@ select:focus-visible {
   padding: 6px 0;
 }
 
-/* ---------- Zugang (Server-Betrieb) ---------- */
-.zugang { min-height: 100vh; display: grid; place-items: center; padding: 1rem; background: var(--green-950); }
-.zugang-karte { width: min(26rem, 100%); }
-.zugang-marke { color: var(--green-900); font-size: 1.4rem; font-weight: 800; }
-.zugang-form { display: flex; flex-direction: column; gap: 0.75rem; }
-.form-fehler { color: var(--danger); background: var(--danger-bg); border-radius: var(--radius-sm); padding: 0.5rem 0.75rem; margin: 0; }
-.sync-hinweis { display: flex; gap: 0.75rem; align-items: center; justify-content: center; flex-wrap: wrap; padding: 0.5rem 1rem; background: var(--info-bg); color: var(--info); font-size: 0.9rem; }
-.sync-hinweis.warn { background: var(--warn-bg); color: var(--warn); }
-.konto { position: relative; }
-.konto-knopf { width: 40px; height: 40px; border-radius: 50%; border: 2px solid var(--lime); background: var(--green-800); color: #fff; font: inherit; font-weight: 700; cursor: pointer; }
-.konto-menue { position: absolute; right: 0; top: calc(100% + 0.5rem); width: 20rem; z-index: 50; color: var(--text); gap: 0.5rem; }
-.einladung-link { display: flex; flex-direction: column; gap: 0.4rem; }

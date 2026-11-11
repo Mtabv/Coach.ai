@@ -108,8 +108,8 @@ export function createHandler(db: Db, cfg: Config) {
     }
     if (path === '/api/einladungen' && m === 'POST') {
       const u = requireUser(req);
-      if (u.role !== 'trainer') throw new HttpError(403, 'Nur der Trainer kann einladen.');
-      const t = createInvite(db, u.id, 'co-trainer');
+      // Alle im Trainerteam sind gleichberechtigt und dürfen einladen.
+      const t = createInvite(db, u.id, 'trainer');
       return send(res, 201, { link: `${cfg.publicUrl.replace(/\/$/, '')}/#einladung/${t}`, gueltigTage: 7 });
     }
     const inv = /^\/api\/einladungen\/([A-Za-z0-9_-]{20,})$/.exec(path);

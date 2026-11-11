@@ -47,7 +47,7 @@ export async function saveServerState(basisVersion: number, zustand: AppState): 
 
 /**
  * Speichern auf dem Server. Merkt sich die Version, auf der die eigenen Änderungen beruhen.
- * Hat das andere Konto inzwischen gespeichert, wird nicht überschrieben: `onKonflikt` meldet das.
+ * Hat ein anderer Trainer inzwischen gespeichert, wird nicht überschrieben: `onKonflikt` meldet das.
  */
 export function serverPersistence(start: ServerState, initial: AppState, onKonflikt: (aktuell: number) => void) {
   let version = start.version;
