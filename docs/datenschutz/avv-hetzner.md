@@ -13,6 +13,8 @@ Bei Hetzner wird er **nicht automatisch** geschlossen. Man schließt ihn **selbs
 - **Variante A, Trainer persönlich:** Manuel Viehmann betreibt Coach.AI für seine Mannschaft. Er ist Verantwortlicher und schließt den AV-Vertrag in seinem Hetzner-Konto.
 - **Variante B, Verein:** Die TSG Wilhelmshöhe ist Verantwortliche. Dann schließt der Verein den Vertrag (Vereinskonto bei Hetzner) oder bevollmächtigt dich. Der Datenschutzbeauftragte des Vereins, falls vorhanden, sollte Bescheid wissen.
 
+**Entschieden am 11.11.2026: Variante A.** Manuel Viehmann ist Verantwortlicher.
+
 Für Version 1 (nur Trainerteam) ist Variante A schnell umsetzbar. Spätestens mit Version 2 (Spieler bekommen Zugang) empfehle ich, das mit dem Vorstand abzustimmen.
 
 ## Angaben für Anlage 1 (im Hetzner-Formular auszuwählen oder zu ergänzen)
@@ -31,7 +33,7 @@ Für Version 1 (nur Trainerteam) ist Variante A schnell umsetzbar. Spätestens m
 
 **Zweck:** Planung und Durchführung von Training und Spielbetrieb, Spielvorbereitung und -nachbereitung, Kaderverwaltung.
 
-## Begleitende Unterlagen (mache ich fertig, sobald die Variante feststeht)
+## Begleitende Unterlagen (Variante A, folgen als Nächstes)
 
 1. **Eintrag im Verzeichnis der Verarbeitungstätigkeiten:** Zweck, Daten, Empfänger (Hetzner), Löschfristen.
 2. **Löschkonzept**, zum Beispiel:
@@ -50,7 +52,7 @@ Für Version 1 (nur Trainerteam) ist Variante A schnell umsetzbar. Spätestens m
 
 ## Schritte für dich
 
-1. Variante A oder B festlegen.
+1. ~~Variante A oder B festlegen.~~ Erledigt: Variante A.
 2. Bei Hetzner einloggen und accounts.hetzner.com/account/dpa öffnen.
 3. Die Angaben oben in Anlage 1 übernehmen und den Vertrag abschließen.
 4. Das PDF des Vertrags ablegen, etwa in der Vereinsablage, nicht im Repository.

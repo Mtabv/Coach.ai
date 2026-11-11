@@ -45,8 +45,12 @@ Nicht in Version 1: Spielersicht, persönliche Links, Zu- und Absagen durch Spie
 
 Jede Stufe geht nach Freigabe sofort auf den Server, damit Trainer und Co-Trainer früh testen können.
 
+## Entschieden
+
+- Verantwortlich im Sinne des Datenschutzes ist der Trainer persönlich (Variante A, siehe `docs/datenschutz/avv-hetzner.md`).
+- Server: Hetzner Cloud CPX22 (2 vCPU, 4 GB RAM), eigenes Projekt, getrennt vom Server mit dem digitalen Assistenten.
+
 ## Offene Entscheidungen
 
 - Domainname.
-- Wer ist datenschutzrechtlich verantwortlich: der Trainer persönlich oder die TSG Wilhelmshöhe? Siehe `docs/datenschutz/avv-hetzner.md`.
 - Trainingsdauer (angenommen 90 Minuten), Auswärts- und Aufwärmkleidung.

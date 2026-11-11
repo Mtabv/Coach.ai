@@ -2,6 +2,10 @@
 
 Coach.AI läuft auf einem eigenen Hetzner-Server, getrennt vom Server mit dem digitalen Assistenten. Die Schritt-für-Schritt-Anleitung zum Einrichten steht in `docs/hetzner-anleitung.html`.
 
+## Servergröße
+
+Hetzner Cloud **CPX22** (2 vCPU, 4 GB RAM). Der Server baut bei jedem Update die App selbst; mit 2 GB (CPX12) kann das knapp werden. Hochstufen geht später in der Cloud Console unter „Rescale“ mit einem Neustart.
+
 ## Bausteine
 
 | Container | Aufgabe | Von außen erreichbar |
