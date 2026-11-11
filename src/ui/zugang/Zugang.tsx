@@ -32,7 +32,7 @@ export function Zugang({ children }: { children: (sitzung: Sitzung | null) => Re
     if (!st.eingerichtet) return setPhase({ p: 'einrichten' });
     if (!st.nutzer) return setPhase(token ? { p: 'einladung', token } : { p: 'anmelden' });
     // Liegt die Teamzentrale auf dem Server, ist sie die eigentliche Anwendung.
-    if (st.teamzentrale) { window.location.replace('/teamzentrale'); return; }
+    if (st.teamzentrale && !new URLSearchParams(window.location.search).has('dossier')) { window.location.replace('/teamzentrale'); return; }
     const start = await loadServerState();
     // Leerer Server: vorhandene Daten aus diesem Browser übernehmen, sonst neu beginnen.
     const lokal = localStorageAdapter.load();
@@ -227,6 +227,7 @@ export function KontoMenue({ sitzung }: { sitzung: Sitzung }) {
               )}
               {fehler && <p className="form-fehler">{fehler}</p>}
           </>
+          <a className="btn small ghost" href="/teamzentrale">Zur Teamzentrale</a>
           <button className="btn small ghost" onClick={sitzung.abmelden}>Abmelden</button>
         </div>
       )}

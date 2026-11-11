@@ -24,6 +24,8 @@ export interface Config {
    * nie im Repository. Wird nach der Anmeldung unter /teamzentrale ausgeliefert.
    */
   teamzentrale?: string;
+  /** Startstand für das Spieltagsdossier (Mannschaftsprofil), solange auf dem Server noch nichts gespeichert ist. */
+  dossierStart?: string;
 }
 
 const COOKIE = 'coachai_session';
@@ -160,7 +162,10 @@ export function createHandler(db: Db, cfg: Config) {
     if (path === '/api/zustand' && m === 'GET') {
       requireUser(req);
       const row = db.prepare('SELECT version, json, updated_at, u.name AS von FROM app_state LEFT JOIN users u ON u.id = updated_by WHERE app_state.id = 1').get() as { version: number; json: string; updated_at: string; von: string | null } | undefined;
-      return send(res, 200, row ? { version: row.version, zustand: JSON.parse(row.json), geaendertAm: row.updated_at, geaendertVon: row.von } : { version: 0, zustand: null });
+      if (row) return send(res, 200, { version: row.version, zustand: JSON.parse(row.json), geaendertAm: row.updated_at, geaendertVon: row.von });
+      let start: unknown = null;
+      if (cfg.dossierStart && existsSync(cfg.dossierStart)) { try { const d = JSON.parse(readFileSync(cfg.dossierStart, 'utf8')); start = d.state ?? d; } catch { start = null; } }
+      return send(res, 200, { version: 0, zustand: start });
     }
     if (path === '/api/zustand' && m === 'PUT') {
       const u = requireUser(req), b = await readJson(req);

@@ -26,15 +26,25 @@ const NUR_ANSICHT = new Set([
   'calView', 'weekStart', 'showAbs', 'picked', 'activeSpot', 'trainTab', 'unitFilter', 'exFilter', 'exKind', 'exQ',
   'pickFor', 'moreUp', 'morePast', 'exId', 'trainEv', 'game', 'post', 'absForm', 'declining', 'editing', 'flash',
   'anaTab', 'anaPlayer', 'focusSug', 'setTab', 'pvTab', 'kSort', 'evFocus', 'evForm', 'nu', 'nuPhase', 'cmpA', 'cmpB',
-  'komTab', 'dragged', 'pvNow', 'msg', 'showEv', 'pvAna', 'travel',
+  'komTab', 'dragged', 'pvNow', 'msg', 'showEv', 'pvAna', 'travel', 'spieler', 'absOpen',
 ]);
 
 const global = (name: string): unknown => {
   try { return (0, eval)(name); } catch { return undefined; }
 };
 const json = (v: unknown) => JSON.stringify(v);
-const kopie = <T>(v: T): T => JSON.parse(JSON.stringify(v ?? null));
-const isObj = (v: unknown): v is Obj => !!v && typeof v === 'object' && !Array.isArray(v);
+/** Kopie als reines JSON. Mengen (Set) und Zuordnungen (Map) werden dabei markiert, damit sie beim Laden wieder entstehen. */
+const kopie = <T>(v: T): T => JSON.parse(JSON.stringify(v ?? null, (_k, x) => x instanceof Set ? { __set: [...x] } : x instanceof Map ? { __map: [...x] } : x));
+const isObj = (v: unknown): v is Obj => Object.prototype.toString.call(v) === '[object Object]';
+function wiederherstellen(v: unknown): unknown {
+  if (Array.isArray(v)) return v.map(wiederherstellen);
+  if (isObj(v)) {
+    if (Array.isArray(v.__set) && Object.keys(v).length === 1) return new Set(v.__set);
+    if (Array.isArray(v.__map) && Object.keys(v).length === 1) return new Map(v.__map as [unknown, unknown][]);
+    return Object.fromEntries(Object.entries(v).map(([k, x]) => [k, wiederherstellen(x)]));
+  }
+  return v;
+}
 
 function schnappschuss(): Daten {
   const out: Daten = {};
@@ -48,6 +58,7 @@ function schnappschuss(): Daten {
 
 /** Überträgt `wert` in das bestehende Objekt, damit Verweise innerhalb der Teamzentrale gültig bleiben. */
 function einsetzen(ziel: unknown, wert: unknown, behalten: string[] = []): unknown {
+  if (ziel instanceof Set || ziel instanceof Map) return wert instanceof Set || wert instanceof Map ? wert : ziel;
   if (Array.isArray(ziel) && Array.isArray(wert)) {
     const alt = new Map(ziel.filter(isObj).filter((x) => 'id' in x).map((x) => [String(x.id), x]));
     const neu = wert.map((w) => (isObj(w) && 'id' in w && alt.has(String(w.id)) ? einsetzen(alt.get(String(w.id)), w, behalten) : w));
@@ -65,7 +76,8 @@ function einsetzen(ziel: unknown, wert: unknown, behalten: string[] = []): unkno
   return wert;
 }
 
-function anwenden(d: Daten) {
+function anwenden(roh: Daten) {
+  const d = wiederherstellen(roh) as Daten;
   for (const n of NAMEN) {
     const ziel = global(n);
     if (n in d && ziel && typeof ziel === 'object') einsetzen(ziel, d[n]);

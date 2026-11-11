@@ -44,6 +44,10 @@ docker compose restart teamzentrale     # Sofort neu bauen, z. B. direkt nach ei
 
 Der Server passt die Seite beim Ausliefern an: dunkler Modus, Schriften vom eigenen Server, Kontomenü mit „Trainer einladen“ und „Abmelden“. Solange noch keine Seite gebaut ist, erscheint die ältere Oberfläche.
 
+### Dossier als PDF
+
+„Dossier als PDF“ in der Spielvorbereitung öffnet das Spieltagsdossier (`/?dossier=1`) mit dem Spiel aus der Teamzentrale: Datenbasis von fussball.de und FuPa laden, Trainerfragebogen, Dossier prüfen, bestätigen, dann PDF oder PowerPoint mit den Folien aus `docs/dossier-sollbild.md`. Den Startstand (Mannschaftsprofil) legt der Container `teamzentrale` als `/daten/dossier-start.json` ab, solange auf dem Server noch kein Dossier-Stand gespeichert ist.
+
 ### Speichern in der Teamzentrale
 
 `src/teamzentrale/sync.ts` wird in die Seite eingebunden und speichert die Eingaben als Dokument `teamzentrale` auf dem Server (`/api/dokumente/teamzentrale`, die letzten 50 Stände bleiben erhalten):

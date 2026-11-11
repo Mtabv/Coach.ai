@@ -16,6 +16,7 @@ const handler = createHandler(db, {
   secureCookies: env.COACHAI_HTTPS !== '0',
   publicUrl: env.COACHAI_ADRESSE || 'http://localhost:3000',
   teamzentrale: join(dataDir, 'teamzentrale.html'),
+  dossierStart: join(dataDir, 'dossier-start.json'),
 });
 
 const port = Number(env.PORT || 3000);

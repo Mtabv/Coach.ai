@@ -14,6 +14,8 @@ while true; do
   echo "$(date '+%F %T') Teamzentrale wird mit aktuellen Daten gebaut …"
   if bash "$P/bauen.sh" "$W" > "$W/letzter-lauf.log" 2>&1; then
     cp "$W/coach-ai-tsg.html" "$A/teamzentrale.html.neu" && mv "$A/teamzentrale.html.neu" "$A/teamzentrale.html"
+    # Mannschaftsprofil als Startstand für das Spieltagsdossier
+    cp "$W/seed-state-all.json" "$A/dossier-start.json"
     echo "$(date '+%F %T') Fertig. Nächster Lauf in $(( ${INTERVALL:-21600} / 3600 )) Stunden."
     sleep "${INTERVALL:-21600}"
   else

@@ -10,7 +10,7 @@ Die Teamzentrale zeigt alle Bereiche als eine einzige HTML-Seite. Auf dem 11Plan
 | `daten/fetch.py` | Lädt Spielplan, Tabelle, Spielberichte und Kader über den lokalen Datendienst (`tools/fussballde-dienst`) |
 | `daten/build.py` | Rechnet daraus Statistik, feste Fakten, KI-Erkenntnisse, Fahrzeiten (OpenStreetMap), Fotos und Wappen (`real/data.js`) |
 | `patches/r7_real.py` | Setzt die echten Daten in das Grundgerüst ein |
-| `patches/r9…r27` | Alle späteren Ausbaustufen, in dieser Reihenfolge anzuwenden (r26: Zu- und Absagen, Formularelemente; r27: aktuelles Datum statt 11.11.2026) |
+| `patches/r9…r28` | Alle späteren Ausbaustufen, in dieser Reihenfolge anzuwenden (r26: Zu- und Absagen, Formularelemente; r27: aktuelles Datum statt 11.11.2026; r28: Spielerprofil, Verletzungen und Abwesenheiten mit Zeitraum, Dossier als PDF) |
 | `bauen.sh` | Führt alles nacheinander aus |
 
 ## Mit aktuellen Daten neu bauen

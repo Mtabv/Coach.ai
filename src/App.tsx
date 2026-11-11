@@ -1,6 +1,7 @@
 import { href, useRoute } from './router';
 import { useStore } from './state/store';
 import { KontoMenue, Zugang, type Sitzung } from './ui/zugang/Zugang';
+import { useSpielAusTeamzentrale } from './ui/zugang/spielUebernahme';
 import { ConfirmAction } from './ui/components';
 import { AnalyticsPage, AnalyticsPrintPage } from './ui/pages/AnalyticsPage';
 import { ArchiveDossierPage, ArchivePage } from './ui/pages/ArchivePage';
@@ -19,6 +20,7 @@ export default function App() {
 function Shell({ sitzung }: { sitzung: Sitzung | null }) {
   const route = useRoute();
   const { state, update, saveStatus, resetAll } = useStore();
+  useSpielAusTeamzentrale();
   if (route.name === 'druck') return <PrintPage dossierId={route.dossierId} />;
   if (route.name === 'analyticsDruck') return <AnalyticsPrintPage />;
 
