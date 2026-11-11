@@ -27,7 +27,16 @@ scp ~/Downloads/11plan-tsg.html root@116.203.28.104:/root/
 cd /opt/coachai/deploy && docker compose cp /root/11plan-tsg.html app:/daten/teamzentrale.html
 ```
 
-Ein Neustart ist nicht nötig. Der Server passt die Datei beim Ausliefern an: dunkler Modus, Schriften vom eigenen Server, Kontomenü mit „Trainer einladen“ und „Abmelden“. Solange sie fehlt, erscheint die ältere Oberfläche. Eingaben in der Teamzentrale werden noch nicht gespeichert; das ist der nächste Ausbauschritt.
+Ein Neustart ist nicht nötig. Der Server passt die Datei beim Ausliefern an: dunkler Modus, Schriften vom eigenen Server, Kontomenü mit „Trainer einladen“ und „Abmelden“. Solange sie fehlt, erscheint die ältere Oberfläche.
+
+### Speichern in der Teamzentrale
+
+`src/teamzentrale/sync.ts` wird in die Seite eingebunden und speichert die Eingaben als Dokument `teamzentrale` auf dem Server (`/api/dokumente/teamzentrale`, die letzten 50 Stände bleiben erhalten):
+
+- Etwa 1,5 Sekunden nach einer Änderung wird gespeichert; der Stand steht unten in der Seitenleiste.
+- Alle 15 Sekunden und beim Zurückkehren in den Tab werden Änderungen der anderen Trainer geholt. Während jemand tippt, wartet der neue Stand, bis das Feld verlassen wird.
+- Haben zwei Trainer gleichzeitig gespeichert, werden beide Änderungen zusammengeführt (`src/teamzentrale/merge.ts`). Nur wenn beide genau dieselbe Angabe unterschiedlich geändert haben, gilt die zuletzt gespeicherte.
+- Kommt eine neue Datei mit neueren Daten von fussball.de und FuPa, bleiben die Eingaben erhalten und werden über die neuen Daten gelegt.
 
 ## Login
 

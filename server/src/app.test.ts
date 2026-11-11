@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createServer, type Server } from 'node:http';
-import { mkdtempSync, writeFileSync, readdirSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, writeFileSync, readdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { backup, openDb } from './db';
@@ -13,6 +13,8 @@ const db = openDb(join(dir, 'test.db'));
 
 beforeAll(async () => {
   writeFileSync(join(dir, 'index.html'), '<!doctype html><title>11Plan</title>');
+  mkdirSync(join(dir, '.vite'));
+  writeFileSync(join(dir, '.vite', 'manifest.json'), JSON.stringify({ 'src/teamzentrale/sync.ts': { file: 'assets/tz-test.js' } }));
   // Stellvertreter für den Datendienst: merkt sich den mitgeschickten Schlüssel.
   upstream = createServer((req, res) => { upstreamKey = String(req.headers['x-api-key']); res.writeHead(200, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ pfad: req.url })); });
   await new Promise<void>((r) => upstream.listen(0, r));
@@ -112,9 +114,22 @@ describe('Server', () => {
     const r = await fetch(base + '/teamzentrale', { headers: { Cookie: trainer.cookie } });
     const html = await r.text();
     expect(html).toContain('data-theme="dark"');
-    expect(html).toContain('konto11');
+    expect(html).toContain('<script type="module" src="/assets/tz-test.js"></script>');
     expect(html).toContain('/schriften/schriften.css');
     expect(html).not.toContain('googleapis');
+  });
+
+  it('speichert gemeinsame Dokumente mit Versionsprüfung', async () => {
+    expect((await call('/api/dokumente/teamzentrale')).status).toBe(401);
+    expect((await call('/api/dokumente/teamzentrale', { jar: trainer })).json).toEqual({ version: 0, inhalt: null });
+    expect((await call('/api/dokumente/teamzentrale', { method: 'PUT', jar: trainer, body: { basisVersion: 0, inhalt: { daten: { a: 1 } } } })).json.version).toBe(1);
+    const g = await call('/api/dokumente/teamzentrale', { jar: co });
+    expect(g.json.inhalt).toEqual({ daten: { a: 1 } });
+    expect(g.json.geaendertVon).toBe('Manuel');
+    const alt = await call('/api/dokumente/teamzentrale', { method: 'PUT', jar: co, body: { basisVersion: 0, inhalt: { daten: { a: 2 } } } });
+    expect(alt.status).toBe(409);
+    expect(alt.json.version).toBe(1);
+    expect((await call('/api/dokumente/Bad_Name', { jar: trainer })).status).toBe(404);
   });
 
   it('liefert das Frontend aus und lässt keine Pfade außerhalb zu', async () => {

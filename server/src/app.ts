@@ -136,6 +136,27 @@ export function createHandler(db: Db, cfg: Config) {
       requireUser(req);
       return send(res, 200, { nutzer: db.prepare('SELECT id, name, email, role FROM users ORDER BY id').all() });
     }
+    const doc = /^\/api\/dokumente\/([a-z0-9-]{1,40})$/.exec(path);
+    if (doc && m === 'GET') {
+      requireUser(req);
+      const row = db.prepare('SELECT version, json, updated_at, u.name AS von FROM docs LEFT JOIN users u ON u.id = updated_by WHERE docs.name = ?').get(doc[1]) as { version: number; json: string; updated_at: string; von: string | null } | undefined;
+      return send(res, 200, row ? { version: row.version, inhalt: JSON.parse(row.json), geaendertAm: row.updated_at, geaendertVon: row.von } : { version: 0, inhalt: null });
+    }
+    if (doc && m === 'PUT') {
+      const u = requireUser(req), b = await readJson(req);
+      if (!b.inhalt || typeof b.inhalt !== 'object') throw new HttpError(400, 'Inhalt fehlt.');
+      const cur = (db.prepare('SELECT version FROM docs WHERE name = ?').get(doc[1]) as { version: number } | undefined)?.version ?? 0;
+      if (Number(b.basisVersion) !== cur) return send(res, 409, { fehler: 'Inzwischen hat jemand anderes gespeichert.', version: cur });
+      const json = JSON.stringify(b.inhalt), next = cur + 1;
+      db.exec('BEGIN');
+      try {
+        db.prepare("INSERT INTO docs (name, version, json, updated_by, updated_at) VALUES (?, ?, ?, ?, datetime('now')) ON CONFLICT(name) DO UPDATE SET version = excluded.version, json = excluded.json, updated_by = excluded.updated_by, updated_at = excluded.updated_at").run(doc[1], next, json, u.id);
+        db.prepare("INSERT INTO docs_history (name, version, json, updated_by, updated_at) VALUES (?, ?, ?, ?, datetime('now'))").run(doc[1], next, json, u.id);
+        db.prepare('DELETE FROM docs_history WHERE name = ? AND version <= ?').run(doc[1], next - HISTORY_KEEP);
+        db.exec('COMMIT');
+      } catch (e) { db.exec('ROLLBACK'); throw e; }
+      return send(res, 200, { version: next });
+    }
     if (path === '/api/zustand' && m === 'GET') {
       requireUser(req);
       const row = db.prepare('SELECT version, json, updated_at, u.name AS von FROM app_state LEFT JOIN users u ON u.id = updated_by WHERE app_state.id = 1').get() as { version: number; json: string; updated_at: string; von: string | null } | undefined;
@@ -176,11 +197,18 @@ export function createHandler(db: Db, cfg: Config) {
 
   /** Teamzentrale nur für Angemeldete. Schriften vom eigenen Server, dunkler Modus, Kontomenü in der Seitenleiste. */
   let tzCache: { mtime: number; html: string } | null = null;
+  /** Name der gebauten Abgleich-Datei laut Vite-Manifest, z. B. assets/teamzentrale-AbC123.js. */
+  const syncScript = (): string | null => {
+    try {
+      const m = JSON.parse(readFileSync(join(cfg.publicDir, '.vite', 'manifest.json'), 'utf8')) as Record<string, { file: string }>;
+      return m['src/teamzentrale/sync.ts']?.file ?? null;
+    } catch { return null; }
+  };
   function serveTeamzentrale(req: IncomingMessage, res: ServerResponse) {
     const file = cfg.teamzentrale;
     if (!currentUser(req) || !file || !existsSync(file)) { res.writeHead(302, { Location: '/' }); return res.end(); }
     const mtime = statSync(file).mtimeMs;
-    if (!tzCache || tzCache.mtime !== mtime) tzCache = { mtime, html: prepareTeamzentrale(readFileSync(file, 'utf8')) };
+    if (!tzCache || tzCache.mtime !== mtime) tzCache = { mtime, html: prepareTeamzentrale(readFileSync(file, 'utf8'), syncScript()) };
     res.writeHead(200, { 'Content-Type': TYPES['.html'], 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'same-origin' });
     res.end(tzCache.html);
   }
@@ -211,40 +239,12 @@ export function createHandler(db: Db, cfg: Config) {
   };
 }
 
-const KONTO_SNIPPET = `<style>
-.side .who { display: none; }
-.konto11 { border-top: 1px solid var(--line); margin-top: 10px; padding: 10px 10px 0; display: grid; gap: 6px; font-size: 14px; color: var(--muted); }
-.konto11 .row { display: flex; flex-wrap: wrap; gap: 6px; }
-.konto11 input { width: 100%; font-size: 12px; }
-</style>
-<script>
-(function () {
-  var h = { 'Content-Type': 'application/json', 'X-CoachAI': '1' };
-  fetch('/api/status', { credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (st) {
-    if (!st.nutzer) { location.href = '/'; return; }
-    var box = document.createElement('div');
-    box.className = 'konto11';
-    box.innerHTML = '<div>Angemeldet als <b></b></div><div class="row"><button class="btn small ghost" data-k="einladen">Trainer einladen</button><button class="btn small ghost" data-k="ab">Abmelden</button></div><div data-k="link" hidden></div><div class="note">Eingaben werden noch nicht gespeichert.</div>';
-    box.querySelector('b').textContent = st.nutzer.name;
-    (document.querySelector('.side') || document.body).appendChild(box);
-    box.addEventListener('click', function (e) {
-      var k = e.target && e.target.getAttribute('data-k');
-      if (k === 'ab') fetch('/api/abmelden', { method: 'POST', headers: h, credentials: 'same-origin' }).then(function () { location.href = '/'; });
-      if (k === 'einladen') fetch('/api/einladungen', { method: 'POST', headers: h, credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (d) {
-        var el = box.querySelector('[data-k=link]'); el.hidden = false; el.textContent = 'Link, 7 Tage und nur einmal gültig:';
-        var i = document.createElement('input'); i.type = 'text'; i.readOnly = true; i.value = d.link || d.fehler; el.appendChild(i); i.select();
-        if (d.link && navigator.clipboard) navigator.clipboard.writeText(d.link).then(function () { el.firstChild.textContent = 'Link kopiert, 7 Tage und nur einmal gültig:'; }, function () {});
-      });
-    });
-  });
-})();
-</script>`;
-
 /** Passt die gebaute Teamzentrale für den Server an, ohne die Datei selbst zu verändern. */
-export function prepareTeamzentrale(html: string): string {
+export function prepareTeamzentrale(html: string, syncScript: string | null): string {
+  const einbinden = syncScript ? `<script type="module" src="/${syncScript}"></script>` : '';
   return html
     .replace(/<link[^>]*fonts\.googleapis\.com[^>]*>\s*/g, '')
     .replace('</head>', '<link rel="stylesheet" href="/schriften/schriften.css">\n</head>')
     .replace(/<html lang="de"( data-theme="[a-z]+")?>/, '<html lang="de" data-theme="dark">')
-    .replace(/<\/body>(?![\s\S]*<\/body>)/, KONTO_SNIPPET + '\n</body>');
+    .replace(/<\/body>(?![\s\S]*<\/body>)/, () => einbinden + '\n</body>');
 }

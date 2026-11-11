@@ -47,6 +47,22 @@ const MIGRATIONS: string[] = [
      updated_by INTEGER,
      updated_at TEXT NOT NULL
    );`,
+  // Weitere gemeinsame Dokumente, z. B. die Eingaben in der Teamzentrale.
+  `CREATE TABLE docs (
+     name TEXT PRIMARY KEY,
+     version INTEGER NOT NULL,
+     json TEXT NOT NULL,
+     updated_by INTEGER REFERENCES users(id),
+     updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+   );
+   CREATE TABLE docs_history (
+     name TEXT NOT NULL,
+     version INTEGER NOT NULL,
+     json TEXT NOT NULL,
+     updated_by INTEGER,
+     updated_at TEXT NOT NULL,
+     PRIMARY KEY (name, version)
+   );`,
 ];
 
 export function openDb(file: string): Db {

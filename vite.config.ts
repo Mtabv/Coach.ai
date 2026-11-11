@@ -20,6 +20,8 @@ export default defineConfig(({ mode }) => {
     // Relative Pfade, damit der Build auch unter einem Unterpfad (z. B. als Artefakt) läuft.
     base: './',
     plugins: [react()],
+    // Zweiter Einstieg: Speichern und Abgleich für die Teamzentrale (vom Server in die Seite eingebunden).
+    build: { manifest: true, rollupOptions: { input: { main: 'index.html', teamzentrale: 'src/teamzentrale/sync.ts' } } },
     server: { host: true, port: 5173, proxy: fdProxy },
     preview: { host: true, port: 4173, proxy: fdProxy },
     test: { environment: 'node', include: ['src/**/*.test.ts', 'server/src/**/*.test.ts'] },
