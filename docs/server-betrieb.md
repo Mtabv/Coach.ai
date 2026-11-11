@@ -18,16 +18,31 @@ Alle Dateien liegen in `deploy/`. Die Einstellungen stehen in `deploy/.env`, die
 
 ## Teamzentrale
 
-Nach der Anmeldung zeigt 11Plan die Teamzentrale, also die klickbare Fassung mit den echten Daten der Mannschaft (gebaut mit `prototype/bauen.sh`). Die Datei enthält Namen und Fotos und liegt deshalb **nur auf dem Server**, nie im Repository:
+Nach der Anmeldung zeigt 11Plan die Teamzentrale mit den echten Daten der Mannschaft. Der Container `teamzentrale` baut sie **alle 6 Stunden selbst neu** (`deploy/teamzentrale-bauen.sh` mit `prototype/bauen.sh`):
+
+1. Spielplan, Ergebnisse, Tabelle, Spielberichte und Kader über den internen Datendienst (fussball.de, FuPa).
+2. Auswertungen, Fahrzeiten (OpenStreetMap), Fotos und Wappen.
+3. Fertige Seite nach `/daten/teamzentrale.html` im Daten-Volume der App. Schlägt ein Lauf fehl, bleibt die bisherige Seite.
+
+Die Seite enthält Namen und Fotos und liegt deshalb **nur auf dem Server**, nie im Repository. Datum, Woche, nächstes Spiel und nächstes Training richten sich nach dem aktuellen Tag.
+
+**Einmalig** braucht der Container das Mannschaftsprofil (Zeitplan am Spieltag, Spielkleidung, Wappen):
 
 ```bash
-# Auf dem Laptop: Datei auf den Server kopieren
-scp ~/Downloads/11plan-tsg.html root@116.203.28.104:/root/
-# Auf dem Server: in die App legen
-cd /opt/coachai/deploy && docker compose cp /root/11plan-tsg.html app:/daten/teamzentrale.html
+# Auf dem Laptop
+scp ~/Downloads/seed-state-all.json root@116.203.28.104:/root/
+# Auf dem Server
+cd /opt/coachai/deploy && docker compose cp /root/seed-state-all.json teamzentrale:/arbeit/seed-state-all.json
 ```
 
-Ein Neustart ist nicht nötig. Der Server passt die Datei beim Ausliefern an: dunkler Modus, Schriften vom eigenen Server, Kontomenü mit „Trainer einladen“ und „Abmelden“. Solange sie fehlt, erscheint die ältere Oberfläche.
+Nützlich:
+
+```bash
+docker compose logs -f teamzentrale     # Was macht der Bau gerade?
+docker compose restart teamzentrale     # Sofort neu bauen, z. B. direkt nach einem Spiel
+```
+
+Der Server passt die Seite beim Ausliefern an: dunkler Modus, Schriften vom eigenen Server, Kontomenü mit „Trainer einladen“ und „Abmelden“. Solange noch keine Seite gebaut ist, erscheint die ältere Oberfläche.
 
 ### Speichern in der Teamzentrale
 

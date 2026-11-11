@@ -1,4 +1,4 @@
-import json, sys, re, unicodedata, urllib.request, urllib.parse, base64, subprocess
+import json, os, sys, re, unicodedata, urllib.request, urllib.parse, base64, subprocess
 from datetime import datetime
 from zoneinfo import ZoneInfo
 S = sys.argv[1]; KEY = open(f'{S}/fdkey.txt').read().strip()
@@ -11,7 +11,7 @@ def local(dt):
     d = datetime.fromisoformat(dt.replace('Z', '+00:00')).astimezone(BER); return d.strftime('%Y-%m-%d'), d.strftime('%H:%M')
 def fold(s): return re.sub(r'\s+', ' ', unicodedata.normalize('NFKD', (s or '').lower().replace('ä','ae').replace('ö','oe').replace('ü','ue').replace('ß','ss')).encode('ascii', 'ignore').decode()).strip()
 def get(path, **q):
-    url = 'http://127.0.0.1:8000' + path + ('?' + urllib.parse.urlencode(q) if q else '')
+    url = os.environ.get('FD_URL', 'http://127.0.0.1:8000') + path + ('?' + urllib.parse.urlencode(q) if q else '')
     with urllib.request.urlopen(urllib.request.Request(url, headers={'X-API-Key': KEY}), timeout=600) as x: return json.load(x)
 isnum = lambda v: str(v or '').isdigit()
 
@@ -69,13 +69,13 @@ def geocode(q):
     time.sleep(1.1)
     url = 'https://nominatim.openstreetmap.org/search?' + urllib.parse.urlencode(dict(q=q, format='json', limit=1, countrycodes='de'))
     try:
-        with urllib.request.urlopen(urllib.request.Request(url, headers={'User-Agent': 'CoachAI-Entwurf/0.1'}), timeout=20) as x: j = json.load(x)
+        with urllib.request.urlopen(urllib.request.Request(url, headers={'User-Agent': '11Plan/1.0 (Trainerteam-App)'}), timeout=20) as x: j = json.load(x)
         return (float(j[0]['lon']), float(j[0]['lat'])) if j else None
     except Exception: return None
 def route(a, b):
     url = f'https://router.project-osrm.org/route/v1/driving/{a[0]},{a[1]};{b[0]},{b[1]}?overview=false'
     try:
-        with urllib.request.urlopen(urllib.request.Request(url, headers={'User-Agent': 'CoachAI-Entwurf/0.1'}), timeout=20) as x: j = json.load(x)
+        with urllib.request.urlopen(urllib.request.Request(url, headers={'User-Agent': '11Plan/1.0 (Trainerteam-App)'}), timeout=20) as x: j = json.load(x)
         r0 = j['routes'][0]; return round(r0['duration'] / 60), round(r0['distance'] / 1000, 1)
     except Exception: return None
 dep_name = team['schedule']['away'].get('departurePoint') or 'Stockwiesen'

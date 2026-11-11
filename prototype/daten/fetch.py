@@ -1,6 +1,7 @@
 import json, urllib.request, urllib.parse, sys
 S = sys.argv[1]; KEY = open(f'{S}/fdkey.txt').read().strip()
-B = 'http://127.0.0.1:8000'
+import os
+B = os.environ.get('FD_URL', 'http://127.0.0.1:8000')
 def get(path, **q):
     url = B + path + ('?' + urllib.parse.urlencode(q) if q else '')
     req = urllib.request.Request(url, headers={'X-API-Key': KEY})

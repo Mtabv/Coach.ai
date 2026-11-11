@@ -1,6 +1,6 @@
 # Klickbarer Entwurf: 11Plan Teamzentrale
 
-Der Entwurf zeigt alle Bereiche und Abläufe der künftigen Anwendung als eine einzige HTML-Seite. Er speichert nichts und dient als Vorlage für die Server-Version (siehe `docs/bauplan-v1.md`).
+Die Teamzentrale zeigt alle Bereiche als eine einzige HTML-Seite. Auf dem 11Plan-Server wird sie alle 6 Stunden mit aktuellen Daten neu gebaut und nach der Anmeldung ausgeliefert; Eingaben speichert dort `src/teamzentrale/sync.ts` (siehe `docs/server-betrieb.md`). Als einzelne Datei im Browser geöffnet, speichert sie nichts.
 
 ## Aufbau
 
@@ -10,7 +10,7 @@ Der Entwurf zeigt alle Bereiche und Abläufe der künftigen Anwendung als eine e
 | `daten/fetch.py` | Lädt Spielplan, Tabelle, Spielberichte und Kader über den lokalen Datendienst (`tools/fussballde-dienst`) |
 | `daten/build.py` | Rechnet daraus Statistik, feste Fakten, KI-Erkenntnisse, Fahrzeiten (OpenStreetMap), Fotos und Wappen (`real/data.js`) |
 | `patches/r7_real.py` | Setzt die echten Daten in das Grundgerüst ein |
-| `patches/r9…r25` | Alle späteren Ausbaustufen, in dieser Reihenfolge anzuwenden |
+| `patches/r9…r27` | Alle späteren Ausbaustufen, in dieser Reihenfolge anzuwenden (r26: Zu- und Absagen, Formularelemente; r27: aktuelles Datum statt 11.11.2026) |
 | `bauen.sh` | Führt alles nacheinander aus |
 
 ## Mit aktuellen Daten neu bauen

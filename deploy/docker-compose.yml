@@ -26,6 +26,18 @@ services:
       - datendienst-cache:/cache
     networks: [intern]
 
+  teamzentrale:
+    build: { context: .., dockerfile: deploy/Dockerfile.teamzentrale }
+    restart: unless-stopped
+    environment:
+      COACHAI_DATENDIENST_KEY: ${COACHAI_DATENDIENST_KEY}
+      INTERVALL: "21600"
+    volumes:
+      - teamzentrale-arbeit:/arbeit
+      - app-daten:/ausgabe
+    depends_on: [datendienst]
+    networks: [intern]
+
   caddy:
     image: caddy:2
     restart: unless-stopped
@@ -45,4 +57,5 @@ networks:
 volumes:
   app-daten:
   datendienst-cache:
+  teamzentrale-arbeit:
   caddy-daten:

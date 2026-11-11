@@ -178,22 +178,24 @@ table { border-collapse: collapse; width: 100%; font-size: 15px; } td, th { text
   <p class="time">einmalig, etwa 20 Minuten</p>
 
   <section class="step" id="s11"><div class="step-h"><span class="no">11</span><h3>Einen eigenen Zugang nur für GitHub anlegen</h3><label><input type="checkbox"> erledigt</label></div>
-    <p>So funktioniert es: Ich ändere 11Plan hier im Chat und lege die Änderung im Repository ab. Sobald du sie auf GitHub freigibst, spielt GitHub sie selbst auf deinen Server. Dafür bekommt GitHub einen eigenen Schlüssel, der nur das darf. Ich sehe diesen Schlüssel nie.</p>
-    <p><b>Auf dem Server:</b> einen Benutzer <code>deploy</code> anlegen, der 11Plan aktualisieren darf:</p>
+    <p>So funktioniert es: Ich ändere 11Plan hier im Chat und lege die Änderung im Zweig <code>main</code> ab. GitHub prüft sie und spielt sie danach selbst auf deinen Server. Dafür bekommt GitHub einen eigenen Schlüssel, der nur das darf. Ich sehe diesen Schlüssel nie.</p>
+    <p><b>1. Auf dem Server</b> (als root) einen Benutzer <code>deploy</code> anlegen, der 11Plan aktualisieren darf:</p>
     <div class="cmd">adduser --disabled-password --gecos "" deploy && usermod -aG docker deploy && mkdir -p /home/deploy/.ssh && chown -R deploy:deploy /home/deploy/.ssh /opt/coachai</div>
-    <p><b>Auf dem Laptop</b> (neues PowerShell- oder Terminal-Fenster) einen zweiten Schlüssel nur für GitHub erzeugen. Bei der Passphrase zweimal nur Enter drücken:</p>
-    <div class="cmd">ssh-keygen -t ed25519 -f coachai-deploy -C "github-deploy"</div>
-    <p>Es entstehen zwei Dateien im aktuellen Ordner: <code>coachai-deploy.pub</code> (öffentlich) und <code>coachai-deploy</code> (privat).</p>
-    <ol>
-      <li>Den Inhalt von <code>coachai-deploy.pub</code> auf dem Server in <code>/home/deploy/.ssh/authorized_keys</code> einfügen (wie in Schritt 3, mit <code>nano</code>).</li>
-      <li>In GitHub das Repository <b>mtabv/coach.ai</b> öffnen → <b>Settings</b> → <b>Secrets and variables</b> → <b>Actions</b> → <b>New repository secret</b>. Drei Einträge anlegen:
-        <table><tr><th>Name</th><th>Inhalt</th></tr>
-          <tr><td><code>DEPLOY_HOST</code></td><td>die IPv4-Adresse des Servers</td></tr>
-          <tr><td><code>DEPLOY_USER</code></td><td><code>deploy</code></td></tr>
-          <tr><td><code>DEPLOY_SSH_KEY</code></td><td>der komplette Inhalt der Datei <code>coachai-deploy</code>, also der privaten, mit allen Zeilen</td></tr></table></li>
-      <li>Die Datei <code>coachai-deploy</code> danach vom Laptop löschen. Sie liegt jetzt sicher bei GitHub.</li>
-    </ol>
-    <div class="ok">Ab dann gilt: Ich baue, du gibst frei, GitHub spielt auf. Du musst dich für Updates nicht mehr auf dem Server einloggen.</div>
+    <p><b>2. Auf dem Laptop</b> (neues Terminal-Fenster) einen zweiten Schlüssel nur für GitHub erzeugen. Bei der Passphrase zweimal nur Enter drücken:</p>
+    <div class="cmd">cd ~ && ssh-keygen -t ed25519 -f coachai-deploy -C "github-deploy"</div>
+    <p><b>3. Den öffentlichen Teil auf den Server legen</b> (auf dem Laptop):</p>
+    <div class="cmd">cat ~/coachai-deploy.pub | ssh root@116.203.28.104 "cat >> /home/deploy/.ssh/authorized_keys && chown deploy:deploy /home/deploy/.ssh/authorized_keys && chmod 600 /home/deploy/.ssh/authorized_keys"</div>
+    <p><b>4. Testen</b>: Diese Zeile muss ohne Passwortfrage „deploy“ ausgeben:</p>
+    <div class="cmd">ssh -i ~/coachai-deploy deploy@116.203.28.104 whoami</div>
+    <p><b>5. In GitHub</b> das Repository <b>mtabv/coach.ai</b> öffnen → <b>Settings</b> → <b>Secrets and variables</b> → <b>Actions</b> → <b>New repository secret</b>. Vier Einträge anlegen:</p>
+    <table><tr><th>Name</th><th>Inhalt</th></tr>
+      <tr><td><code>DEPLOY_HOST</code></td><td><code>116.203.28.104</code></td></tr>
+      <tr><td><code>DEPLOY_USER</code></td><td><code>deploy</code></td></tr>
+      <tr><td><code>DEPLOY_SSH_KEY</code></td><td>der private Schlüssel. Auf dem Mac mit <code>pbcopy &lt; ~/coachai-deploy</code> in die Zwischenablage legen und einfügen</td></tr>
+      <tr><td><code>DEPLOY_KNOWN_HOSTS</code></td><td>der Fingerabdruck des Servers. Mit <code>ssh-keyscan -t ed25519 116.203.28.104 | pbcopy</code> in die Zwischenablage legen und einfügen</td></tr></table>
+    <p><b>6. Aufräumen</b>: Die private Datei vom Laptop löschen, sie liegt jetzt nur noch bei GitHub:</p>
+    <div class="cmd">rm ~/coachai-deploy</div>
+    <div class="ok">Ab dann gilt: Was in <code>main</code> landet, ist ein paar Minuten später auf 11plan.de. Ob es geklappt hat, steht bei GitHub unter <b>Actions</b>. Du musst dich für Updates nicht mehr auf dem Server einloggen.</div>
   </section>
 
   <h2>Wenn etwas hakt</h2>

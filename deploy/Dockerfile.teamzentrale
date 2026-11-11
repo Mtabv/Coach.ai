@@ -1,0 +1,10 @@
+# Baut die Teamzentrale regelmäßig neu: holt Spielplan, Ergebnisse, Tabelle und Kader über den
+# internen Datendienst, rechnet die Auswertungen und legt die fertige Seite in die App.
+FROM python:3.13-slim
+RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/* \
+ && pip install --no-cache-dir Pillow tzdata
+WORKDIR /app
+COPY prototype /app/prototype
+COPY deploy/teamzentrale-bauen.sh /app/teamzentrale-bauen.sh
+ENV FD_URL=http://datendienst:8000 TZ=Europe/Berlin
+CMD ["bash", "/app/teamzentrale-bauen.sh"]
