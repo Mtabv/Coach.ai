@@ -90,6 +90,8 @@ function status(text: string, art: '' | 'warn' = '') {
   if (!anzeige) return;
   anzeige.textContent = text;
   anzeige.style.color = art === 'warn' ? 'var(--warn)' : '';
+  const marke = document.querySelector<HTMLElement>('.side .brand');
+  if (marke) { marke.dataset.status = art === 'warn' ? 'fehler' : text.startsWith('Speichert') ? 'speichert' : 'ok'; marke.title = text; }
 }
 const uhr = () => new Date().toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
 
@@ -99,7 +101,29 @@ function kontoKasten(name: string) {
 .konto11 { border-top: 1px solid var(--line); margin-top: 10px; padding: 10px 10px 0; display: grid; gap: 6px; font-size: 14px; color: var(--muted); }
 .konto11 .row { display: flex; flex-wrap: wrap; gap: 6px; }
 .konto11 input { width: 100%; font-size: 12px; }
-.hinweis11 { position: fixed; right: 16px; bottom: 16px; z-index: 99; background: var(--accent-soft); color: var(--accent); border: 1px solid var(--accent); border-radius: 8px; padding: 8px 12px; font-size: 14px; }`;
+.hinweis11 { position: fixed; right: 16px; bottom: 16px; z-index: 99; background: var(--accent-soft); color: var(--accent); border: 1px solid var(--accent); border-radius: 8px; padding: 8px 12px; font-size: 14px; }
+/* Handy: Kopfbereich kompakt, Menü in einer wischbaren Zeile, Inhalt beginnt sofort */
+@media (max-width: 900px) {
+  .side { position: sticky; top: 0; z-index: 40; padding: 8px 12px; gap: 6px; border-bottom: 1px solid var(--line); }
+  .side .brand { font-size: 22px; padding: 0 4px; }
+  .side .team { display: none; }
+  .side { min-width: 0; max-width: 100vw; }
+  .nav { order: 3; min-width: 0; flex-wrap: nowrap !important; overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; margin: 0 -12px; padding: 0 12px; width: calc(100% + 24px) !important; }
+  .nav::-webkit-scrollbar { display: none; }
+  .nav a { white-space: nowrap; padding: 6px 10px; flex: none; }
+  .konto11 { order: 2; margin: 0 0 0 auto; padding: 0; border: 0; display: flex; align-items: center; gap: 6px; font-size: 12px; }
+  .konto11 > div:first-child, .konto11 [data-k=status] { display: none; }
+  .konto11 .row { flex-wrap: nowrap; }
+  .konto11 [data-k=link] { position: absolute; left: 12px; right: 12px; top: 100%; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 10px; }
+  .konto11 .row .btn { padding: 4px 8px; font-size: 13px; }
+  .demo { display: none; }
+  .hinweis11 { left: 12px; right: 12px; bottom: 12px; }
+}
+/* Zustand des Speicherns auf dem Handy als kleiner Punkt am Logo */
+.side .brand[data-status]::after { content: ''; display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-left: 6px; vertical-align: middle; background: var(--accent); }
+.side .brand[data-status=speichert]::after { background: var(--warn); }
+.side .brand[data-status=fehler]::after { background: #f0857a; }
+@media (min-width: 901px) { .side .brand[data-status]::after { display: none; } }`;
   document.head.appendChild(css);
   const box = document.createElement('div');
   box.className = 'konto11';

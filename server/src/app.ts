@@ -196,7 +196,7 @@ export function createHandler(db: Db, cfg: Config) {
   }
 
   /** Teamzentrale nur für Angemeldete. Schriften vom eigenen Server, dunkler Modus, Kontomenü in der Seitenleiste. */
-  let tzCache: { mtime: number; html: string } | null = null;
+  let tzCache: { mtime: number; script: string | null; html: string } | null = null;
   /** Name der gebauten Abgleich-Datei laut Vite-Manifest, z. B. assets/teamzentrale-AbC123.js. */
   const syncScript = (): string | null => {
     try {
@@ -207,8 +207,8 @@ export function createHandler(db: Db, cfg: Config) {
   function serveTeamzentrale(req: IncomingMessage, res: ServerResponse) {
     const file = cfg.teamzentrale;
     if (!currentUser(req) || !file || !existsSync(file)) { res.writeHead(302, { Location: '/' }); return res.end(); }
-    const mtime = statSync(file).mtimeMs;
-    if (!tzCache || tzCache.mtime !== mtime) tzCache = { mtime, html: prepareTeamzentrale(readFileSync(file, 'utf8'), syncScript()) };
+    const mtime = statSync(file).mtimeMs, script = syncScript();
+    if (!tzCache || tzCache.mtime !== mtime || tzCache.script !== script) tzCache = { mtime, script, html: prepareTeamzentrale(readFileSync(file, 'utf8'), script) };
     res.writeHead(200, { 'Content-Type': TYPES['.html'], 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'same-origin' });
     res.end(tzCache.html);
   }
@@ -244,7 +244,8 @@ export function prepareTeamzentrale(html: string, syncScript: string | null): st
   const einbinden = syncScript ? `<script type="module" src="/${syncScript}"></script>` : '';
   return html
     .replace(/<link[^>]*fonts\.googleapis\.com[^>]*>\s*/g, '')
-    .replace('</head>', '<link rel="stylesheet" href="/schriften/schriften.css">\n</head>')
+    .replace(' Die Seite speichert noch nichts.', '')
+    .replace('</head>', '<link rel="stylesheet" href="/schriften/schriften.css">\n<meta name="theme-color" content="#111816">\n<meta name="apple-mobile-web-app-capable" content="yes">\n<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">\n<meta name="apple-mobile-web-app-title" content="11Plan">\n</head>')
     .replace(/<html lang="de"( data-theme="[a-z]+")?>/, '<html lang="de" data-theme="dark">')
     .replace(/<\/body>(?![\s\S]*<\/body>)/, () => einbinden + '\n</body>');
 }
