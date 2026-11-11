@@ -22,6 +22,6 @@ export default defineConfig(({ mode }) => {
     plugins: [react()],
     server: { host: true, port: 5173, proxy: fdProxy },
     preview: { host: true, port: 4173, proxy: fdProxy },
-    test: { environment: 'node', include: ['src/**/*.test.ts'] },
+    test: { environment: 'node', include: ['src/**/*.test.ts', 'server/src/**/*.test.ts'] },
   };
 });

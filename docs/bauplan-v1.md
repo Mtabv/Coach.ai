@@ -38,7 +38,7 @@ Nicht in Version 1: Spielersicht, persönliche Links, Zu- und Absagen durch Spie
 
 ## Reihenfolge
 
-1. Grundgerüst: Login, Datenbank, Datendienst, Einstellungen, Kader.
+1. Grundgerüst: Login, Datenbank, Datendienst, Einstellungen, Kader. Login, Datenbank, Container und automatisches Aufspielen stehen (siehe `docs/server-betrieb.md`).
 2. Kalender und Training.
 3. Spieltag: Vorbereitung (Dossier aus der bestehenden App), Nachbereitung.
 4. Analytics, Kommunikation, Spielphilosophie.

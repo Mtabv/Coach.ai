@@ -5,10 +5,28 @@ import { initialState } from '../data/seed';
 
 export type SaveStatus = 'gespeichert' | 'speichert' | 'fehler';
 
+/** Wohin gespeichert wird: lokal im Browser (Vorschau) oder auf dem Server (Trainerteam). */
+export interface Persistence {
+  load(): AppState;
+  save(state: AppState): void | Promise<void>;
+  clear(): void;
+  /** Wartezeit nach der letzten Änderung, bevor gespeichert wird. */
+  debounceMs: number;
+}
+
+export const localPersistence: Persistence = {
+  load: () => loadOrInit(),
+  save: (s) => localStorageAdapter.save(s),
+  clear: () => localStorageAdapter.clear(),
+  debounceMs: 250,
+};
+
 interface StoreValue {
   state: AppState;
-  /** Ändert den Zustand über eine Kopie; wird automatisch lokal gespeichert. */
+  /** Ändert den Zustand über eine Kopie; wird automatisch gespeichert. */
   update: (fn: (draft: AppState) => void) => void;
+  /** Ersetzt den Zustand ohne erneutes Speichern (z. B. neuer Stand vom Server). */
+  replace: (s: AppState) => void;
   saveStatus: SaveStatus;
   lastSavedAt: Date | null;
   resetAll: () => void;
@@ -16,50 +34,47 @@ interface StoreValue {
 
 const StoreContext = createContext<StoreValue | null>(null);
 
-export function StoreProvider({ children }: { children: ReactNode }) {
-  const [state, setState] = useState<AppState>(() => loadOrInit());
+export function StoreProvider({ children, persistence = localPersistence }: { children: ReactNode; persistence?: Persistence }) {
+  const [state, setState] = useState<AppState>(() => persistence.load());
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('gespeichert');
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
   const timer = useRef<number | null>(null);
   const first = useRef(true);
+  const skipNext = useRef(false);
+
+  const doSave = useCallback(async (s: AppState) => {
+    try {
+      await persistence.save(s);
+      setSaveStatus('gespeichert');
+      setLastSavedAt(new Date());
+    } catch {
+      setSaveStatus('fehler');
+    }
+  }, [persistence]);
 
   useEffect(() => {
     if (first.current) {
       first.current = false;
-      try {
-        localStorageAdapter.save(state);
-      } catch {
-        setSaveStatus('fehler');
-      }
+      if (persistence === localPersistence) void doSave(state);
       return;
     }
+    if (skipNext.current) { skipNext.current = false; return; }
     setSaveStatus('speichert');
     if (timer.current) window.clearTimeout(timer.current);
-    timer.current = window.setTimeout(() => {
-      try {
-        localStorageAdapter.save(state);
-        setSaveStatus('gespeichert');
-        setLastSavedAt(new Date());
-      } catch {
-        setSaveStatus('fehler');
-      }
-    }, 250);
-  }, [state]);
+    timer.current = window.setTimeout(() => { void doSave(state); }, persistence.debounceMs);
+  }, [state, doSave, persistence]);
 
-  // Beim Verlassen der Seite sofort speichern
+  // Beim Verlassen der Seite sofort speichern (lokal; beim Server übernimmt das der letzte Speichervorgang)
+  const stateRef = useRef(state);
+  stateRef.current = state;
   useEffect(() => {
     const flush = () => {
-      try {
-        localStorageAdapter.save(stateRef.current);
-      } catch {
-        /* nicht verfügbar */
-      }
+      if (persistence !== localPersistence) return;
+      try { localStorageAdapter.save(stateRef.current); } catch { /* nicht verfügbar */ }
     };
     window.addEventListener('beforeunload', flush);
     return () => window.removeEventListener('beforeunload', flush);
-  }, []);
-  const stateRef = useRef(state);
-  stateRef.current = state;
+  }, [persistence]);
 
   const update = useCallback((fn: (draft: AppState) => void) => {
     setState((prev) => {
@@ -69,12 +84,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
-  const resetAll = useCallback(() => {
-    localStorageAdapter.clear();
-    setState(initialState());
-  }, []);
+  const replace = useCallback((s: AppState) => { skipNext.current = true; setState(s); }, []);
 
-  const value = useMemo(() => ({ state, update, saveStatus, lastSavedAt, resetAll }), [state, update, saveStatus, lastSavedAt, resetAll]);
+  const resetAll = useCallback(() => {
+    persistence.clear();
+    setState(initialState());
+  }, [persistence]);
+
+  const value = useMemo(() => ({ state, update, replace, saveStatus, lastSavedAt, resetAll }), [state, update, replace, saveStatus, lastSavedAt, resetAll]);
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;
 }
 

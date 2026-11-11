@@ -159,13 +159,13 @@ table { border-collapse: collapse; width: 100%; font-size: 15px; } td, th { text
 
   <section class="step" id="s10"><div class="step-h"><span class="no">10</span><h3>Coach.AI herunterladen und starten</h3><label><input type="checkbox"> erledigt</label></div>
     <p>Ich lege dafür im Repository einen Ordner <code>deploy</code> an. Darin steckt alles: Coach.AI, die Datenbank, der Datendienst und ein Webserver, der das HTTPS-Zertifikat selbst besorgt. Auf dem Server:</p>
-    <div class="cmd">git clone https://github.com/mtabv/coach.ai.git /opt/coachai && cd /opt/coachai/deploy && cp .env.beispiel .env</div>
+    <div class="cmd">git clone -b main https://github.com/mtabv/coach.ai.git /opt/coachai && cd /opt/coachai/deploy && cp .env.beispiel .env</div>
     <p>Die Einstellungen öffnen und die Domain eintragen. Passwörter erzeugst du direkt auf dem Server, nie im Chat:</p>
     <div class="cmd">openssl rand -hex 24</div>
     <div class="cmd">nano .env</div>
     <p>Starten:</p>
-    <div class="cmd">docker compose up -d</div>
-    <p>Nach ein bis zwei Minuten ist Coach.AI unter deiner Adresse erreichbar. Beim ersten Aufruf legst du dein Trainer-Konto an und lädst deinen Co-Trainer ein.</p>
+    <div class="cmd">docker compose up -d --build</div>
+    <p>Der erste Start dauert etwa fünf Minuten, weil alles einmal gebaut wird. Danach ist Coach.AI unter deiner Adresse erreichbar. Beim ersten Aufruf gibst du den Einrichtungsschlüssel aus der <code>.env</code> ein und legst dein Trainer-Konto an. Über den Kreis mit deinen Initialen oben rechts erzeugst du dann den Einladungslink für deinen Co-Trainer.</p>
     <div class="note">Ist das Repository auf GitHub privat, klappt das Herunterladen so nicht. Sag mir dann Bescheid, ich ergänze einen Lesezugang nur für den Server.</div>
   </section>
 

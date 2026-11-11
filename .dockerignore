@@ -1,0 +1,7 @@
+node_modules
+dist
+server/dist
+.git
+deploy/.env
+deploy/daten
+**/__pycache__

@@ -1,0 +1,12 @@
+# Datendienst: Crawler „fussball_de_api“ (MIT) mit der Coach.AI-Erweiterung. Nur intern erreichbar.
+FROM python:3.13-slim
+ARG CRAWLER_STAND=24d83d5
+RUN apt-get update && apt-get install -y --no-install-recommends git && rm -rf /var/lib/apt/lists/*
+WORKDIR /app
+RUN git clone https://github.com/Zetabytes/fussball_de_api.git . && git checkout "$CRAWLER_STAND" \
+ && pip install --no-cache-dir -r requirements.txt && mkdir -p /app/logos /cache && chown nobody /app/logos /cache
+COPY tools/fussballde-dienst /app/coachai
+ENV PYTHONPATH=/app/coachai CACHE_DIR=/cache
+USER nobody
+EXPOSE 8000
+CMD ["uvicorn", "coachai_dienst:app", "--host", "0.0.0.0", "--port", "8000"]

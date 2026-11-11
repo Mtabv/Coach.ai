@@ -1,0 +1,57 @@
+# Prüft jede Änderung. Auf dem Hauptzweig wird danach automatisch auf den eigenen Server aufgespielt.
+# Benötigte Repository-Secrets (nur in GitHub hinterlegt, nie im Code):
+#   DEPLOY_HOST, DEPLOY_USER, DEPLOY_SSH_KEY, optional DEPLOY_KNOWN_HOSTS
+name: Prüfen und aufspielen
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency: { group: deploy, cancel-in-progress: false }
+
+jobs:
+  pruefen:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npx tsc -p server/tsconfig.json --noEmit
+      - run: npm test
+
+  aufspielen:
+    needs: pruefen
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    env:
+      HOST: ${{ secrets.DEPLOY_HOST }}
+      USER: ${{ secrets.DEPLOY_USER }}
+    steps:
+      - name: Server eingerichtet?
+        id: bereit
+        run: |
+          if [ -z "$HOST" ]; then echo "Noch kein Server hinterlegt, Aufspielen übersprungen."; echo "los=nein" >> "$GITHUB_OUTPUT"; else echo "los=ja" >> "$GITHUB_OUTPUT"; fi
+      - name: Zugang vorbereiten
+        if: steps.bereit.outputs.los == 'ja'
+        env:
+          KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          KNOWN: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          mkdir -p ~/.ssh && chmod 700 ~/.ssh
+          printf '%s\n' "$KEY" > ~/.ssh/id_ed25519 && chmod 600 ~/.ssh/id_ed25519
+          if [ -n "$KNOWN" ]; then printf '%s\n' "$KNOWN" > ~/.ssh/known_hosts; else ssh-keyscan -t ed25519 "$HOST" > ~/.ssh/known_hosts; fi
+      - name: Aufspielen
+        if: steps.bereit.outputs.los == 'ja'
+        run: |
+          ssh "$USER@$HOST" 'set -e
+            cd /opt/coachai
+            git fetch --quiet origin main
+            git reset --hard origin/main
+            cd deploy
+            docker compose up -d --build --remove-orphans
+            docker image prune -f >/dev/null
+            docker compose ps'

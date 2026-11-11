@@ -1,5 +1,6 @@
 import { href, useRoute } from './router';
-import { StoreProvider, useStore } from './state/store';
+import { useStore } from './state/store';
+import { KontoMenue, Zugang, type Sitzung } from './ui/zugang/Zugang';
 import { ConfirmAction } from './ui/components';
 import { AnalyticsPage, AnalyticsPrintPage } from './ui/pages/AnalyticsPage';
 import { ArchiveDossierPage, ArchivePage } from './ui/pages/ArchivePage';
@@ -11,13 +12,11 @@ import { NewTeamPage, TeamPage } from './ui/pages/TeamPage';
 
 export default function App() {
   return (
-    <StoreProvider>
-      <Shell />
-    </StoreProvider>
+    <Zugang>{(sitzung) => <Shell sitzung={sitzung} />}</Zugang>
   );
 }
 
-function Shell() {
+function Shell({ sitzung }: { sitzung: Sitzung | null }) {
   const route = useRoute();
   const { state, update, saveStatus, resetAll } = useStore();
   if (route.name === 'druck') return <PrintPage dossierId={route.dossierId} />;
@@ -28,9 +27,11 @@ function Shell() {
 
   return (
     <div className="app">
-      <div className="preview-banner" role="note">
-        Vorschau · lokale Speicherung im Browser · Beispieldaten sind gekennzeichnet · keine Online-Recherche
-      </div>
+      {!sitzung && (
+        <div className="preview-banner" role="note">
+          Vorschau · lokale Speicherung im Browser · Beispieldaten sind gekennzeichnet · keine Online-Recherche
+        </div>
+      )}
       <header className="topbar">
         <a className="brand" href={href({ name: 'start' })} aria-label="Coach.AI Startseite">
           <span className="brand-mark" aria-hidden>
@@ -76,7 +77,8 @@ function Shell() {
               ))}
             </select>
           )}
-          <span className={`save-dot ${saveStatus}`} title={saveStatus === 'gespeichert' ? 'Lokal gespeichert' : saveStatus === 'speichert' ? 'Speichert …' : 'Speichern fehlgeschlagen'} aria-label={`Speicherstatus: ${saveStatus}`} />
+          <span className={`save-dot ${saveStatus}`} title={saveStatus === 'gespeichert' ? (sitzung ? 'Auf dem Server gespeichert' : 'Lokal gespeichert') : saveStatus === 'speichert' ? 'Speichert …' : 'Speichern fehlgeschlagen'} aria-label={`Speicherstatus: ${saveStatus}`} />
+          {sitzung && <KontoMenue sitzung={sitzung} />}
         </div>
       </header>
       <main className="main">
@@ -90,8 +92,8 @@ function Shell() {
         {route.name === 'archivDossier' && <ArchiveDossierPage dossierId={route.dossierId} />}
       </main>
       <footer className="footer">
-        <span>Coach.AI · Vorschau 0.1 · Daten bleiben in diesem Browser</span>
-        <ConfirmAction
+        <span>{sitzung ? 'Coach.AI · Trainerteam · gemeinsamer Stand auf dem eigenen Server' : 'Coach.AI · Vorschau 0.1 · Daten bleiben in diesem Browser'}</span>
+        {!sitzung && <ConfirmAction
           className="link-btn"
           label="Vorschau vollständig zurücksetzen"
           confirmLabel="Alle Daten inkl. bestätigter Dossiers löschen? Erneut tippen"
@@ -99,7 +101,7 @@ function Shell() {
             resetAll();
             window.location.hash = '#/';
           }}
-        />
+        />}
       </footer>
     </div>
   );

@@ -7,3 +7,5 @@ Coach.ai-Vorschau.zip
 .env.local
 .env
 __pycache__/
+deploy/daten/
+server/dist/

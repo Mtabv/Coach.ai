@@ -10,7 +10,9 @@
     "preview": "vite preview",
     "typecheck": "tsc -b",
     "test": "vitest run",
-    "e2e": "node scripts/e2e.mjs"
+    "e2e": "node scripts/e2e.mjs",
+    "build:server": "tsc -p server/tsconfig.json",
+    "server": "node server/dist/main.js"
   },
   "dependencies": {
     "pptxgenjs": "^4.0.1",

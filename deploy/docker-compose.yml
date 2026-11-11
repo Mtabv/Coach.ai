@@ -1,0 +1,48 @@
+# Coach.AI Version 1 (Trainerteam). Läuft getrennt von allen anderen Diensten auf eigenem Server.
+# Start: cd /opt/coachai/deploy && docker compose up -d --build
+name: coachai
+
+services:
+  app:
+    build: { context: .., dockerfile: deploy/Dockerfile }
+    restart: unless-stopped
+    environment:
+      COACHAI_EINRICHTUNGSSCHLUESSEL: ${COACHAI_EINRICHTUNGSSCHLUESSEL:?fehlt in .env}
+      COACHAI_DATENDIENST_KEY: ${COACHAI_DATENDIENST_KEY:?fehlt in .env}
+      COACHAI_DATENDIENST_URL: http://datendienst:8000
+      COACHAI_ADRESSE: https://${COACHAI_DOMAIN:?fehlt in .env}
+      COACHAI_HTTPS: "1"
+    volumes:
+      - app-daten:/daten
+    depends_on: [datendienst]
+    networks: [intern]
+
+  datendienst:
+    build: { context: .., dockerfile: deploy/Dockerfile.datendienst }
+    restart: unless-stopped
+    environment:
+      API_KEY: ${COACHAI_DATENDIENST_KEY}
+    volumes:
+      - datendienst-cache:/cache
+    networks: [intern]
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports: ["80:80", "443:443", "443:443/udp"]
+    environment:
+      COACHAI_DOMAIN: ${COACHAI_DOMAIN}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-daten:/data
+    depends_on: [app]
+    networks: [intern]
+
+networks:
+  intern: {}
+
+# Daten liegen in Docker-Volumes auf dem Server (von den Hetzner-Backups erfasst).
+volumes:
+  app-daten:
+  datendienst-cache:
+  caddy-daten:
