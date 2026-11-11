@@ -79,3 +79,20 @@ docker compose logs caddy    # Zertifikat und Domain
 
 - `npm run dev`: Oberfläche ohne Server. Speichert im Browser, wie bisher.
 - `npm run build && npm run build:server`, dann `COACHAI_HTTPS=0 COACHAI_FRONTEND=dist COACHAI_EINRICHTUNGSSCHLUESSEL=test npm run server`: App mit Login auf Port 3000.
+
+## Absicherung
+
+Angriffsversuche lassen sich bei einem Server im Internet nicht verhindern: Jede öffentliche Adresse wird innerhalb von Minuten automatisch abgetastet. Ziel ist, dass diese Versuche ins Leere laufen.
+
+| Ebene | Maßnahme |
+|---|---|
+| Netz | Hetzner-Firewall vor dem Server: eingehend nur 22, 80, 443 (TCP) und 443 (UDP). Docker kann diese Firewall nicht umgehen, weil sie außerhalb des Servers liegt. Nur Caddy hat Ports nach außen; App und Datendienst sind nur intern erreichbar. |
+| Zugang zum Server | Nur mit SSH-Schlüssel, Passwort-Login aus. Rateversuche gegen Port 22 sind damit aussichtslos und stehen nur im Protokoll. |
+| Updates | Sicherheitsupdates automatisch, Neustart bei Bedarf nachts um 4 Uhr. |
+| Konten | Zwei-Faktor-Anmeldung bei Hetzner und GitHub. |
+| Coach.AI | HTTPS mit HSTS, Passwörter als scrypt-Hash, Bremse nach 8 Fehlversuchen, Cookies `HttpOnly`/`Secure`/`SameSite=Strict`, Schutzkopf gegen fremde Seiten, erstes Konto nur mit Einrichtungsschlüssel. |
+| Ernstfall | Hetzner-Backups (7 Tage) und eigene Datenbanksicherung (14 Tage). |
+
+Bewusst nicht gemacht:
+- **SSH nur von der eigenen IP:** Die Adresse zu Hause wechselt, und GitHub braucht für das Aufspielen ebenfalls Port 22.
+- **fail2ban:** Bei reinem Schlüssel-Login bringt es kaum zusätzlichen Schutz.

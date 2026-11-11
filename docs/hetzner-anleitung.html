@@ -123,11 +123,13 @@ table { border-collapse: collapse; width: 100%; font-size: 15px; } td, th { text
     <div class="cmd">apt update && apt upgrade -y</div>
     <p>Sicherheitsupdates künftig automatisch einspielen lassen. Bei der Frage „Yes“ wählen:</p>
     <div class="cmd">apt install -y unattended-upgrades && dpkg-reconfigure -plow unattended-upgrades</div>
+    <p>Braucht ein Update einen Neustart, startet der Server nachts um 4 Uhr kurz neu. Coach.AI ist danach nach etwa einer Minute wieder da:</p>
+    <div class="cmd">printf 'Unattended-Upgrade::Automatic-Reboot "true";\nUnattended-Upgrade::Automatic-Reboot-Time "04:00";\n' > /etc/apt/apt.conf.d/52coachai</div>
   </section>
 
   <section class="step" id="s6"><div class="step-h"><span class="no">6</span><h3>Firewall und Backups bei Hetzner einschalten</h3><label><input type="checkbox"> erledigt</label></div>
     <ol>
-      <li>In der Cloud Console unter <b>Firewalls</b> eine neue Firewall anlegen. Eingehend nur erlauben: <b>TCP 22</b> (SSH), <b>TCP 80</b> und <b>TCP 443</b> (Webseite). Die Firewall dem Server zuweisen.</li>
+      <li>In der Cloud Console unter <b>Firewalls</b> eine neue Firewall anlegen. Eingehend nur erlauben: <b>TCP 22</b> (SSH), <b>TCP 80</b>, <b>TCP 443</b> und <b>UDP 443</b> (Webseite), dazu ICMP (Ping). Die Firewall dem Server zuweisen.</li>
       <li>Beim Server unter <b>Backups</b> die automatischen Backups einschalten. Das kostet 20 % des Serverpreises und rettet im Ernstfall alles.</li>
     </ol>
   </section>
@@ -135,6 +137,9 @@ table { border-collapse: collapse; width: 100%; font-size: 15px; } td, th { text
   <section class="step" id="s7"><div class="step-h"><span class="no">7</span><h3>Login per Passwort abschalten</h3><label><input type="checkbox"> erledigt</label></div>
     <div class="note"><b>Erst machen, wenn Schritt 4 sicher funktioniert.</b> Lass das Fenster offen und teste danach in einem <b>zweiten</b> Fenster, ob <code>ssh root@…</code> noch geht. Sonst sperrst du dich aus. Notfalls hilft dann immer noch die Hetzner-Konsole aus Schritt 3.</div>
     <div class="cmd">echo "PasswordAuthentication no" > /etc/ssh/sshd_config.d/00-coachai.conf && systemctl restart ssh</div>
+    <p>Prüfen, ob es wirkt. Die Ausgabe muss <code>passwordauthentication no</code> enthalten:</p>
+    <div class="cmd">sshd -T | grep -i passwordauthentication</div>
+    <div class="ok"><b>Genauso wichtig wie der Server: deine Konten.</b> Schalte die Zwei-Faktor-Anmeldung ein, bei Hetzner (accounts.hetzner.com → Sicherheit) und bei GitHub (Settings → Password and authentication). Wer eines dieser Konten übernimmt, kommt an alles, egal wie gut der Server abgesichert ist.</div>
   </section>
 
   <section class="step" id="s8"><div class="step-h"><span class="no">8</span><h3>Docker installieren</h3><label><input type="checkbox"> erledigt</label></div>
