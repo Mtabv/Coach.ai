@@ -5,7 +5,7 @@ import type { AppState } from '../domain/types';
  * (lokale Entwicklung, Vorschau als Artefakt), bleibt alles wie bisher im Browser.
  */
 export interface SessionUser { id: number; name: string; email: string; role: 'trainer' | 'co-trainer' }
-export type ServerStatus = { mode: 'lokal' } | { mode: 'server'; eingerichtet: boolean; nutzer: SessionUser | null };
+export type ServerStatus = { mode: 'lokal' } | { mode: 'server'; eingerichtet: boolean; nutzer: SessionUser | null; teamzentrale: boolean };
 
 export class ApiError extends Error { constructor(public status: number, message: string, public data?: Record<string, unknown>) { super(message); } }
 
@@ -26,7 +26,7 @@ export async function serverStatus(): Promise<ServerStatus> {
     const r = await fetch('/api/status', { credentials: 'same-origin' });
     if (!r.ok || !(r.headers.get('content-type') || '').includes('application/json')) return { mode: 'lokal' };
     const d = await r.json();
-    return { mode: 'server', eingerichtet: !!d.eingerichtet, nutzer: d.nutzer ?? null };
+    return { mode: 'server', eingerichtet: !!d.eingerichtet, nutzer: d.nutzer ?? null, teamzentrale: !!d.teamzentrale };
   } catch {
     return { mode: 'lokal' };
   }

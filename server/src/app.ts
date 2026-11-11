@@ -1,5 +1,5 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
-import { createReadStream, existsSync, statSync } from 'node:fs';
+import { createReadStream, existsSync, readFileSync, statSync } from 'node:fs';
 import { extname, join, normalize, resolve } from 'node:path';
 import type { Db } from './db.js';
 import {
@@ -19,6 +19,11 @@ export interface Config {
   secureCookies: boolean;
   /** Öffentliche Adresse für Einladungslinks, z. B. https://coach.example.de */
   publicUrl: string;
+  /**
+   * Gebaute Teamzentrale (prototype/bauen.sh) mit den echten Mannschaftsdaten. Liegt nur auf dem Server,
+   * nie im Repository. Wird nach der Anmeldung unter /teamzentrale ausgeliefert.
+   */
+  teamzentrale?: string;
 }
 
 const COOKIE = 'coachai_session';
@@ -73,7 +78,7 @@ export function createHandler(db: Db, cfg: Config) {
 
     if (path === '/api/status' && m === 'GET') {
       const u = currentUser(req);
-      return send(res, 200, { eingerichtet: countUsers(db) > 0, nutzer: u ? publicUser(u) : null });
+      return send(res, 200, { eingerichtet: countUsers(db) > 0, nutzer: u ? publicUser(u) : null, teamzentrale: !!cfg.teamzentrale && existsSync(cfg.teamzentrale) });
     }
     if (path === '/api/einrichten' && m === 'POST') {
       if (countUsers(db) > 0) throw new HttpError(409, '11Plan ist bereits eingerichtet.');
@@ -169,6 +174,17 @@ export function createHandler(db: Db, cfg: Config) {
     res.end(buf);
   }
 
+  /** Teamzentrale nur für Angemeldete. Schriften vom eigenen Server, dunkler Modus, Kontomenü in der Seitenleiste. */
+  let tzCache: { mtime: number; html: string } | null = null;
+  function serveTeamzentrale(req: IncomingMessage, res: ServerResponse) {
+    const file = cfg.teamzentrale;
+    if (!currentUser(req) || !file || !existsSync(file)) { res.writeHead(302, { Location: '/' }); return res.end(); }
+    const mtime = statSync(file).mtimeMs;
+    if (!tzCache || tzCache.mtime !== mtime) tzCache = { mtime, html: prepareTeamzentrale(readFileSync(file, 'utf8')) };
+    res.writeHead(200, { 'Content-Type': TYPES['.html'], 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'same-origin' });
+    res.end(tzCache.html);
+  }
+
   function serveStatic(res: ServerResponse, path: string) {
     const root = resolve(cfg.publicDir);
     let file = normalize(join(root, decodeURIComponent(path)));
@@ -185,6 +201,7 @@ export function createHandler(db: Db, cfg: Config) {
     try {
       if (url.pathname.startsWith('/api/')) return await api(req, res, url.pathname);
       if (url.pathname.startsWith('/datenquelle/fussballde/')) return await proxy(req, res, url.pathname, url.search);
+      if (url.pathname === '/teamzentrale') return serveTeamzentrale(req, res);
       return serveStatic(res, url.pathname);
     } catch (e) {
       if (e instanceof HttpError) return send(res, e.status, { fehler: e.message });
@@ -192,4 +209,42 @@ export function createHandler(db: Db, cfg: Config) {
       return send(res, 500, { fehler: 'Interner Fehler.' });
     }
   };
+}
+
+const KONTO_SNIPPET = `<style>
+.side .who { display: none; }
+.konto11 { border-top: 1px solid var(--line); margin-top: 10px; padding: 10px 10px 0; display: grid; gap: 6px; font-size: 14px; color: var(--muted); }
+.konto11 .row { display: flex; flex-wrap: wrap; gap: 6px; }
+.konto11 input { width: 100%; font-size: 12px; }
+</style>
+<script>
+(function () {
+  var h = { 'Content-Type': 'application/json', 'X-CoachAI': '1' };
+  fetch('/api/status', { credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (st) {
+    if (!st.nutzer) { location.href = '/'; return; }
+    var box = document.createElement('div');
+    box.className = 'konto11';
+    box.innerHTML = '<div>Angemeldet als <b></b></div><div class="row"><button class="btn small ghost" data-k="einladen">Trainer einladen</button><button class="btn small ghost" data-k="ab">Abmelden</button></div><div data-k="link" hidden></div><div class="note">Eingaben werden noch nicht gespeichert.</div>';
+    box.querySelector('b').textContent = st.nutzer.name;
+    (document.querySelector('.side') || document.body).appendChild(box);
+    box.addEventListener('click', function (e) {
+      var k = e.target && e.target.getAttribute('data-k');
+      if (k === 'ab') fetch('/api/abmelden', { method: 'POST', headers: h, credentials: 'same-origin' }).then(function () { location.href = '/'; });
+      if (k === 'einladen') fetch('/api/einladungen', { method: 'POST', headers: h, credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (d) {
+        var el = box.querySelector('[data-k=link]'); el.hidden = false; el.textContent = 'Link, 7 Tage und nur einmal gültig:';
+        var i = document.createElement('input'); i.type = 'text'; i.readOnly = true; i.value = d.link || d.fehler; el.appendChild(i); i.select();
+        if (d.link && navigator.clipboard) navigator.clipboard.writeText(d.link).then(function () { el.firstChild.textContent = 'Link kopiert, 7 Tage und nur einmal gültig:'; }, function () {});
+      });
+    });
+  });
+})();
+</script>`;
+
+/** Passt die gebaute Teamzentrale für den Server an, ohne die Datei selbst zu verändern. */
+export function prepareTeamzentrale(html: string): string {
+  return html
+    .replace(/<link[^>]*fonts\.googleapis\.com[^>]*>\s*/g, '')
+    .replace('</head>', '<link rel="stylesheet" href="/schriften/schriften.css">\n</head>')
+    .replace(/<html lang="de"( data-theme="[a-z]+")?>/, '<html lang="de" data-theme="dark">')
+    .replace(/<\/body>(?![\s\S]*<\/body>)/, KONTO_SNIPPET + '\n</body>');
 }

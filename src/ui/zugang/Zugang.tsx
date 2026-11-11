@@ -31,6 +31,8 @@ export function Zugang({ children }: { children: (sitzung: Sitzung | null) => Re
     const token = einladungsToken();
     if (!st.eingerichtet) return setPhase({ p: 'einrichten' });
     if (!st.nutzer) return setPhase(token ? { p: 'einladung', token } : { p: 'anmelden' });
+    // Liegt die Teamzentrale auf dem Server, ist sie die eigentliche Anwendung.
+    if (st.teamzentrale) { window.location.replace('/teamzentrale'); return; }
     const start = await loadServerState();
     // Leerer Server: vorhandene Daten aus diesem Browser übernehmen, sonst neu beginnen.
     const lokal = localStorageAdapter.load();

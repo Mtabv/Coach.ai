@@ -16,6 +16,19 @@ Hetzner Cloud **CPX22** (2 vCPU, 4 GB RAM). Der Server baut bei jedem Update die
 
 Alle Dateien liegen in `deploy/`. Die Einstellungen stehen in `deploy/.env`, die nur auf dem Server existiert (Vorlage: `deploy/.env.beispiel`).
 
+## Teamzentrale
+
+Nach der Anmeldung zeigt 11Plan die Teamzentrale, also die klickbare Fassung mit den echten Daten der Mannschaft (gebaut mit `prototype/bauen.sh`). Die Datei enthält Namen und Fotos und liegt deshalb **nur auf dem Server**, nie im Repository:
+
+```bash
+# Auf dem Laptop: Datei auf den Server kopieren
+scp ~/Downloads/11plan-tsg.html root@116.203.28.104:/root/
+# Auf dem Server: in die App legen
+cd /opt/coachai/deploy && docker compose cp /root/11plan-tsg.html app:/daten/teamzentrale.html
+```
+
+Ein Neustart ist nicht nötig. Der Server passt die Datei beim Ausliefern an: dunkler Modus, Schriften vom eigenen Server, Kontomenü mit „Trainer einladen“ und „Abmelden“. Solange sie fehlt, erscheint die ältere Oberfläche. Eingaben in der Teamzentrale werden noch nicht gespeichert; das ist der nächste Ausbauschritt.
+
 ## Login
 
 Es gibt keinen fremden Anmeldedienst. 11Plan verwaltet die Konten selbst. Alle im Trainerteam heißen „Trainer“ und haben dieselben Rechte.

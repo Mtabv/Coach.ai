@@ -6,7 +6,7 @@
   "description": "11Plan – Spieltagsdossiers für Fußballtrainer (Vorschau)",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "tsc -b && vite build && node scripts/schriften.mjs",
     "preview": "vite preview",
     "typecheck": "tsc -b",
     "test": "vitest run",

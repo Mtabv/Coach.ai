@@ -17,7 +17,8 @@ beforeAll(async () => {
   upstream = createServer((req, res) => { upstreamKey = String(req.headers['x-api-key']); res.writeHead(200, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ pfad: req.url })); });
   await new Promise<void>((r) => upstream.listen(0, r));
   const up = upstream.address() as { port: number };
-  server = createServer(createHandler(db, { publicDir: dir, setupToken: 'einrichten-123', datendienstUrl: `http://127.0.0.1:${up.port}`, datendienstKey: 'geheim', secureCookies: false, publicUrl: 'https://coach.example.de' }));
+  writeFileSync(join(dir, 'tz.html'), '<!doctype html><html lang="de"><head><link href="https://fonts.googleapis.com/css2?x" rel="stylesheet"></head><body><aside class="side">Teamzentrale</aside></body></html>');
+  server = createServer(createHandler(db, { teamzentrale: join(dir, 'tz.html'), publicDir: dir, setupToken: 'einrichten-123', datendienstUrl: `http://127.0.0.1:${up.port}`, datendienstKey: 'geheim', secureCookies: false, publicUrl: 'https://coach.example.de' }));
   await new Promise<void>((r) => server.listen(0, r));
   base = `http://127.0.0.1:${(server.address() as { port: number }).port}`;
 });
@@ -48,7 +49,7 @@ describe('Server', () => {
   const trainer: Jar = { cookie: '' }, co: Jar = { cookie: '' };
 
   it('ist anfangs nicht eingerichtet und braucht für das erste Konto den Schlüssel', async () => {
-    expect((await call('/api/status')).json).toEqual({ eingerichtet: false, nutzer: null });
+    expect((await call('/api/status')).json).toEqual({ eingerichtet: false, nutzer: null, teamzentrale: true });
     expect((await call('/api/einrichten', { method: 'POST', body: { einrichtungsschluessel: 'falsch', name: 'Manuel', email: 'm@example.de', passwort: 'sehr-geheim-123' } })).status).toBe(403);
     const r = await call('/api/einrichten', { method: 'POST', jar: trainer, body: { einrichtungsschluessel: 'einrichten-123', name: 'Manuel', email: 'm@example.de', passwort: 'sehr-geheim-123' } });
     expect(r.status).toBe(201);
@@ -102,6 +103,18 @@ describe('Server', () => {
     expect(r.status).toBe(200);
     expect(r.json.pfad).toBe('/api/coachai/team/x/liga?a=1');
     expect(upstreamKey).toBe('geheim');
+  });
+
+  it('zeigt die Teamzentrale nur angemeldet, dunkel und ohne Google-Schriften', async () => {
+    const anon = await fetch(base + '/teamzentrale', { redirect: 'manual' });
+    expect(anon.status).toBe(302);
+    expect((await call('/api/status', { jar: trainer })).json.teamzentrale).toBe(true);
+    const r = await fetch(base + '/teamzentrale', { headers: { Cookie: trainer.cookie } });
+    const html = await r.text();
+    expect(html).toContain('data-theme="dark"');
+    expect(html).toContain('konto11');
+    expect(html).toContain('/schriften/schriften.css');
+    expect(html).not.toContain('googleapis');
   });
 
   it('liefert das Frontend aus und lässt keine Pfade außerhalb zu', async () => {
