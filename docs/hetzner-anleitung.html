@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Coach.AI auf den Hetzner-Server</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Source+Sans+3:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+/* Leitfaden: eine Spalte zum Abarbeiten, Schritte als nummerierte Karten mit Häkchen, Befehle zum Kopieren. */
+:root {
+  --bg: #f3f5f4; --panel: #ffffff; --ink: #17221d; --muted: #5b6a63; --line: #d9e0dc;
+  --accent: #1f6f4a; --accent-soft: #e2f0e8; --warn: #9a6a00; --warn-soft: #fff4d6; --code: #17221d; --code-ink: #e6ede9;
+  --display: "Barlow Condensed", "Arial Narrow", sans-serif; --body: "Source Sans 3", "Segoe UI", system-ui, sans-serif; --mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #111816; --panel: #19221f; --ink: #e6ede9; --muted: #9baba3; --line: #2c3833; --accent: #5cc08e; --accent-soft: #1d3329; --warn: #e7b84a; --warn-soft: #362c12; --code: #0b100e; color-scheme: dark; } }
+:root[data-theme="dark"] { --bg: #111816; --panel: #19221f; --ink: #e6ede9; --muted: #9baba3; --line: #2c3833; --accent: #5cc08e; --accent-soft: #1d3329; --warn: #e7b84a; --warn-soft: #362c12; --code: #0b100e; color-scheme: dark; }
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: var(--bg); color: var(--ink); font: 17px/1.55 var(--body); }
+main { max-width: 860px; margin: 0 auto; padding: 28px 18px 60px; display: grid; gap: 18px; }
+h1, h2, h3 { font-family: var(--display); font-weight: 700; margin: 0; text-wrap: balance; }
+h1 { font-size: 40px; line-height: 1.05; } h2 { font-size: 28px; margin-top: 14px; } h3 { font-size: 21px; }
+p { margin: 0; max-width: 68ch; }
+.lead { font-size: 19px; color: var(--muted); }
+.box { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; display: grid; gap: 10px; }
+.note { background: var(--warn-soft); border-left: 4px solid var(--warn); border-radius: 8px; padding: 10px 14px; }
+.ok { background: var(--accent-soft); border-left: 4px solid var(--accent); border-radius: 8px; padding: 10px 14px; }
+.parts { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; }
+.parts div { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+.parts b { display: block; font-family: var(--display); font-size: 19px; }
+.parts span { color: var(--muted); font-size: 15px; }
+.step { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; display: grid; gap: 10px; }
+.step.done { border-color: var(--accent); }
+.step-h { display: flex; align-items: center; gap: 12px; }
+.no { flex: none; width: 34px; height: 34px; border-radius: 50%; background: var(--accent); color: #fff; display: grid; place-items: center; font: 700 16px/1 var(--body); }
+.step.done .no { background: var(--muted); }
+.step-h h3 { flex: 1; }
+.step-h label { font-size: 14px; color: var(--muted); display: flex; gap: 6px; align-items: center; cursor: pointer; white-space: nowrap; }
+.time { font-size: 14px; color: var(--muted); }
+ol, ul { margin: 0; padding-left: 22px; display: grid; gap: 6px; }
+.cmd { position: relative; background: var(--code); color: var(--code-ink); border-radius: 8px; padding: 12px 86px 12px 14px; font: 14px/1.5 var(--mono); white-space: pre-wrap; overflow-wrap: anywhere; }
+.cmd button { position: absolute; top: 8px; right: 8px; border: 1px solid #3a4a42; background: #22302a; color: #e6ede9; border-radius: 6px; font: 600 13px var(--body); padding: 4px 10px; cursor: pointer; }
+.cmd button:focus-visible, .step-h input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+code { font: 14px var(--mono); background: var(--bg); border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; }
+.tabs { display: flex; gap: 6px; flex-wrap: wrap; }
+.tabs button { border: 1px solid var(--line); background: var(--panel); color: var(--ink); border-radius: 20px; padding: 4px 14px; cursor: pointer; font: inherit; font-size: 15px; }
+.tabs button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+[data-os] { display: none; } body.os-win [data-os="win"], body.os-mac [data-os="mac"] { display: grid; }
+.prog { position: sticky; top: 0; z-index: 2; background: var(--bg); padding: 8px 0; display: flex; gap: 10px; align-items: center; font-size: 15px; color: var(--muted); }
+.bar { flex: 1; height: 8px; background: var(--line); border-radius: 4px; overflow: hidden; } .bar span { display: block; height: 100%; background: var(--accent); width: 0; }
+dl { margin: 0; display: grid; grid-template-columns: max-content 1fr; gap: 6px 14px; } dt { font-weight: 700; } dd { margin: 0; }
+table { border-collapse: collapse; width: 100%; font-size: 15px; } td, th { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+@media (max-width: 520px) { h1 { font-size: 32px; } dl { grid-template-columns: 1fr; } .cmd { padding-right: 14px; padding-top: 40px; } }
+</style>
+</head>
+<body class="os-win">
+<main>
+  <div>
+    <h1>Coach.AI auf deinen Hetzner-Server</h1>
+    <p class="lead">Schritt für Schritt, ohne Vorkenntnisse. Du arbeitest die Schritte der Reihe nach ab und hakst sie ab. Befehle kopierst du mit „Kopieren“ und fügst sie ein.</p>
+  </div>
+
+  <div class="box">
+    <h3>Worum es geht</h3>
+    <p>Am Ende läuft Coach.AI unter einer eigenen Adresse, etwa <code>https://coach.deine-domain.de</code>, mit Login für dich und deinen Co-Trainer. Die Daten liegen auf deinem Server, nicht bei Dritten. Dafür richten wir vier Dinge ein:</p>
+    <div class="parts">
+      <div><b>Schlüssel</b><span>Dein Laptop bekommt einen digitalen Schlüssel für den Server, statt eines Passworts.</span></div>
+      <div><b>Server</b><span>Updates, Firewall und Backups, damit er sicher läuft.</span></div>
+      <div><b>Adresse</b><span>Eine Subdomain zeigt auf den Server, mit verschlüsselter Verbindung (HTTPS).</span></div>
+      <div><b>Automatik</b><span>Neue Versionen kommen von GitHub automatisch auf den Server.</span></div>
+    </div>
+    <div class="note"><b>Wichtig:</b> Passwörter und Schlüssel schickst du nie in den Chat, auch mir nicht. Wo ein Geheimnis gebraucht wird, legst du es selbst auf dem Server oder in GitHub ab. Ich arbeite nur mit dem Code im Repository.</div>
+  </div>
+
+  <div class="box">
+    <h3>Ehrlich zum Stand</h3>
+    <p>Teil A und C kannst du sofort machen. Teil B, also Coach.AI selbst aufspielen, geht, sobald ich die Server-Fassung gebaut habe: mit Login, gemeinsamer Datenbank und dem Datendienst. Der Entwurf, den du gerade anklickst, speichert noch im Browser und ist dafür noch nicht gedacht.</p>
+  </div>
+
+  <div class="tabs" role="group" aria-label="Betriebssystem des Laptops"><span class="time" style="align-self:center">Dein Laptop:</span><button data-set="win" class="on">Windows</button><button data-set="mac">Mac</button></div>
+  <div class="prog"><span id="progtxt">0 von 0 erledigt</span><div class="bar"><span id="progbar"></span></div></div>
+
+  <h2>Teil A: Laptop und Server vorbereiten</h2>
+  <p class="time">einmalig, etwa 45 bis 60 Minuten</p>
+
+  <section class="step" id="s1"><div class="step-h"><span class="no">1</span><h3>Herausfinden, was für ein Server es ist</h3><label><input type="checkbox"> erledigt</label></div>
+    <ol>
+      <li>Bei Hetzner einloggen. Liegt der Server unter <b>console.hetzner.cloud</b>, ist es ein <b>Cloud-Server</b>, und diese Anleitung passt genau. Liegt er unter <b>robot.hetzner.com</b>, ist es ein dedizierter Server, die Schritte sind fast gleich; sag mir dann kurz Bescheid.</li>
+      <li>Notiere dir die <b>IPv4-Adresse</b> des Servers (vier Zahlen mit Punkten, zum Beispiel <code>203.0.113.10</code>) und das <b>Betriebssystem</b>. Am besten ist Ubuntu 24.04.</li>
+      <li>Läuft auf dem Server schon etwas, zum Beispiel eine Webseite? Dann bitte nichts löschen und mir vorher sagen, was dort läuft.</li>
+    </ol>
+  </section>
+
+  <section class="step" id="s2"><div class="step-h"><span class="no">2</span><h3>Schlüssel auf dem Laptop erzeugen</h3><label><input type="checkbox"> erledigt</label></div>
+    <p>Ein SSH-Schlüssel besteht aus zwei Dateien: einer <b>öffentlichen</b> (endet auf <code>.pub</code>, darf auf den Server) und einer <b>privaten</b> (bleibt immer auf deinem Laptop, niemals weitergeben).</p>
+    <div data-os="win" style="gap:8px"><p>Startmenü öffnen, <b>PowerShell</b> eintippen und öffnen. Dann:</p></div>
+    <div data-os="mac" style="gap:8px"><p>Spotlight (Cmd + Leertaste), <b>Terminal</b> eintippen und öffnen. Dann:</p></div>
+    <div class="cmd">ssh-keygen -t ed25519 -C "laptop-manuel"</div>
+    <ul><li>Bei der Frage nach dem Speicherort einfach <b>Enter</b> drücken.</li><li>Dann eine <b>Passphrase</b> wählen, also ein Passwort für den Schlüssel. Beim Tippen siehst du nichts, das ist normal. Gut merken.</li></ul>
+    <p>Den öffentlichen Schlüssel anzeigen und komplett kopieren (eine lange Zeile, beginnt mit <code>ssh-ed25519</code>):</p>
+    <div data-os="win"><div class="cmd">Get-Content $env:USERPROFILE\.ssh\id_ed25519.pub</div></div>
+    <div data-os="mac"><div class="cmd">cat ~/.ssh/id_ed25519.pub</div></div>
+  </section>
+
+  <section class="step" id="s3"><div class="step-h"><span class="no">3</span><h3>Schlüssel beim Server hinterlegen</h3><label><input type="checkbox"> erledigt</label></div>
+    <p><b>Fall 1: Der Server ist neu oder wird neu angelegt.</b> In der Hetzner Cloud Console im Projekt unter <b>Sicherheit → SSH-Keys</b> auf „SSH-Key hinzufügen“, die kopierte Zeile einfügen, Namen vergeben. Beim Erstellen des Servers diesen Schlüssel auswählen.</p>
+    <p><b>Fall 2: Der Server läuft schon.</b> Den Server anklicken, oben auf das Symbol <b>Konsole</b> (<code>&gt;_</code>). Es öffnet sich ein schwarzes Fenster im Browser. Als <code>root</code> mit dem Root-Passwort einloggen; das stand in der Hetzner-E-Mail, sonst unter „Rescue → Root-Passwort zurücksetzen“ ein neues setzen. Dann:</p>
+    <div class="cmd">mkdir -p ~/.ssh && nano ~/.ssh/authorized_keys</div>
+    <ul><li>Die kopierte Zeile einfügen. Im Browser-Fenster geht Einfügen oft nur über das Menü oder mit <b>Strg + Umschalt + V</b>.</li><li>Speichern mit <b>Strg + O</b>, dann Enter, schließen mit <b>Strg + X</b>.</li></ul>
+    <div class="cmd">chmod 700 ~/.ssh && chmod 600 ~/.ssh/authorized_keys</div>
+  </section>
+
+  <section class="step" id="s4"><div class="step-h"><span class="no">4</span><h3>Zum ersten Mal vom Laptop verbinden</h3><label><input type="checkbox"> erledigt</label></div>
+    <p>Zurück in PowerShell oder Terminal auf dem Laptop. Statt <code>203.0.113.10</code> deine Server-Adresse einsetzen:</p>
+    <div class="cmd">ssh root@203.0.113.10</div>
+    <ul><li>Beim ersten Mal kommt eine Frage nach einem „fingerprint“. Mit <b>yes</b> bestätigen.</li><li>Dann die Passphrase deines Schlüssels eingeben.</li><li>Steht vorne jetzt etwas wie <code>root@…:~#</code>, bist du auf dem Server. Mit <code>exit</code> kommst du zurück.</li></ul>
+    <div class="ok">Ab hier tippst du alle Befehle in diesem Fenster, also auf dem Server, solange nichts anderes dabeisteht.</div>
+  </section>
+
+  <section class="step" id="s5"><div class="step-h"><span class="no">5</span><h3>Server auf den neuesten Stand bringen</h3><label><input type="checkbox"> erledigt</label></div>
+    <div class="cmd">apt update && apt upgrade -y</div>
+    <p>Sicherheitsupdates künftig automatisch einspielen lassen. Bei der Frage „Yes“ wählen:</p>
+    <div class="cmd">apt install -y unattended-upgrades && dpkg-reconfigure -plow unattended-upgrades</div>
+  </section>
+
+  <section class="step" id="s6"><div class="step-h"><span class="no">6</span><h3>Firewall und Backups bei Hetzner einschalten</h3><label><input type="checkbox"> erledigt</label></div>
+    <ol>
+      <li>In der Cloud Console unter <b>Firewalls</b> eine neue Firewall anlegen. Eingehend nur erlauben: <b>TCP 22</b> (SSH), <b>TCP 80</b> und <b>TCP 443</b> (Webseite). Die Firewall dem Server zuweisen.</li>
+      <li>Beim Server unter <b>Backups</b> die automatischen Backups einschalten. Das kostet 20 % des Serverpreises und rettet im Ernstfall alles.</li>
+    </ol>
+  </section>
+
+  <section class="step" id="s7"><div class="step-h"><span class="no">7</span><h3>Login per Passwort abschalten</h3><label><input type="checkbox"> erledigt</label></div>
+    <div class="note"><b>Erst machen, wenn Schritt 4 sicher funktioniert.</b> Lass das Fenster offen und teste danach in einem <b>zweiten</b> Fenster, ob <code>ssh root@…</code> noch geht. Sonst sperrst du dich aus. Notfalls hilft dann immer noch die Hetzner-Konsole aus Schritt 3.</div>
+    <div class="cmd">echo "PasswordAuthentication no" > /etc/ssh/sshd_config.d/00-coachai.conf && systemctl restart ssh</div>
+  </section>
+
+  <section class="step" id="s8"><div class="step-h"><span class="no">8</span><h3>Docker installieren</h3><label><input type="checkbox"> erledigt</label></div>
+    <p>Docker packt Coach.AI, die Datenbank und den Datendienst in fertige Pakete. So musst du nichts einzeln installieren.</p>
+    <div class="cmd">curl -fsSL https://get.docker.com | sh</div>
+    <p>Test: Steht am Ende „Hello from Docker!“, passt alles.</p>
+    <div class="cmd">docker run --rm hello-world</div>
+  </section>
+
+  <section class="step" id="s9"><div class="step-h"><span class="no">9</span><h3>Adresse einrichten</h3><label><input type="checkbox"> erledigt</label></div>
+    <ol>
+      <li>Klären, welche Domain du nutzt. Entweder eine Subdomain der Vereinsseite, etwa <code>coach.tsg-wilhelmshoehe.de</code> (dafür braucht es den, der die Vereinsdomain verwaltet), oder eine eigene Domain, die es ab etwa einem Euro im Monat gibt, zum Beispiel direkt bei Hetzner.</li>
+      <li>Bei der Domain-Verwaltung einen <b>A-Eintrag</b> anlegen: Name <code>coach</code>, Wert ist die IPv4-Adresse des Servers.</li>
+      <li>Nach einigen Minuten bis Stunden prüfen, auf dem Laptop:</li>
+    </ol>
+    <div class="cmd">ping coach.deine-domain.de</div>
+    <p>Erscheint die Server-Adresse in der Antwort, stimmt es. Mit <b>Strg + C</b> beenden.</p>
+  </section>
+
+  <h2>Teil B: Coach.AI aufspielen</h2>
+  <p class="time">sobald die Server-Fassung fertig ist, etwa 15 Minuten</p>
+
+  <section class="step" id="s10"><div class="step-h"><span class="no">10</span><h3>Coach.AI herunterladen und starten</h3><label><input type="checkbox"> erledigt</label></div>
+    <p>Ich lege dafür im Repository einen Ordner <code>deploy</code> an. Darin steckt alles: Coach.AI, die Datenbank, der Datendienst und ein Webserver, der das HTTPS-Zertifikat selbst besorgt. Auf dem Server:</p>
+    <div class="cmd">git clone https://github.com/mtabv/coach.ai.git /opt/coachai && cd /opt/coachai/deploy && cp .env.beispiel .env</div>
+    <p>Die Einstellungen öffnen und die Domain eintragen. Passwörter erzeugst du direkt auf dem Server, nie im Chat:</p>
+    <div class="cmd">openssl rand -hex 24</div>
+    <div class="cmd">nano .env</div>
+    <p>Starten:</p>
+    <div class="cmd">docker compose up -d</div>
+    <p>Nach ein bis zwei Minuten ist Coach.AI unter deiner Adresse erreichbar. Beim ersten Aufruf legst du dein Trainer-Konto an und lädst deinen Co-Trainer ein.</p>
+    <div class="note">Ist das Repository auf GitHub privat, klappt das Herunterladen so nicht. Sag mir dann Bescheid, ich ergänze einen Lesezugang nur für den Server.</div>
+  </section>
+
+  <h2>Teil C: Neue Versionen automatisch, „über hier“</h2>
+  <p class="time">einmalig, etwa 20 Minuten</p>
+
+  <section class="step" id="s11"><div class="step-h"><span class="no">11</span><h3>Einen eigenen Zugang nur für GitHub anlegen</h3><label><input type="checkbox"> erledigt</label></div>
+    <p>So funktioniert es: Ich ändere Coach.AI hier im Chat und lege die Änderung im Repository ab. Sobald du sie auf GitHub freigibst, spielt GitHub sie selbst auf deinen Server. Dafür bekommt GitHub einen eigenen Schlüssel, der nur das darf. Ich sehe diesen Schlüssel nie.</p>
+    <p><b>Auf dem Server:</b> einen Benutzer <code>deploy</code> anlegen, der Coach.AI aktualisieren darf:</p>
+    <div class="cmd">adduser --disabled-password --gecos "" deploy && usermod -aG docker deploy && mkdir -p /home/deploy/.ssh && chown -R deploy:deploy /home/deploy/.ssh /opt/coachai</div>
+    <p><b>Auf dem Laptop</b> (neues PowerShell- oder Terminal-Fenster) einen zweiten Schlüssel nur für GitHub erzeugen. Bei der Passphrase zweimal nur Enter drücken:</p>
+    <div class="cmd">ssh-keygen -t ed25519 -f coachai-deploy -C "github-deploy"</div>
+    <p>Es entstehen zwei Dateien im aktuellen Ordner: <code>coachai-deploy.pub</code> (öffentlich) und <code>coachai-deploy</code> (privat).</p>
+    <ol>
+      <li>Den Inhalt von <code>coachai-deploy.pub</code> auf dem Server in <code>/home/deploy/.ssh/authorized_keys</code> einfügen (wie in Schritt 3, mit <code>nano</code>).</li>
+      <li>In GitHub das Repository <b>mtabv/coach.ai</b> öffnen → <b>Settings</b> → <b>Secrets and variables</b> → <b>Actions</b> → <b>New repository secret</b>. Drei Einträge anlegen:
+        <table><tr><th>Name</th><th>Inhalt</th></tr>
+          <tr><td><code>DEPLOY_HOST</code></td><td>die IPv4-Adresse des Servers</td></tr>
+          <tr><td><code>DEPLOY_USER</code></td><td><code>deploy</code></td></tr>
+          <tr><td><code>DEPLOY_SSH_KEY</code></td><td>der komplette Inhalt der Datei <code>coachai-deploy</code>, also der privaten, mit allen Zeilen</td></tr></table></li>
+      <li>Die Datei <code>coachai-deploy</code> danach vom Laptop löschen. Sie liegt jetzt sicher bei GitHub.</li>
+    </ol>
+    <div class="ok">Ab dann gilt: Ich baue, du gibst frei, GitHub spielt auf. Du musst dich für Updates nicht mehr auf dem Server einloggen.</div>
+  </section>
+
+  <h2>Wenn etwas hakt</h2>
+  <div class="box"><table>
+    <tr><th>Meldung</th><th>Bedeutung und Lösung</th></tr>
+    <tr><td><code>Permission denied (publickey)</code></td><td>Der Server kennt deinen Schlüssel nicht. Schritt 3 prüfen: ganze Zeile eingefügt, ohne Zeilenumbruch?</td></tr>
+    <tr><td><code>Connection timed out</code></td><td>Falsche Adresse oder die Firewall lässt Port 22 nicht durch. IP-Adresse und Schritt 6 prüfen.</td></tr>
+    <tr><td><code>REMOTE HOST IDENTIFICATION HAS CHANGED</code></td><td>Kommt, wenn der Server neu installiert wurde. Auf dem Laptop <code>ssh-keygen -R 203.0.113.10</code> mit deiner Adresse ausführen und neu verbinden.</td></tr>
+    <tr><td>Seite lädt nicht</td><td>Zeigt <code>ping</code> aus Schritt 9 die richtige Adresse? Sind Port 80 und 443 in der Firewall offen?</td></tr>
+  </table>
+  <p>Kommst du nicht weiter, schick mir die Fehlermeldung als Text. Nur die Meldung, keine Passwörter und keine Schlüssel.</p></div>
+
+  <h2>Kleines Wörterbuch</h2>
+  <div class="box"><dl>
+    <dt>Terminal, PowerShell</dt><dd>Ein Fenster, in dem man Befehle tippt statt zu klicken.</dd>
+    <dt>SSH</dt><dd>Sichere Verbindung vom Laptop zum Server.</dd>
+    <dt>Schlüssel</dt><dd>Ersatz für ein Passwort. Der öffentliche Teil liegt auf dem Server, der private bleibt bei dir.</dd>
+    <dt>root</dt><dd>Der Hauptbenutzer des Servers, er darf alles.</dd>
+    <dt>Docker</dt><dd>Fertige Programmpakete, die auf jedem Server gleich laufen.</dd>
+    <dt>DNS, A-Eintrag</dt><dd>Das Telefonbuch des Internets: Es übersetzt die Adresse in die Server-IP.</dd>
+    <dt>HTTPS</dt><dd>Verschlüsselte Verbindung, erkennbar am Schloss im Browser.</dd>
+    <dt>Secret (GitHub)</dt><dd>Ein geschützter Eintrag, den nur die Automatik lesen kann, niemand sonst.</dd>
+  </dl></div>
+</main>
+<script>
+const KEY = 'coachai-anleitung';
+let saved = {}; try { saved = JSON.parse(localStorage.getItem(KEY) || '{}'); } catch (e) {}
+const steps = [...document.querySelectorAll('.step')];
+function update() {
+  const n = steps.filter(s => s.querySelector('input').checked).length;
+  steps.forEach(s => s.classList.toggle('done', s.querySelector('input').checked));
+  document.getElementById('progtxt').textContent = `${n} von ${steps.length} erledigt`;
+  document.getElementById('progbar').style.width = `${n / steps.length * 100}%`;
+}
+steps.forEach(s => { const cb = s.querySelector('input'); cb.checked = !!saved[s.id];
+  cb.addEventListener('change', () => { saved[s.id] = cb.checked; try { localStorage.setItem(KEY, JSON.stringify(saved)); } catch (e) {} update(); }); });
+document.querySelectorAll('.cmd').forEach(el => { const b = document.createElement('button'); b.type = 'button'; b.textContent = 'Kopieren'; el.appendChild(b);
+  b.addEventListener('click', () => { const t = el.firstChild.textContent.trim();
+    (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(() => { b.textContent = 'Kopiert'; setTimeout(() => b.textContent = 'Kopieren', 1500); },
+      () => { const r = document.createRange(); r.selectNodeContents(el.firstChild); const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); b.textContent = 'Markiert, Strg + C'; }); }); });
+const os = saved.os || (/Mac/i.test(navigator.platform) ? 'mac' : 'win');
+function setOs(o) { document.body.className = 'os-' + o; document.querySelectorAll('[data-set]').forEach(b => b.classList.toggle('on', b.dataset.set === o)); saved.os = o; try { localStorage.setItem(KEY, JSON.stringify(saved)); } catch (e) {} }
+document.querySelectorAll('[data-set]').forEach(b => b.addEventListener('click', () => setOs(b.dataset.set)));
+setOs(os); update();
+</script>
+</body>
+</html>
