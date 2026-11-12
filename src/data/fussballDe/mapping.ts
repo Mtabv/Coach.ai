@@ -639,6 +639,6 @@ export function mapToBlocks(team: TeamProfile, match: Match, raw: FdBundle): { b
   else if (raw.fupa) messages.push('FuPa: Gegner nicht gefunden – Spielerfotos, MVP-Wert und Positionen fehlen. Bitte FuPa-Link des Gegners in der Begegnung eintragen.');
 
   messages.push(opp ? `Gegner zugeordnet: „${oppSource ?? opp.name}“ (${opp.via}).` : 'Gegner auf fussball.de nicht gefunden – Gegnerdaten bleiben offen. Bitte fussball.de-Link des Gegners in der Begegnung eintragen.');
-  messages.push('Fahrzeit liefert fussball.de nicht – bitte im Datenbereich eintragen.');
+  messages.push('Fahrzeit liefert fussball.de nicht. Sie kommt aus der Teamzentrale (OpenStreetMap) oder wird im Datenbereich eingetragen.');
   return { blocks, messages };
 }

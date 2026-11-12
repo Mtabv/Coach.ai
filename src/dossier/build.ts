@@ -279,7 +279,7 @@ export function buildDossier(team: TeamProfile, match: Match, prep: Preparation)
   if (!match.isHome) {
     facts.push({
       label: 'Abfahrt',
-      value: sched?.departureTime ? fv(`${sched.departureTime} Uhr ab ${team.schedule.away.departurePoint || 'Treffpunkt'} (Fahrzeit ${prep.organisation.travelMinutes} Min.)`, prep.organisation.travelSource === 'verifiziert' ? 'ok' : 'trainer') : fv('Offen – Fahrzeit fehlt', 'offen'),
+      value: sched?.departureTime ? fv(`${sched.departureTime} Uhr ab ${team.schedule.away.departurePoint || 'Treffpunkt'} (Fahrzeit ${prep.organisation.travelMinutes} Min.)`, prep.organisation.travelSource === 'verifiziert' || prep.organisation.travelSource === 'osm' ? 'ok' : 'trainer') : fv('Offen – Fahrzeit fehlt', 'offen'),
     });
   }
   if (prep.organisation.notes.trim()) facts.push({ label: 'Besonderheiten', value: fv(prep.organisation.notes.trim(), 'trainer') });

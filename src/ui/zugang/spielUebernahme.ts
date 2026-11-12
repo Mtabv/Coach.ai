@@ -19,8 +19,16 @@ export function useSpielAusTeamzentrale() {
     const team = state.teams.find((t) => t.id === state.activeTeamId) ?? state.teams[0];
     if (!team) return;
     const vorhanden = state.matches.find((m) => m.teamId === team.id && m.date === datum && m.opponent === gegner);
+    const fahrzeit = parseInt(q.get('fahrzeit') ?? '', 10);
+    /** Fahrzeit aus der Teamzentrale (OpenStreetMap), solange der Trainer keine eigene eingetragen hat. */
+    const fahrzeitSetzen = (s: { preparations: Record<string, { organisation: { travelMinutes: number | null; travelSource: 'trainer' | 'verifiziert' | 'osm' | null } }> }, id: string) => {
+      const org = s.preparations[id]?.organisation;
+      if (!org || !(fahrzeit > 0) || (org.travelMinutes && org.travelSource !== 'osm')) return;
+      org.travelMinutes = fahrzeit;
+      org.travelSource = 'osm';
+    };
     if (vorhanden) {
-      update((s) => { s.selectedMatch = { ...(s.selectedMatch ?? {}), [team.id]: vorhanden.id }; });
+      update((s) => { s.selectedMatch = { ...(s.selectedMatch ?? {}), [team.id]: vorhanden.id }; fahrzeitSetzen(s, vorhanden.id); });
       navigate({ name: 'spiel', matchId: vorhanden.id, tab: 'daten' });
       return;
     }
@@ -41,6 +49,7 @@ export function useSpielAusTeamzentrale() {
     update((s) => {
       addMatch(s, m);
       s.selectedMatch = { ...(s.selectedMatch ?? {}), [team.id]: m.id };
+      if (!m.isHome) fahrzeitSetzen(s, m.id);
     });
     navigate({ name: 'spiel', matchId: m.id, tab: 'daten' });
     // nur einmal beim Öffnen

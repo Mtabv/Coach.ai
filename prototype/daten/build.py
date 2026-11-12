@@ -5,7 +5,7 @@ S = sys.argv[1]; KEY = open(f'{S}/fdkey.txt').read().strip()
 r = json.load(open(f'{S}/real/raw.json'))
 seed = json.load(open(f'{S}/seed-state-all.json')); st = seed.get('state', seed)
 team = st['teams'][0]; prep = st['preparations']['spiel-mw5kxr4r-d2df03cd']
-TID = '011MIDPSO0000000VTVG0001VTR8C1K7'; OWN = 'TSG Wilhelmshöhe'; TODAY = '2026-11-11'
+TID = '011MIDPSO0000000VTVG0001VTR8C1K7'; OWN = 'TSG Wilhelmshöhe'; TODAY = datetime.now(ZoneInfo('Europe/Berlin')).strftime('%Y-%m-%d')
 BER = ZoneInfo('Europe/Berlin')
 def local(dt):
     d = datetime.fromisoformat(dt.replace('Z', '+00:00')).astimezone(BER); return d.strftime('%Y-%m-%d'), d.strftime('%H:%M')
@@ -81,13 +81,19 @@ def route(a, b):
 dep_name = team['schedule']['away'].get('departurePoint') or 'Stockwiesen'
 dep = geocode(f'{dep_name}, Kassel')
 cache = {}
+# Fahrzeiten des letzten Laufs als Rückfall, falls OpenStreetMap gerade nicht antwortet
+try:
+    _alt = open(f'{S}/real/data.js').read(); _alt = json.loads(_alt[_alt.index('=')+1:_alt.rstrip().rindex(';')])
+    alt_fahrt = {g.get('address'): g['travel'] for g in _alt.get('games', []) if g.get('travel') and g.get('address')}
+except Exception: alt_fahrt = {}
 for x in games:
     x['address'] = ', '.join(x['venue'].split(', ')[1:]) if ', ' in x['venue'] else x['venue']
     x['travel'] = None
-    if x['home'] or not x['venue'] or x['date'] < TODAY or not dep: continue
+    if x['home'] or not x['venue'] or x['date'] < TODAY: continue
+    if not dep and x['address'] not in alt_fahrt: continue
     if x['address'] not in cache:
-        pt = geocode(x['address']) or geocode(x['address'].split(', ')[-1])
-        cache[x['address']] = route(dep, pt) if pt else None
+        pt = (geocode(x['address']) or geocode(x['address'].split(', ')[-1])) if dep else None
+        cache[x['address']] = (route(dep, pt) if pt else None) or ((alt_fahrt[x['address']]['min'], alt_fahrt[x['address']]['km']) if x['address'] in alt_fahrt else None)
     if cache[x['address']]: x['travel'] = dict(min=cache[x['address']][0], km=cache[x['address']][1], src=f'OpenStreetMap (OSRM), ab {dep_name}, ohne Verkehr')
 
 # ---------- Kader (FuPa) mit Statistik aus den Spielberichten ----------

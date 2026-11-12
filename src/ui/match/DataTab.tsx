@@ -519,6 +519,7 @@ export function TravelInput({ match }: { match: Match }) {
           options={[
             { value: 'trainer', label: 'Trainerangabe' },
             { value: 'verifiziert', label: 'Selbst verifiziert' },
+            { value: 'osm', label: 'OpenStreetMap' },
           ]}
         />
       </div>

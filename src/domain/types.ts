@@ -454,7 +454,8 @@ export interface MissionState {
 export interface OrganisationInput {
   /** Aktuelle Fahrzeit für genau diese Fahrt (Minuten). */
   travelMinutes: number | null;
-  travelSource: 'trainer' | 'verifiziert' | null;
+  /** osm: aus OpenStreetMap berechnet (Teamzentrale), ab dem Abfahrtsort des Mannschaftsprofils */
+  travelSource: 'trainer' | 'verifiziert' | 'osm' | null;
   /** Ausdrücklich genannte Abweichungen beim Spielort. */
   venueOverride: Venue | null;
   /** Ausdrücklich genannte Zeitänderungen je Block (Block-ID → neue Start-/Endzeit). */

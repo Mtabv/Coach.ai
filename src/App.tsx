@@ -47,6 +47,11 @@ function Shell({ sitzung }: { sitzung: Sitzung | null }) {
           </span>
         </a>
         <nav className="mainnav" aria-label="Hauptnavigation">
+          {sitzung && (
+            <a href="/teamzentrale" className="zur-tz">
+              ‹ Teamzentrale
+            </a>
+          )}
           <a href={href({ name: 'start' })} className={section === 'start' ? 'is-active' : ''}>
             Spieltag
           </a>
