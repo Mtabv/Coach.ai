@@ -474,6 +474,7 @@ export function buildDossier(team: TeamProfile, match: Match, prep: Preparation)
     formationLabel: 'Unsere Grundordnung',
     absencesLabel: `Ausfälle ${opp}`,
     formation: answerFV(prep.answers.u1_grundordnung),
+    showFormation: prep.answers.u1_grundordnung?.state === 'beantwortet' && !!prep.answers.u1_grundordnung.text.trim(),
     absences: phaseModel === 'eigene' ? absences : null,
     phases: phaseRows(['u2_ballbesitz', 'u3_ballverlust', 'u4_gegnerball', 'u5_ballgewinn'], true),
     extras: extrasOf(

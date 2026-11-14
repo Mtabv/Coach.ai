@@ -139,6 +139,8 @@ export interface ObservationSlide extends SlideBase<'soSpieltGegner' | 'soSpiele
   formationLabel: string;
   absencesLabel: string;
   formation: FV;
+  /** false: Grundordnung nicht zeigen (bei „So spielen wir“, wenn der Trainer keine angegeben hat). */
+  showFormation?: boolean;
   /** Ausfälle/Besonderheiten – nur, wenn etwas eingetragen ist. */
   absences: FV | null;
   /** Reihenfolge im Kreislauf: Ballbesitz → Ballverlust → gegnerischer Ballbesitz → Ballgewinn. */

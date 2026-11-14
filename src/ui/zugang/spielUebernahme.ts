@@ -35,7 +35,10 @@ export function useSpielAusTeamzentrale() {
     const art = q.get('art');
     const wettbewerb = q.get('wettbewerb') ?? '';
     const md = parseInt((/(\d+)\.\s*Spieltag/.exec(wettbewerb) || [])[1] ?? '', 10);
-    const ort = q.get('ort'), adresse = q.get('adresse');
+    const adresse = q.get('adresse') ?? '';
+    // Die Teamzentrale liefert den Spielort von fussball.de oft als „Name, Straße, PLZ Ort“: Adresse abtrennen.
+    let ort = q.get('ort');
+    if (ort && adresse && ort.endsWith(adresse)) ort = ort.slice(0, -adresse.length).replace(/[,\s]+$/, '') || ort;
     const m = createMatch(team.id, {
       opponent: gegner,
       competition: wettbewerb.replace(/,?\s*\d+\.\s*Spieltag/, '').trim() || team.competition || '',
@@ -44,7 +47,7 @@ export function useSpielAusTeamzentrale() {
       date: datum,
       kickoff: q.get('anstoss') || null,
       isHome: q.get('heim') === '1',
-      venue: ort ? { name: ort, address: adresse ?? '' } : null,
+      venue: ort ? { name: ort, address: adresse } : null,
     });
     update((s) => {
       addMatch(s, m);

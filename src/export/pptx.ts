@@ -374,7 +374,7 @@ function addSlide(p: PptxGenJS, slide: Slide, content: DossierContent) {
     case 'soSpieltGegner':
     case 'soSpielenWir': {
       // Spielphasenmodell: Kreislauf aus vier Phasen um einen Mittelpunkt.
-      s.addText([{ text: `${slide.formationLabel.toUpperCase()}  `, options: { bold: true, color: C.green2, fontSize: 9.5 } }, ...fvRuns(slide.formation, { color: C.text, fontSize: 12 })], { x: 0.5, y: 1.35, w: 7.5, h: 0.35, fontFace: FONT, valign: 'middle' });
+      if (slide.showFormation !== false) s.addText([{ text: `${slide.formationLabel.toUpperCase()}  `, options: { bold: true, color: C.green2, fontSize: 9.5 } }, ...fvRuns(slide.formation, { color: C.text, fontSize: 12 })], { x: 0.5, y: 1.35, w: 7.5, h: 0.35, fontFace: FONT, valign: 'middle' });
       if (slide.absences) s.addText([{ text: `${slide.absencesLabel.toUpperCase()}  `, options: { bold: true, color: C.green2, fontSize: 9.5 } }, ...fvRuns(slide.absences, { color: C.muted, fontSize: 11 })], { x: 8.1, y: 1.35, w: 4.75, h: 0.35, fontFace: FONT, valign: 'middle', align: 'right' });
       const order = ['ballbesitz', 'ballverlust', 'ballgewinn', 'gegnerBall'] as const;
       const pw = (W - 1 - 0.2) / 2;
