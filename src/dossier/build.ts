@@ -262,10 +262,13 @@ export function buildDossier(team: TeamProfile, match: Match, prep: Preparation)
   });
 
   // 4 Unser Spiel
+  const awayTemplate = prep.organisation.departurePointOverride?.trim()
+    ? { ...team.schedule.away, departurePoint: prep.organisation.departurePointOverride.trim() }
+    : team.schedule.away;
   const sched = timeOk
     ? match.isHome
       ? computeHomeSchedule(match.kickoff!, team.schedule.home, venue?.name ?? null, prep.organisation)
-      : computeAwaySchedule(match.kickoff!, team.schedule.away, prep.organisation.travelMinutes, prep.organisation)
+      : computeAwaySchedule(match.kickoff!, awayTemplate, prep.organisation.travelMinutes, prep.organisation)
     : null;
   const meetingFV = sched?.meetingTime
     ? fv(`${sched.meetingTime} Uhr${sched.meetingPlace ? ` · ${sched.meetingPlace === venue?.name && sched.meetingPlace.length > 32 ? 'am Spielort' : sched.meetingPlace}` : ''}`)
@@ -279,7 +282,7 @@ export function buildDossier(team: TeamProfile, match: Match, prep: Preparation)
   if (!match.isHome) {
     facts.push({
       label: 'Abfahrt',
-      value: sched?.departureTime ? fv(`${sched.departureTime} Uhr ab ${team.schedule.away.departurePoint || 'Treffpunkt'} (Fahrzeit ${prep.organisation.travelMinutes} Min.)`, prep.organisation.travelSource === 'verifiziert' || prep.organisation.travelSource === 'osm' ? 'ok' : 'trainer') : fv('Offen – Fahrzeit fehlt', 'offen'),
+      value: sched?.departureTime ? fv(`${sched.departureTime} Uhr ab ${awayTemplate.departurePoint || 'Treffpunkt'} (Fahrzeit ${prep.organisation.travelMinutes} Min.)`, prep.organisation.travelSource === 'verifiziert' || prep.organisation.travelSource === 'osm' ? 'ok' : 'trainer') : fv('Offen – Fahrzeit fehlt', 'offen'),
     });
   }
   if (prep.organisation.notes.trim()) facts.push({ label: 'Besonderheiten', value: fv(prep.organisation.notes.trim(), 'trainer') });

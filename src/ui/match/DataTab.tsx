@@ -491,8 +491,18 @@ export function TravelInput({ match }: { match: Match }) {
   const org = state.preparations[match.id].organisation;
   const travelId = useId('fahrzeit');
   const setOrg = (fn: (o: typeof org) => void) => update((s) => updatePrep(s, match.id, (p) => fn(p.organisation)));
+  const team = state.teams.find((t) => t.id === match.teamId);
   return (
     <div className="form-grid">
+      <Field label="Abfahrtstreffpunkt für dieses Spiel" htmlFor={`${travelId}-ort`} hint={`Leer lassen für den Treffpunkt aus dem Mannschaftsprofil${team?.schedule.away.departurePoint ? ` (${team.schedule.away.departurePoint})` : ''}.`}>
+        <input
+          id={`${travelId}-ort`}
+          className="input"
+          value={org.departurePointOverride ?? ''}
+          placeholder={team?.schedule.away.departurePoint || 'z. B. Schulstraße'}
+          onChange={(e) => setOrg((o) => (o.departurePointOverride = e.target.value || null))}
+        />
+      </Field>
       <Field label="Fahrzeit für genau diese Fahrt (Minuten)" htmlFor={travelId} hint="Nur aktuelle, verifizierte oder von Ihnen vorgegebene Fahrzeit. Ohne Angabe bleiben Abfahrt und Treffpunkt offen.">
         <input
           id={travelId}

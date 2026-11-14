@@ -461,6 +461,8 @@ export interface OrganisationInput {
   /** Ausdrücklich genannte Zeitänderungen je Block (Block-ID → neue Start-/Endzeit). */
   blockOverrides: Record<string, { start: LocalTime; end: LocalTime }>;
   meetingOverride: LocalTime | null;
+  /** Abfahrtstreffpunkt nur für dieses Spiel (sonst der aus dem Mannschaftsprofil). */
+  departurePointOverride?: string | null;
   kit: KitCombination | null;
   notes: string;
 }

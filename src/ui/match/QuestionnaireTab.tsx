@@ -256,7 +256,12 @@ function ScheduleAnswer({ match, team, prep, setPrep, ans, setAnswer }: { match:
   if (!match.kickoff) return <Notice tone="warn">Anstoßzeit fehlt – der Ablauf kann noch nicht berechnet werden.</Notice>;
   const sched = match.isHome
     ? computeHomeSchedule(match.kickoff, team.schedule.home, null, prep.organisation)
-    : computeAwaySchedule(match.kickoff, team.schedule.away, prep.organisation.travelMinutes, prep.organisation);
+    : computeAwaySchedule(
+        match.kickoff,
+        prep.organisation.departurePointOverride?.trim() ? { ...team.schedule.away, departurePoint: prep.organisation.departurePointOverride.trim() } : team.schedule.away,
+        prep.organisation.travelMinutes,
+        prep.organisation,
+      );
   const blocks = match.isHome ? team.schedule.home.blocks : team.schedule.away.blocks;
   return (
     <>
