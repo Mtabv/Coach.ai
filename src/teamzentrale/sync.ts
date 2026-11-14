@@ -153,7 +153,7 @@ function kontoKasten(name: string) {
   .nav::-webkit-scrollbar { display: none; }
   .nav a { white-space: nowrap; padding: 6px 10px; flex: none; }
   .konto11 { order: 2; margin: 0 0 0 auto; padding: 0; border: 0; display: flex; align-items: center; gap: 6px; font-size: 12px; }
-  .konto11 > div:first-child, .konto11 [data-k=status] { display: none; }
+  .konto11 > div:first-child, .konto11 [data-k=status], .konto11 [data-k=stand] { display: none; }
   .konto11 .row { flex-wrap: nowrap; }
   .konto11 [data-k=link] { position: absolute; left: 12px; right: 12px; top: 100%; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 10px; }
   .konto11 .row .btn { padding: 4px 8px; font-size: 13px; }
@@ -168,9 +168,10 @@ function kontoKasten(name: string) {
   document.head.appendChild(css);
   const box = document.createElement('div');
   box.className = 'konto11';
-  box.innerHTML = '<div>Angemeldet als <b></b></div><div class="row"><button class="btn small ghost" data-k="einladen">Trainer einladen</button><button class="btn small ghost" data-k="ab">Abmelden</button></div><div data-k="link" hidden></div><div class="note" data-k="status">Wird geladen …</div>';
+  box.innerHTML = '<div>Angemeldet als <b></b></div><div class="row"><button class="btn small ghost" data-k="einladen">Trainer einladen</button><button class="btn small ghost" data-k="ab">Abmelden</button></div><div data-k="link" hidden></div><div class="note" data-k="status">Wird geladen …</div><div class="note" data-k="stand"></div>';
   box.querySelector('b')!.textContent = name;
   anzeige = box.querySelector('[data-k=status]');
+  datenstandZeigen(box.querySelector<HTMLElement>('[data-k=stand]'));
   (document.querySelector('.side') || document.body).appendChild(box);
   box.addEventListener('click', async (e) => {
     const k = (e.target as HTMLElement).getAttribute('data-k');
@@ -190,6 +191,19 @@ function kontoKasten(name: string) {
       if (d.link && navigator.clipboard) navigator.clipboard.writeText(d.link).then(() => { el.firstChild!.textContent = 'Link kopiert, 7 Tage und nur einmal gültig:'; }, () => {});
     }
   });
+}
+
+/** Wann die Daten von fussball.de und FuPa zuletzt abgerufen wurden; älter als ein Tag: Hinweis. */
+function datenstandZeigen(el: HTMLElement | null) {
+  const iso = global('STAND_ISO');
+  if (!el || typeof iso !== 'string') return;
+  const t = new Date(iso);
+  if (Number.isNaN(t.getTime())) return;
+  const stunden = (Date.now() - t.getTime()) / 36e5;
+  const heute = t.toDateString() === new Date().toDateString();
+  const zeit = t.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+  el.textContent = `Daten von fussball.de und FuPa: ${heute ? 'heute' : t.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' })} ${zeit}`;
+  if (stunden > 24) { el.style.color = 'var(--warn)'; el.textContent += ' – älter als ein Tag, die Aktualisierung hakt.'; }
 }
 
 function hinweis(text: string) {

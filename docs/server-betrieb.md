@@ -24,6 +24,12 @@ Nach der Anmeldung zeigt 11Plan die Teamzentrale mit den echten Daten der Mannsc
 2. Auswertungen, Fahrzeiten (OpenStreetMap), Fotos und Wappen.
 3. Fertige Seite nach `/daten/teamzentrale.html` im Daten-Volume der App. Schlägt ein Lauf fehl, bleibt die bisherige Seite.
 
+**Nur Neues laden:** Jeder Lauf holt Tabelle, Spielplan und FuPa-Kader neu (je ein Abruf) und nur die Spielberichte von Spielen, die seit dem letzten Lauf gespielt wurden, dazu die noch offenen Spieltage. Alte Spielberichte, Fotos, Wappen, Vereinssuche und Fahrzeiten liegen im Zwischenspeicher (`/arbeit/real/raw.json`, `/arbeit/real/cache.json`). Ein normaler Lauf dauert damit Sekunden statt Minuten; ein Lauf ohne Zwischenspeicher liefert nachweislich dieselben Daten.
+
+**Selbstkontrolle:** Der Datendienst prüft sich jede Minute selbst (`deploy/datendienst-start.sh`). Antwortet er dreimal nicht, beendet er sich und Docker startet ihn neu. `docker compose ps` zeigt für `app` und `datendienst` „healthy“ oder „unhealthy“.
+
+**Datenstand:** Unten in der Seitenleiste steht „Daten von fussball.de und FuPa: heute 13:04“. Ist der letzte erfolgreiche Lauf älter als einen Tag, erscheint dort ein Hinweis.
+
 Die Seite enthält Namen und Fotos und liegt deshalb **nur auf dem Server**, nie im Repository. Datum, Woche, nächstes Spiel und nächstes Training richten sich nach dem aktuellen Tag.
 
 **Einmalig** braucht der Container das Mannschaftsprofil (Zeitplan am Spieltag, Spielkleidung, Wappen):

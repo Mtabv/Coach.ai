@@ -15,6 +15,15 @@ def get(path, **q):
     with urllib.request.urlopen(urllib.request.Request(url, headers={'X-API-Key': KEY}), timeout=600) as x: return json.load(x)
 isnum = lambda v: str(v or '').isdigit()
 
+# ---------- Zwischenspeicher zwischen den Läufen: nur Neues laden ----------
+# Spielberichte vergangener Ligaspiele, Fotos, Wappen, Vereinssuche und Fahrzeiten ändern sich nicht mehr.
+CACHE_DATEI = f'{S}/real/cache.json'
+try: CACHE = json.load(open(CACHE_DATEI))
+except Exception: CACHE = {}
+if CACHE.get('saison') != '2026-27': CACHE = {'saison': '2026-27'}
+for _k in ('berichte', 'bilder', 'teams', 'geo', 'routen'): CACHE.setdefault(_k, {})
+def cache_sichern(): json.dump(CACHE, open(CACHE_DATEI, 'w'), ensure_ascii=False)
+
 # ---------- Liga: alle Spiele und Spielberichte ----------
 lg = {}; mdOf = {}
 for md in r['spieltage']:
@@ -22,9 +31,12 @@ for md in r['spieltage']:
         mdOf[g['game_id']] = md['matchday']
         if isnum(g['home_score']) and isnum(g['away_score']) and local(g['datetime_utc'])[0] < TODAY: lg[g['game_id']] = g
 details = {d['game_id']: d for d in r['details']}
+for _gid, _d in CACHE['berichte'].items():
+    if _gid in lg and _gid not in details: details[_gid] = _d
 need = [i for i in lg if i not in details]
 for k in range(0, len(need), 17): 
-    for d in get('/api/coachai/spiele/aufstellungen', ids=','.join(need[k:k+17])): details[d['game_id']] = d
+    for d in get('/api/coachai/spiele/aufstellungen', ids=','.join(need[k:k+17])): details[d['game_id']] = d; CACHE['berichte'][d['game_id']] = d
+print('Ligaberichte neu geladen:', len(need))
 def minute(t):
     m = re.match(r'(\d+)', (t or '').replace('’', '').replace("'", '')); return int(m.group(1)) if m else None
 def bin_of(m, half):
@@ -66,17 +78,22 @@ games.sort(key=lambda x: x['date'])
 # ---------- Fahrzeit zu Auswärtsspielen (OpenStreetMap: Nominatim + OSRM) ----------
 import time
 def geocode(q):
+    if q in CACHE['geo']: return tuple(CACHE['geo'][q]) if CACHE['geo'][q] else None
     time.sleep(1.1)
     url = 'https://nominatim.openstreetmap.org/search?' + urllib.parse.urlencode(dict(q=q, format='json', limit=1, countrycodes='de'))
     try:
         with urllib.request.urlopen(urllib.request.Request(url, headers={'User-Agent': '11Plan/1.0 (Trainerteam-App)'}), timeout=20) as x: j = json.load(x)
-        return (float(j[0]['lon']), float(j[0]['lat'])) if j else None
+        pt = (float(j[0]['lon']), float(j[0]['lat'])) if j else None
+        if pt: CACHE['geo'][q] = pt
+        return pt
     except Exception: return None
 def route(a, b):
+    key = f'{a[0]:.5f},{a[1]:.5f};{b[0]:.5f},{b[1]:.5f}'
+    if key in CACHE['routen']: return tuple(CACHE['routen'][key])
     url = f'https://router.project-osrm.org/route/v1/driving/{a[0]},{a[1]};{b[0]},{b[1]}?overview=false'
     try:
         with urllib.request.urlopen(urllib.request.Request(url, headers={'User-Agent': '11Plan/1.0 (Trainerteam-App)'}), timeout=20) as x: j = json.load(x)
-        r0 = j['routes'][0]; return round(r0['duration'] / 60), round(r0['distance'] / 1000, 1)
+        r0 = j['routes'][0]; res = (round(r0['duration'] / 60), round(r0['distance'] / 1000, 1)); CACHE['routen'][key] = res; return res
     except Exception: return None
 dep_name = team['schedule']['away'].get('departurePoint') or 'Stockwiesen'
 dep = geocode(f'{dep_name}, Kassel')
@@ -142,9 +159,12 @@ for x in pflicht:
             if m: stats[m['slug']]['goals'] += 1
 def photo(url):
     if not url: return None
+    if url in CACHE['bilder']: return CACHE['bilder'][url]
     try:
         b = subprocess.run(['curl', '-s', '-m', '20', url], capture_output=True).stdout
-        return 'data:image/jpeg;base64,' + base64.b64encode(b).decode() if len(b) > 500 else None
+        res = 'data:image/jpeg;base64,' + base64.b64encode(b).decode() if len(b) > 500 else None
+        if res: CACHE['bilder'][url] = res
+        return res
     except Exception: return None
 players = []
 order = {'Torwart': 0, 'Abwehr': 1, 'Mittelfeld': 2, 'Angriff': 3, None: 4}
@@ -265,8 +285,11 @@ for x in [g for g in games if g['res']]:
 # ---------- Vereinswappen (FuPa) ----------
 def img64(url):
     if not url: return None
+    if 'w64:' + url in CACHE['bilder']: return CACHE['bilder']['w64:' + url]
     b = subprocess.run(['curl', '-s', '-m', '20', url.replace('200x200', '64x64')], capture_output=True).stdout
-    return 'data:image/png;base64,' + base64.b64encode(b).decode() if len(b) > 200 else None
+    res = 'data:image/png;base64,' + base64.b64encode(b).decode() if len(b) > 200 else None
+    if res: CACHE['bilder']['w64:' + url] = res
+    return res
 crests = {}
 try:
     ft = get('/api/coachai/fupa/tabelle', wettbewerb='kassel-gruppenliga-2', saison='2026-27')['rows']
@@ -279,7 +302,10 @@ for name in sorted({g['opp'] for g in games} - set(crests)):
     base = re.sub(r'\s+(II|2)$', '', name); nr = 2 if re.search(r'\s(II|2)$', name) else 1
     variants = [base, base.replace(' KS', ' Kassel'), base.replace('KS', 'Kassel')]
     try:
-        t = get('/api/coachai/fupa/finde-team', namen='|'.join(dict.fromkeys(variants)), saison='2026-27', nummer=nr)
+        if name in CACHE['teams']: t = CACHE['teams'][name]
+        else:
+            t = get('/api/coachai/fupa/finde-team', namen='|'.join(dict.fromkeys(variants)), saison='2026-27', nummer=nr)
+            if t: CACHE['teams'][name] = t
         crests[name] = img64(t and t.get('image_url'))
     except Exception: crests[name] = None
 # Eigenes Wappen in guter Auflösung aus dem Mannschaftsprofil (TSG II, gleicher Verein), sonst FuPa
@@ -320,6 +346,7 @@ out = dict(
     prep_answers={k: v.get('text') for k, v in prep['answers'].items() if isinstance(v, dict) and v.get('text')},
     mission=prep.get('mission'),
 )
+cache_sichern()
 open(f'{S}/real/data.js', 'w').write('const REAL = ' + json.dumps(out, ensure_ascii=False) + ';\n')
 print('Spiele', len(games), '| nächstes', nxt['date'], nxt['time'], nxt['opp'], '| Kader', len(players), 'Fotos', sum(1 for p in players if p['photo']))
 print('Liga-Berichte', league_full, '/', len(lg), '| eigene vollst.', full, '| bins', own_for, own_against, lb_scaled)

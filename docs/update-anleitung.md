@@ -42,5 +42,6 @@ Woran man sieht, dass alles drauf ist:
 - Training: unten Gastspieler.
 - Spielvorbereitung 6, 7, 8: je ein Knopf „Sprachaufnahme“.
 - „Dossier als PDF“ öffnet das Dossier im dunklen Design.
+- Unten in der Seitenleiste: „Daten von fussball.de und FuPa: heute …“.
 
 Danach baut der Server die Teamzentrale alle 6 Stunden selbst neu; die Datei aus Schritt 1 braucht es dann nicht mehr.

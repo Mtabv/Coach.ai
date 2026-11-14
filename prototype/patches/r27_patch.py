@@ -8,7 +8,8 @@ def rep(a, b, count=1):
     s = s.replace(a, b) if count == 0 else s.replace(a, b, count)
 
 # ---- Heute statt fest 11.11.2026: Woche, Kalender, nächstes Spiel und Training richten sich nach dem echten Datum ----
-STAND = datetime.now(ZoneInfo('Europe/Berlin')).strftime('%d.%m.%Y')
+JETZT = datetime.now(ZoneInfo('Europe/Berlin'))
+STAND = JETZT.strftime('%d.%m.%Y')
 rep("const TODAY = '2026-11-11';", """const TODAY = (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; })();
 const plusDays = (iso, n) => { const d = new Date(iso+'T12:00:00'); d.setDate(d.getDate()+n); return d.toISOString().slice(0,10); };
 const mondayOf = iso => { const d = new Date(iso+'T12:00:00'); return plusDays(iso, -((d.getDay()+6)%7)); };
@@ -17,7 +18,9 @@ const MON = mondayOf(TODAY);
 const KW = iso => { const d = new Date(iso+'T12:00:00'); d.setDate(d.getDate()+3-((d.getDay()+6)%7)); const y = new Date(d.getFullYear(),0,4,12); return 1+Math.round(((d-y)/864e5-3+((y.getDay()+6)%7))/7); };
 const MONATE = ['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
 /** Stand der Daten von fussball.de und FuPa (Tag des Abrufs) */
-const STAND = '""" + STAND + """';""")
+const STAND = '""" + STAND + """';
+/** Zeitpunkt des Abrufs, für die Anzeige „Daten von …“ */
+const STAND_ISO = '""" + JETZT.isoformat(timespec='minutes') + """';""")
 rep("weekStart:'2026-11-09'", "weekStart:MON")
 
 # Trainings nach Rhythmus: sechs Wochen zurück, drei Monate voraus

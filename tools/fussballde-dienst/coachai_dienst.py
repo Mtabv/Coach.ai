@@ -153,7 +153,14 @@ async def coachai_liga(team_id: str):
         offset = 0
         for _ in range(10):  # höchstens 300 Spieler
             url = f"{BASE}/ajax.top.scorer.loadmore/-/max/30/mime-type/JSON/offset/{offset}/staffel/{staffel}"
-            raw = await _get(url, settings.CACHE_TTL_TABLE)
+            try:
+                raw = await _get(url, settings.CACHE_TTL_TABLE)
+            except Exception:
+                # Weitere Seiten der Torjägerliste nicht erreichbar: mit dem Bisherigen weitermachen,
+                # statt den ganzen Abruf (Tabelle, Heim/Auswärts) scheitern zu lassen.
+                if offset == 0:
+                    raise
+                break
             try:
                 import json
 

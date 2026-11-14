@@ -6,7 +6,8 @@ WORKDIR /app
 RUN git clone https://github.com/Zetabytes/fussball_de_api.git . && git checkout "$CRAWLER_STAND" \
  && pip install --no-cache-dir -r requirements.txt && mkdir -p /app/logos /cache && chown nobody /app/logos /cache
 COPY tools/fussballde-dienst /app/coachai
+COPY --chmod=755 deploy/datendienst-start.sh /app/datendienst-start.sh
 ENV PYTHONPATH=/app/coachai CACHE_DIR=/cache
 USER nobody
 EXPOSE 8000
-CMD ["uvicorn", "coachai_dienst:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["bash", "/app/datendienst-start.sh"]
