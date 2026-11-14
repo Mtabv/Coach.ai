@@ -51,9 +51,40 @@ function schnappschuss(): Daten {
   for (const n of NAMEN) { const v = global(n); if (v !== undefined) out[n] = kopie(v); }
   const state = global('state');
   if (isObj(state)) out.state = kopie(Object.fromEntries(Object.entries(state).filter(([k]) => !NUR_ANSICHT.has(k))));
+  // Nur Kennung → Name, damit spätere Seiten die Kennungen sicher zuordnen können (der Kader selbst kommt von FuPa).
   const players = global('players');
-  if (Array.isArray(players)) out.players = kopie(players.map((p: Obj) => { const { photo: _photo, ...rest } = p; return rest; }));
+  if (Array.isArray(players)) out.kaderNamen = Object.fromEntries(players.map((p: Obj) => [String(p.id), String(p.name)]));
   return out;
+}
+
+/**
+ * Der Kader kommt bei jedem Bau frisch von FuPa und wird nicht mehr gespeichert. Ältere Stände hatten
+ * Spielerkennungen nach der Reihenfolge im Kader (p0, p1, …). Die werden hier über den Namen auf die
+ * festen Kennungen der aktuellen Seite (p-vorname-nachname) umgestellt, damit Abwesenheiten, Zusagen und
+ * Kader beim richtigen Spieler bleiben.
+ */
+const falten = (t: string) => t.toLowerCase().replace(/ä/g, 'ae').replace(/ö/g, 'oe').replace(/ü/g, 'ue').replace(/ß/g, 'ss').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
+function umbenennen(v: unknown, map: Map<string, string>): unknown {
+  if (typeof v === 'string') return map.get(v) ?? v;
+  if (Array.isArray(v)) return v.map((x) => umbenennen(x, map));
+  if (isObj(v)) return Object.fromEntries(Object.entries(v).map(([k, x]) => [map.get(k) ?? k, umbenennen(x, map)]));
+  return v;
+}
+function normalisieren<T extends { basis?: Daten; daten?: Daten } | null>(inhalt: T): T {
+  if (!inhalt) return inhalt;
+  const ausNamen = (k: unknown) => (isObj(k) ? Object.entries(k).map(([id, name]) => ({ id, name: String(name) })) : undefined);
+  const alt = (ausNamen(inhalt.daten?.kaderNamen) ?? (inhalt.daten?.players as { id: string; name: string }[] | undefined) ??
+    ausNamen(inhalt.basis?.kaderNamen) ?? (inhalt.basis?.players as { id: string; name: string }[] | undefined)) ?? [];
+  const aktuell = (global('players') as { id: string; name: string }[] | undefined) ?? [];
+  const map = new Map<string, string>();
+  for (const a of alt) {
+    if (!/^p\d+$/.test(a.id)) continue;
+    const neu = aktuell.find((p) => falten(p.name) === falten(a.name));
+    if (neu && neu.id !== a.id) map.set(a.id, neu.id);
+  }
+  const ohneKader = (d?: Daten) => { if (!d) return d; const { players: _p, kaderNamen: _k, ...rest } = d; return rest as Daten; };
+  const basis = ohneKader(inhalt.basis), daten = ohneKader(inhalt.daten);
+  return { ...inhalt, basis: map.size ? (umbenennen(basis, map) as Daten) : basis, daten: map.size ? (umbenennen(daten, map) as Daten) : daten };
 }
 
 /** Überträgt `wert` in das bestehende Objekt, damit Verweise innerhalb der Teamzentrale gültig bleiben. */
@@ -86,8 +117,6 @@ function anwenden(roh: Daten) {
   if (isObj(state) && isObj(d.state)) for (const [k, v] of Object.entries(d.state)) if (!NUR_ANSICHT.has(k)) {
     state[k] = (isObj(state[k]) && isObj(v)) || (Array.isArray(state[k]) && Array.isArray(v)) ? einsetzen(state[k], v) : v;
   }
-  const players = global('players');
-  if (Array.isArray(players) && Array.isArray(d.players)) einsetzen(players, d.players, ['photo']);
 }
 
 const neuZeichnen = () => { const r = global('render'); if (typeof r === 'function') r(); };
@@ -182,7 +211,8 @@ async function laden() {
   const r = await fetch(DOKUMENT, { credentials: 'same-origin' });
   if (r.status === 401) { location.href = '/'; throw new Error('abgemeldet'); }
   if (!r.ok) throw new Error('Server');
-  return r.json() as Promise<{ version: number; inhalt: { basis: Daten; daten: Daten } | null; geaendertVon?: string | null }>;
+  const d = (await r.json()) as { version: number; inhalt: { basis: Daten; daten: Daten } | null; geaendertVon?: string | null };
+  return { ...d, inhalt: normalisieren(d.inhalt) };
 }
 
 /** Eigene Eingaben über einen neueren Stand legen (Datei oder anderer Trainer). */
