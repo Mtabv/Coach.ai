@@ -26,7 +26,7 @@ export function MaskenDiktatKnopf({ titel }: { titel: string }) {
 
   const steuerung = useMemo(() => new MaskenDiktat(
     () => titel,
-    () => { const w = ref.current?.closest('.page') || document.querySelector('.main'); return w ? felderSammeln(w, (el) => !el.closest('.knopf-leiste')) : []; },
+    () => { const w = ref.current?.closest('.page') || document.querySelector('.main'); return w ? felderSammeln(w) : []; },
     () => zuletzt,
     setZ,
     setE,

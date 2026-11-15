@@ -5,8 +5,16 @@
  */
 import { MAX_SEKUNDEN, aufnahmeStarten, dauer, diktatMoeglich, inText, type Aufnahme } from './aufnahme';
 
-export type Eingabe = HTMLTextAreaElement | HTMLInputElement;
-export interface MaskenFeld { el: Eingabe; key: string; label: string; hinweis?: string }
+export type Eingabe = HTMLTextAreaElement | HTMLInputElement | HTMLSelectElement;
+export interface MaskenFeld { el: Eingabe; key: string; label: string; hinweis?: string; optionen?: { wert: string; label: string }[]; sel: string }
+
+/** Stabiler Suchausdruck, um ein Feld nach einem Neuzeichnen der Seite wiederzufinden. */
+function suchausdruck(el: Eingabe): string {
+  if (el.id) return `#${CSS.escape(el.id)}`;
+  const a = [...el.attributes].filter((x) => x.name.startsWith('data-'));
+  return a.length ? el.tagName.toLowerCase() + a.map((x) => `[${x.name}="${CSS.escape(x.value)}"]`).join('') : '';
+}
+const aktuellesFeld = (f: MaskenFeld): Eingabe | null => (f.el.isConnected ? f.el : (f.sel ? document.querySelector<Eingabe>(f.sel) : null));
 
 const sichtbar = (el: Element) => !!(el as HTMLElement).offsetParent || (el as HTMLElement).getClientRects().length > 0;
 const kurz = (t: string | null | undefined, n: number) => (t || '').replace(/\s+/g, ' ').replace(/[*:]+$/, '').trim().slice(0, n);
@@ -19,7 +27,7 @@ function beschriftung(el: Eingabe): string {
   if (lab) { const c = lab.cloneNode(true) as HTMLElement; c.querySelectorAll('textarea, input, select, button, small, .note').forEach((x) => x.remove()); t = c.textContent || ''; }
   if (!kurz(t, 80)) t = el.closest('.tb')?.querySelector('.tbh label')?.textContent || '';
   if (!kurz(t, 80)) t = el.closest('.field')?.querySelector('.field-label, label')?.textContent || '';
-  if (!kurz(t, 80)) t = el.getAttribute('aria-label') || el.placeholder || '';
+  if (!kurz(t, 80)) t = el.getAttribute('aria-label') || (el instanceof HTMLSelectElement ? '' : el.placeholder) || '';
   return kurz(t, 80) || 'Textfeld';
 }
 
@@ -32,21 +40,34 @@ function zusammenhang(el: Eingabe, wurzel: Element): string {
     if (h) titel = h.textContent || '';
     ab = ab.parentElement;
   }
-  const teile = [titel && `Abschnitt „${kurz(titel, 70)}“`, el.placeholder && `Beispiel: ${kurz(el.placeholder, 120)}`].filter(Boolean);
+  const ph = el instanceof HTMLSelectElement ? '' : el.placeholder;
+  const teile = [titel && `Abschnitt „${kurz(titel, 70)}“`, ph && `Beispiel: ${kurz(ph, 120)}`].filter(Boolean);
   return teile.join('; ').slice(0, 280);
 }
 
-/** Alle sichtbaren, beschreibbaren Textfelder einer Maske. */
-export function felderSammeln(wurzel: Element, auch?: (el: HTMLInputElement) => boolean): MaskenFeld[] {
-  const els = [...wurzel.querySelectorAll<Eingabe>('textarea, input[type="text"], input:not([type])')].filter((el) =>
-    sichtbar(el) && !el.readOnly && !el.disabled && !el.closest('[data-kein-diktat]')
-    && (el instanceof HTMLTextAreaElement || (el.inputMode !== 'numeric' && (!auch || auch(el as HTMLInputElement)))));
-  return els.slice(0, 40).map((el, i) => ({ el, key: `f${i + 1}`, label: beschriftung(el), hinweis: zusammenhang(el, wurzel) || undefined }));
+export interface Sammeln {
+  /** Welche einzeiligen Felder dazugehören (Standard: alle). */
+  auch?: (el: HTMLInputElement) => boolean;
+  /** Auswahlfelder mitnehmen (z. B. Noten). */
+  auswahl?: boolean;
+  /** Felder in diesen Bereichen gehören zu einer eigenen Maske. */
+  ohne?: Element[];
+}
+
+/** Alle sichtbaren, beschreibbaren Felder einer Maske. */
+export function felderSammeln(wurzel: Element, o: Sammeln = {}): MaskenFeld[] {
+  const els = [...wurzel.querySelectorAll<Eingabe>(`textarea, input[type="text"], input:not([type])${o.auswahl ? ', select' : ''}`)].filter((el) =>
+    sichtbar(el) && !el.disabled && !(el as HTMLInputElement).readOnly && !el.closest('[data-kein-diktat]') && !(o.ohne || []).some((x) => x.contains(el))
+    && (el instanceof HTMLTextAreaElement || el instanceof HTMLSelectElement || (el.inputMode !== 'numeric' && (!o.auch || o.auch(el)))));
+  return els.slice(0, 40).map((el, i) => {
+    const optionen = el instanceof HTMLSelectElement ? [...el.options].map((x) => ({ wert: x.value, label: x.text })).filter((x) => x.wert && !/^[–-]$/.test(x.wert)) : undefined;
+    return { el, sel: suchausdruck(el), key: `f${i + 1}`, label: beschriftung(el), hinweis: zusammenhang(el, wurzel) || undefined, ...(optionen ? { optionen } : {}) };
+  });
 }
 
 /** Wert setzen, so dass auch React (gesteuerte Felder) und die Teamzentrale die Änderung mitbekommen. */
 export function wertSetzen(el: Eingabe, v: string) {
-  const proto = el instanceof HTMLTextAreaElement ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype;
+  const proto = el instanceof HTMLTextAreaElement ? HTMLTextAreaElement.prototype : el instanceof HTMLSelectElement ? HTMLSelectElement.prototype : HTMLInputElement.prototype;
   Object.getOwnPropertyDescriptor(proto, 'value')?.set?.call(el, v);
   el.dispatchEvent(new Event('input', { bubbles: true }));
   el.dispatchEvent(new Event('change', { bubbles: true }));
@@ -71,9 +92,10 @@ export interface Ergebnis { text: string; art: '' | 'ok' | 'warn' }
 
 /** Text auf die Felder verteilen. Ohne KI (oder bei nur einem Feld) landet er im zuletzt benutzten oder ersten Feld. */
 export async function verteilen(maske: string, felder: MaskenFeld[], text: string, zuletzt: Eingabe | null): Promise<Ergebnis> {
-  const anhaengen = (el: Eingabe, v: string) => wertSetzen(el, el.value.trim() ? `${el.value.trim()}${el instanceof HTMLTextAreaElement ? '\n' : ' '}${v}` : v);
-  const ziel = (zuletzt && felder.some((f) => f.el === zuletzt) ? zuletzt : null) || felder.find((f) => f.el instanceof HTMLTextAreaElement && !f.el.value.trim())?.el || felder[0]?.el;
-  if (felder.length === 1 || !(await kiBereit())) {
+  const anhaengen = (el: HTMLTextAreaElement | HTMLInputElement, v: string) => wertSetzen(el, el.value.trim() ? `${el.value.trim()}${el instanceof HTMLTextAreaElement ? '\n' : ' '}${v}` : v);
+  const text_ = felder.filter((f) => !(f.el instanceof HTMLSelectElement));
+  const ziel = ((zuletzt && !(zuletzt instanceof HTMLSelectElement) && text_.some((f) => f.el === zuletzt) ? zuletzt : null) || text_.find((f) => f.el instanceof HTMLTextAreaElement && !f.el.value.trim())?.el || text_[0]?.el) as HTMLTextAreaElement | HTMLInputElement | null | undefined;
+  if (text_.length === felder.length && felder.length === 1 || !(await kiBereit())) {
     if (!ziel) return { text: 'Kein Textfeld gefunden.', art: 'warn' };
     anhaengen(ziel, text);
     return felder.length === 1
@@ -83,26 +105,33 @@ export async function verteilen(maske: string, felder: MaskenFeld[], text: strin
   const namen = spielernamen();
   const r = await fetch('/api/ki/verteilen', {
     method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', 'X-CoachAI': '1' },
-    body: JSON.stringify({ maske, text, felder: felder.map(({ key, label, hinweis }) => ({ key, label, ...(hinweis ? { hinweis } : {}) })), kontext: namen ? `Spielernamen im Kader: ${namen}` : undefined }),
+    body: JSON.stringify({ maske, text, felder: felder.map(({ key, label, hinweis, optionen }) => ({ key, label, ...(hinweis ? { hinweis } : {}), ...(optionen ? { optionen } : {}) })), kontext: namen ? `Spielernamen im Kader: ${namen}` : undefined }),
   });
   const b = await r.json().catch(() => ({})) as { felder?: Record<string, string>; fehler?: string };
   if (!r.ok || !b.felder) {
     if (ziel) anhaengen(ziel, text);
     return { text: `${b.fehler || 'Die KI ist gerade nicht erreichbar.'}${ziel ? ` Der Text steht im Feld „${beschriftung(ziel)}“.` : ''}`, art: 'warn' };
   }
-  let n = 0;
+  let n = 0, schon = 0;
   for (const f of felder) {
     const v = (b.felder[f.key] || '').trim();
-    if (!v || !f.el.isConnected) continue;
-    // Textfelder: anhängen. Einzeilige Felder: nur füllen, wenn sie leer sind.
-    if (f.el instanceof HTMLTextAreaElement) anhaengen(f.el, v);
-    else if (!f.el.value.trim()) wertSetzen(f.el, v);
+    const el = aktuellesFeld(f);
+    if (!v || !el) continue;
+    // Auswahl (z. B. Note): gesagt ist gesagt. Textfelder und Kommentarzeilen: anhängen. Andere einzeilige Felder: nur füllen, wenn leer.
+    if (el instanceof HTMLSelectElement) {
+      if (![...el.options].some((x) => x.value === v)) continue;
+      if (el.value === v) { schon++; continue; }
+      wertSetzen(el, v);
+    } else if (el.value.trim() === v || el.value.includes(v)) { schon++; continue; }
+    else if (el instanceof HTMLTextAreaElement) anhaengen(el, v);
+    else if (!el.value.trim()) wertSetzen(el, v);
+    else if (el.hasAttribute('data-text')) wertSetzen(el, `${el.value.trim().replace(/[.;,]$/, '')}; ${v}`);
     else continue;
     n++;
   }
-  return n
-    ? { text: `${n} ${n === 1 ? 'Feld' : 'Felder'} ausgefüllt (grün markiert). Bitte kurz prüfen.`, art: 'ok' }
-    : { text: 'Die KI hat nichts Passendes gefunden. Bitte nochmal etwas ausführlicher.', art: 'warn' };
+  if (n) return { text: `${n} ${n === 1 ? 'Feld' : 'Felder'} ausgefüllt (grün markiert). Bitte kurz prüfen.`, art: 'ok' };
+  if (schon) return { text: 'Das Gesagte ist bereits so eingetragen.', art: 'ok' };
+  return { text: 'Die KI hat nichts Passendes gefunden. Bitte nochmal etwas ausführlicher.', art: 'warn' };
 }
 
 export type Zustand = { art: 'bereit' } | { art: 'rec'; zeit: string } | { art: 'arbeit'; text: string };

@@ -31,14 +31,18 @@ HINWEIS = ('Fußballtraining, Übung, Spielform, Pressing, Gegenpressing, Umscha
 _modell = None
 _zuletzt = time.time()
 _sperre = threading.Lock()
+# Eigene Sperre fürs Laden: Vorladen beim Start und eine gleichzeitige Aufnahme dürfen das Modell nicht
+# doppelt laden – das sprengt sonst die Speichergrenze des Containers und Docker beendet ihn.
+_lade = threading.Lock()
 
 
 def modell():
     global _modell
-    if _modell is None:
-        from faster_whisper import WhisperModel
-        _modell = WhisperModel(MODELL, device='cpu', compute_type='int8', cpu_threads=THREADS, download_root=ORDNER)
-    return _modell
+    with _lade:
+        if _modell is None:
+            from faster_whisper import WhisperModel
+            _modell = WhisperModel(MODELL, device='cpu', compute_type='int8', cpu_threads=THREADS, download_root=ORDNER)
+        return _modell
 
 
 def umwandeln(daten: bytes, hinweis: str = '') -> str:
@@ -61,7 +65,7 @@ def aufraeumen():
     global _modell
     while True:
         time.sleep(60)
-        with _sperre:
+        with _sperre, _lade:
             if _modell is not None and time.time() - _zuletzt > LEERLAUF:
                 _modell = None
 

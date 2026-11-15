@@ -188,7 +188,10 @@ export function createHandler(db: Db, cfg: Config) {
           method: 'POST', body: Buffer.concat(chunks), headers: { 'Content-Type': 'application/octet-stream', ...(hinweis ? { 'X-Hinweis': hinweis } : {}) },
           signal: AbortSignal.timeout(300_000),
         });
-      } catch { throw new HttpError(502, 'Der Sprachdienst ist gerade nicht erreichbar.'); }
+      } catch (e) {
+        if ((e as Error).name === 'TimeoutError') throw new HttpError(504, 'Die Umwandlung hat zu lange gedauert. Bitte kürzer aufnehmen oder gleich nochmal versuchen.');
+        throw new HttpError(502, 'Der Sprachdienst ist gerade nicht erreichbar (startet vielleicht gerade neu). Bitte in einer Minute nochmal.');
+      }
       const b = await r.json().catch(() => ({})) as { text?: string; fehler?: string };
       if (!r.ok || typeof b.text !== 'string') throw new HttpError(r.status === 413 ? 413 : 502, b.fehler || 'Die Aufnahme konnte nicht umgewandelt werden.');
       return send(res, 200, { text: b.text });
