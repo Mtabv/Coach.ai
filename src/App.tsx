@@ -2,6 +2,7 @@ import { href, useRoute } from './router';
 import { useStore } from './state/store';
 import { KontoMenue, Zugang, type Sitzung } from './ui/zugang/Zugang';
 import { useSpielAusTeamzentrale } from './ui/zugang/spielUebernahme';
+import { eingebettet } from './ui/zugang/vorbereitung';
 import { ConfirmAction } from './ui/components';
 import { AnalyticsPage, AnalyticsPrintPage } from './ui/pages/AnalyticsPage';
 import { ArchiveDossierPage, ArchivePage } from './ui/pages/ArchivePage';
@@ -25,6 +26,18 @@ function Shell({ sitzung }: { sitzung: Sitzung | null }) {
   if (route.name === 'analyticsDruck') return <AnalyticsPrintPage />;
 
   const team = state.teams.find((t) => t.id === state.activeTeamId) ?? state.teams[0];
+  // Als Reiter „Dossier“ in der Teamzentrale: ohne eigene Kopf- und Fußzeile.
+  if (eingebettet) {
+    return (
+      <div className="app eingebettet">
+        <main className="main">
+          {route.name === 'spiel' && <MatchWorkspace key={route.matchId} matchId={route.matchId} tab={route.tab} />}
+          {route.name === 'archivDossier' && <ArchiveDossierPage dossierId={route.dossierId} />}
+          {route.name !== 'spiel' && route.name !== 'archivDossier' && <p className="muted">Dossier wird geöffnet …</p>}
+        </main>
+      </div>
+    );
+  }
   const section = route.name === 'mannschaft' || route.name === 'neueMannschaft' ? 'mannschaft' : route.name === 'archiv' || route.name === 'archivDossier' ? 'archiv' : route.name === 'analytics' ? 'analytics' : 'start';
 
   return (

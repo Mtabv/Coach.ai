@@ -6,12 +6,20 @@ import { DataTab } from '../match/DataTab';
 import { DossierTab } from '../match/DossierTab';
 import { ExportTab } from '../match/ExportTab';
 import { QuestionnaireTab } from '../match/QuestionnaireTab';
+import { eingebettet } from '../zugang/vorbereitung';
 
 const TABS: { tab: Extract<Route, { name: 'spiel' }>['tab']; label: string; short: string }[] = [
   { tab: 'daten', label: 'Datenbasis prüfen', short: 'Daten' },
   { tab: 'fragebogen', label: 'Trainerfragebogen', short: 'Fragebogen' },
   { tab: 'dossier', label: 'Dossier prüfen & bearbeiten', short: 'Dossier' },
   { tab: 'export', label: 'Bestätigen & exportieren', short: 'Export' },
+];
+
+/** Als Reiter in der Teamzentrale: Die Fragen beantwortet der Trainer dort in der Gegnervorbereitung. */
+const TABS_EINGEBETTET: typeof TABS = [
+  { tab: 'daten', label: 'Daten von fussball.de laden', short: 'Daten' },
+  { tab: 'dossier', label: 'Folien ansehen und anpassen', short: 'Folien' },
+  { tab: 'export', label: 'Abschließen und exportieren', short: 'Abschluss' },
 ];
 
 export function MatchWorkspace({ matchId, tab }: { matchId: string; tab: Extract<Route, { name: 'spiel' }>['tab'] }) {
@@ -29,11 +37,12 @@ export function MatchWorkspace({ matchId, tab }: { matchId: string; tab: Extract
   const team = state.teams.find((t) => t.id === match.teamId)!;
   const home = match.isHome ? team.name : match.opponent;
   const away = match.isHome ? match.opponent : team.name;
-  const idx = TABS.findIndex((t) => t.tab === tab);
+  const tabs = eingebettet ? TABS_EINGEBETTET : TABS;
+  const idx = tabs.findIndex((t) => t.tab === tab);
 
   return (
     <div className="page">
-      <div className="ws-head">
+      {!eingebettet && <div className="ws-head">
         <a className="back" href={href({ name: 'start' })}>
           ← Spieltagsübersicht
         </a>
@@ -50,9 +59,9 @@ export function MatchWorkspace({ matchId, tab }: { matchId: string; tab: Extract
             </span>
           </div>
         </div>
-      </div>
+      </div>}
       <nav className="stepper" aria-label="Arbeitsschritte">
-        {TABS.map((t, i) => (
+        {tabs.map((t, i) => (
           <a key={t.tab} href={href({ name: 'spiel', matchId, tab: t.tab })} className={`step ${t.tab === tab ? 'is-active' : ''} ${i < idx ? 'is-done' : ''}`} aria-current={t.tab === tab ? 'step' : undefined}>
             <span className="step-n">{i + 1}</span>
             <span className="step-l">
@@ -63,19 +72,19 @@ export function MatchWorkspace({ matchId, tab }: { matchId: string; tab: Extract
         ))}
       </nav>
       {tab === 'daten' && <DataTab match={match} team={team} />}
-      {tab === 'fragebogen' && <QuestionnaireTab match={match} team={team} />}
+      {tab === 'fragebogen' && !eingebettet && <QuestionnaireTab match={match} team={team} />}
       {tab === 'dossier' && <DossierTab match={match} team={team} />}
       {tab === 'export' && <ExportTab match={match} team={team} />}
       <div className="ws-next">
         {idx > 0 && (
-          <a className="btn btn-ghost" href={href({ name: 'spiel', matchId, tab: TABS[idx - 1].tab })}>
-            ← {TABS[idx - 1].short}
+          <a className="btn btn-ghost" href={href({ name: 'spiel', matchId, tab: tabs[idx - 1].tab })}>
+            ← {tabs[idx - 1].short}
           </a>
         )}
         <span />
-        {idx < TABS.length - 1 && (
-          <a className="btn btn-primary" href={href({ name: 'spiel', matchId, tab: TABS[idx + 1].tab })}>
-            Weiter: {TABS[idx + 1].label} →
+        {idx < tabs.length - 1 && (
+          <a className="btn btn-primary" href={href({ name: 'spiel', matchId, tab: tabs[idx + 1].tab })}>
+            Weiter: {tabs[idx + 1].label} →
           </a>
         )}
       </div>

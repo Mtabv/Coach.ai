@@ -4,6 +4,9 @@ import type { CompetitionType } from '../../domain/types';
 import { navigate } from '../../router';
 import { addMatch } from '../../state/actions';
 import { useStore } from '../../state/store';
+import { updatePrep } from '../../state/actions';
+import { now } from '../../domain/factory';
+import { ausTeamzentrale, uebernehmen, zumAbschluss } from './vorbereitung';
 
 /**
  * Öffnet die Teamzentrale „Dossier als PDF“, kommen die Spieldaten in der Adresse mit
@@ -16,6 +19,13 @@ export function useSpielAusTeamzentrale() {
     const gegner = q.get('gegner'), datum = q.get('datum');
     if (!gegner || !datum) return;
     window.history.replaceState(null, '', '/?dossier=1' + window.location.hash);
+    /** Einträge aus der Spielvorbereitung der Teamzentrale übernehmen (nur als Reiter dort). */
+    const tz = ausTeamzentrale();
+    const vorbereitungSetzen = (s: Parameters<Parameters<typeof update>[0]>[0], id: string, home: boolean) => {
+      const t = s.teams.find((x) => x.id === team.id);
+      if (tz && t && s.preparations[id]) updatePrep(s, id, (p) => uebernehmen(p, t, home, tz, now()));
+    };
+    const schritt = (id: string) => zumAbschluss ? 'export' as const : (state.preparations[id]?.dataLoadedAt ? 'dossier' as const : 'daten' as const);
     const team = state.teams.find((t) => t.id === state.activeTeamId) ?? state.teams[0];
     if (!team) return;
     const vorhanden = state.matches.find((m) => m.teamId === team.id && m.date === datum && m.opponent === gegner);
@@ -28,8 +38,8 @@ export function useSpielAusTeamzentrale() {
       org.travelSource = 'osm';
     };
     if (vorhanden) {
-      update((s) => { s.selectedMatch = { ...(s.selectedMatch ?? {}), [team.id]: vorhanden.id }; fahrzeitSetzen(s, vorhanden.id); });
-      navigate({ name: 'spiel', matchId: vorhanden.id, tab: 'daten' });
+      update((s) => { s.selectedMatch = { ...(s.selectedMatch ?? {}), [team.id]: vorhanden.id }; fahrzeitSetzen(s, vorhanden.id); vorbereitungSetzen(s, vorhanden.id, vorhanden.isHome); });
+      navigate({ name: 'spiel', matchId: vorhanden.id, tab: schritt(vorhanden.id) });
       return;
     }
     const art = q.get('art');
@@ -53,8 +63,9 @@ export function useSpielAusTeamzentrale() {
       addMatch(s, m);
       s.selectedMatch = { ...(s.selectedMatch ?? {}), [team.id]: m.id };
       if (!m.isHome) fahrzeitSetzen(s, m.id);
+      vorbereitungSetzen(s, m.id, m.isHome);
     });
-    navigate({ name: 'spiel', matchId: m.id, tab: 'daten' });
+    navigate({ name: 'spiel', matchId: m.id, tab: zumAbschluss ? 'export' : 'daten' });
     // nur einmal beim Öffnen
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

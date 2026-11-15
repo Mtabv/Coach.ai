@@ -54,9 +54,14 @@ docker compose restart teamzentrale     # Sofort neu bauen, z. B. direkt nach ei
 
 Der Server passt die Seite beim Ausliefern an: dunkler Modus, Schriften vom eigenen Server, Kontomenü mit „Trainer einladen“ und „Abmelden“. Solange noch keine Seite gebaut ist, erscheint die ältere Oberfläche.
 
-### Dossier als PDF
+### Spieltagsdossier als Reiter der Spielvorbereitung
 
-„Dossier als PDF“ in der Spielvorbereitung öffnet das Spieltagsdossier (`/?dossier=1`) mit dem Spiel aus der Teamzentrale: Datenbasis von fussball.de und FuPa laden, Trainerfragebogen, Dossier prüfen, bestätigen, dann PDF oder PowerPoint mit den Folien aus `docs/dossier-sollbild.md`. Den Startstand (Mannschaftsprofil) legt der Container `teamzentrale` als `/daten/dossier-start.json` ab, solange auf dem Server noch kein Dossier-Stand gespeichert ist.
+Die Spielvorbereitung hat die Reiter „Gegnervorbereitung“, „Aufstellung“ und „Dossier“. Der Reiter „Dossier“ zeigt das Spieltagsdossier (`/?dossier=1&tz=<Spiel>`) eingebettet, ohne eigenes Fenster und ohne eigene Kopfzeile, in drei Schritten: Daten von fussball.de laden, Folien ansehen und anpassen, abschließen und exportieren (PDF über die Druckansicht, PowerPoint).
+
+- Das Dossier übernimmt bei jedem Öffnen, was in der Gegnervorbereitung steht (`src/ui/zugang/vorbereitung.ts`): Gegnerbeobachtung und Plan nach Spielphasen (gleiche Frage-Kennungen), drei Botschaften (je Zeile eine), Leitmotiv, Merksätze (leer = keine), Kleidung und Kader. Leere Felder ändern im Dossier nichts. Den eigenen Fragebogen des Dossiers gibt es eingebettet nicht mehr.
+- „Spieltagsdossier abschließen“ am Ende der Gegnervorbereitung springt direkt zum Abschluss. Der Abschluss friert die Version ein und meldet ihn an die Teamzentrale (`postMessage`, nur gleiche Adresse); dort steht dann „Dossier ✓“ und das Spiel gilt als vorbereitet.
+- Damit das Einbetten klappt, erlaubt Caddy Rahmen nur von der eigenen Adresse (`X-Frame-Options SAMEORIGIN`).
+- Den Startstand (Mannschaftsprofil) legt der Container `teamzentrale` als `/daten/dossier-start.json` ab, solange auf dem Server noch kein Dossier-Stand gespeichert ist.
 
 ### Speichern in der Teamzentrale
 

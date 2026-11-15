@@ -7,6 +7,7 @@ import { confirmDossier, currentDraft, ensureDraft } from '../../state/actions';
 import { contentForDossier } from '../../state/selectors';
 import { useStore } from '../../state/store';
 import { Badge, Card, Notice, Toast } from '../components';
+import { anTeamzentrale, eingebettet } from '../zugang/vorbereitung';
 
 export function ExportTab({ match, team }: { match: Match; team: TeamProfile }) {
   const { state, update } = useStore();
@@ -36,7 +37,7 @@ export function ExportTab({ match, team }: { match: Match; team: TeamProfile }) 
   return (
     <div className="stack">
       <div className="two-col">
-        <Card title="Prüfung vor der Bestätigung">
+        <Card title="Prüfung vor dem Abschluss">
           <ul className="checks">
             {checks.map((c) => (
               <li key={c.id} className={c.ok ? 'ok' : c.blocking ? 'fail' : 'warn'}>
@@ -54,7 +55,7 @@ export function ExportTab({ match, team }: { match: Match; team: TeamProfile }) 
           {warnings.length > 0 && (
             <label className="check ack">
               <input type="checkbox" checked={ack} onChange={(e) => setAck(e.target.checked)} />
-              Mir ist bewusst, dass offene und widersprüchliche Angaben im bestätigten Dossier sichtbar markiert bleiben.
+              Mir ist bewusst, dass offene und widersprüchliche Angaben im abgeschlossenen Dossier sichtbar markiert bleiben.
             </label>
           )}
           {!draft && <Notice tone="info">Kein offener Entwurf. Öffnen Sie den Schritt „Dossier“, um einen Entwurf anzulegen.</Notice>}
@@ -67,13 +68,15 @@ export function ExportTab({ match, team }: { match: Match; team: TeamProfile }) 
                 const notes = checks.filter((c) => !c.ok).map((c) => `${c.label}: ${c.detail ?? ''}`);
                 // Die bestätigte Version behält die ID des Entwurfs.
                 update((s) => void confirmDossier(s, draft.id, notes));
+                anTeamzentrale('abgeschlossen', draft.version);
                 navigate({ name: 'archivDossier', dossierId: draft.id });
               }}
             >
-              Dossier bestätigen{draft ? ` (V${draft.version})` : ''}
+              Spieltagsdossier abschließen{draft ? ` (V${draft.version})` : ''}
             </button>
           </div>
-          <p className="muted small">Entwürfe dürfen unvollständig sein. Eine bestätigte Version wird eingefroren und ändert sich durch spätere Profil- oder Datenänderungen nicht.</p>
+          {eingebettet && !ok && <p className="small">Was fehlt, trägst du in der Teamzentrale im Reiter „Gegnervorbereitung“ ein (z. B. „Unser Auftrag“). Danach diesen Reiter erneut öffnen.</p>}
+          <p className="muted small">Entwürfe dürfen unvollständig sein. Eine abgeschlossene Version wird eingefroren und ändert sich durch spätere Profil- oder Datenänderungen nicht.</p>
         </Card>
 
         <Card title="Exportieren">

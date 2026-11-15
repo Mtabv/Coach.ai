@@ -2940,3 +2940,7 @@ input[type='file']::file-selector-button { font: inherit; color: var(--ink); bac
   .mainnav::-webkit-scrollbar { display: none; }
   .mainnav a { white-space: nowrap; flex: none; }
 }
+
+/* Dossier als Reiter in der Teamzentrale: ohne Kopfzeile, knapper Rand. */
+.app.eingebettet .main { padding-top: 12px; padding-bottom: 16px; }
+.app.eingebettet .page { padding-top: 0; }

@@ -12,6 +12,7 @@ import { Badge, Card, Notice, TextArea, TextInput, Toast } from '../components';
 import { ScaledSlide, slideIssues } from '../dossier/SlideView';
 import { SquadEditor } from '../SquadEditor';
 import { DossierOptionsCard } from './DossierOptionsCard';
+import { anTeamzentrale } from '../zugang/vorbereitung';
 
 export function DossierTab({ match, team }: { match: Match; team: TeamProfile }) {
   const { state, update } = useStore();
@@ -36,7 +37,7 @@ export function DossierTab({ match, team }: { match: Match; team: TeamProfile })
           <a className="btn" href={href({ name: 'archivDossier', dossierId: confirmed[0].id })}>
             Bestätigte Version öffnen
           </a>
-          <button className="btn btn-primary" onClick={() => update((s) => void ensureDraft(s, match.id))}>
+          <button className="btn btn-primary" onClick={() => { update((s) => void ensureDraft(s, match.id)); anTeamzentrale('geoeffnet'); }}>
             Neue Version V{confirmed[0].version + 1} als Entwurf bearbeiten
           </button>
         </div>
@@ -74,7 +75,7 @@ export function DossierTab({ match, team }: { match: Match; team: TeamProfile })
             Entwurf speichern
           </button>
           <a className="btn btn-primary" href={href({ name: 'spiel', matchId: match.id, tab: 'export' })}>
-            Prüfen & bestätigen
+            Weiter zum Abschluss
           </a>
         </div>
       </div>
