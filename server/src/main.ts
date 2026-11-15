@@ -2,6 +2,7 @@ import { createServer } from 'node:http';
 import { join } from 'node:path';
 import { backup, openDb } from './db.js';
 import { createHandler } from './app.js';
+import { kiDienst } from './ki.js';
 
 /** Start des 11Plan-Servers. Alle Einstellungen kommen aus Umgebungsvariablen (deploy/.env). */
 const env = process.env;
@@ -19,6 +20,7 @@ const handler = createHandler(db, {
   dossierStart: join(dataDir, 'dossier-start.json'),
   aktualisierenDatei: join(dataDir, 'neu-bauen'),
   spracheUrl: env.COACHAI_SPRACHE_URL || undefined,
+  ki: env.ANTHROPIC_API_KEY ? kiDienst(env.ANTHROPIC_API_KEY, env.COACHAI_KI_URL || undefined) : undefined,
 });
 
 const port = Number(env.PORT || 3000);

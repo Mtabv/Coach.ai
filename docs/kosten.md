@@ -15,6 +15,16 @@ Offen und beim Bestellen zu prüfen:
 - Ob die 24 € mit oder ohne Mehrwertsteuer angezeigt werden. Mit 19 % Mehrwertsteuer wären es 28,56 € nur für den Server.
 - Ob die öffentliche IPv4-Adresse im Preis enthalten ist oder extra berechnet wird.
 
+## KI-Verteilung (optional, Anthropic)
+
+Abrechnung über ein eigenes API-Konto (platform.claude.com), getrennt vom Claude-Abo, mit Guthaben und Monatslimit. Modell Claude Sonnet 5.5, Preise laut Anthropic am 15.11.2026: 2 $ je Million Eingabe-Tokens, 10 $ je Million Ausgabe-Tokens.
+
+| Posten | Schätzung | Stand |
+|---|---|---|
+| Eine Sprachnachricht auf etwa 6–11 Felder verteilt (~2.000 Tokens rein, ~600 raus) | ≈ 1 Cent | gerechnet |
+| 100 Sprachnachrichten im Monat | ≈ 1 € | gerechnet |
+| Monatslimit in der Konsole | 5 $ | Empfehlung |
+
 ## Ohne zusätzliche Kosten
 
 | Posten | Warum kostenlos |

@@ -84,6 +84,15 @@ An jedem Textfeld der Teamzentrale und des Spieltagsdossiers steht ein Mikrofon-
 - Damit Namen richtig geschrieben werden, schickt die Seite die Spielernamen aus dem Kader als Hinweis mit.
 - Der Browser fragt beim ersten Mal nach dem Mikrofon. Das geht nur über HTTPS (also auf der echten Adresse).
 
+### KI-Verteilung („Ganze Übung diktieren“)
+
+In „Übung erfassen“ (Übungspool und eigene Seite) steht „Ganze Übung diktieren“: frei erzählen, „Fertig“ antippen. Whisper macht daraus Text (eigener Server), Claude Sonnet 5.5 verteilt ihn auf Name, Art, Prinzip, Spieler, Feld, Dauer, Aufbau, Ablauf, Ziel, Coaching und Variationen. Die Felder werden nur vorausgefüllt und grün markiert; gespeichert wird erst mit „Übung speichern“. Steht in einem Textfeld schon etwas, wird angehängt.
+
+- Einschalten: `ANTHROPIC_API_KEY=…` in `deploy/.env`, dann `docker compose up -d`. Ohne Schlüssel meldet der Knopf „KI noch nicht eingerichtet“; alles andere läuft normal.
+- Server: `server/src/ki.ts` (offizielle Anthropic-Bibliothek, Antwort als festes JSON-Schema mit genau den Feldern der Maske, Auswahlfelder nur mit erlaubten Werten), Endpunkte `GET /api/ki/status` und `POST /api/ki/verteilen` (nur angemeldet, höchstens 60 je Trainer und Stunde).
+- Fällt die KI aus (Guthaben leer, Limit erreicht, Schlüssel falsch), steht der erkannte Text im Feld „Ablauf“ und eine verständliche Meldung erscheint.
+- Datenschutz und Kosten: `docs/datenschutz/avv-anthropic.md`, `docs/kosten.md`.
+
 ## Login
 
 Es gibt keinen fremden Anmeldedienst. 11Plan verwaltet die Konten selbst. Alle im Trainerteam heißen „Trainer“ und haben dieselben Rechte.

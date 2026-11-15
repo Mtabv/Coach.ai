@@ -23,7 +23,7 @@ beforeAll(async () => {
   await new Promise<void>((r) => upstream.listen(0, r));
   const up = upstream.address() as { port: number };
   writeFileSync(join(dir, 'tz.html'), '<!doctype html><html lang="de"><head><link href="https://fonts.googleapis.com/css2?x" rel="stylesheet"></head><body><aside class="side">Teamzentrale</aside></body></html>');
-  server = createServer(createHandler(db, { aktualisierenDatei: join(dir, 'neu-bauen'), teamzentrale: join(dir, 'tz.html'), publicDir: dir, setupToken: 'einrichten-123', datendienstUrl: `http://127.0.0.1:${up.port}`, datendienstKey: 'geheim', spracheUrl: `http://127.0.0.1:${up.port}`, secureCookies: false, publicUrl: 'https://coach.example.de' }));
+  server = createServer(createHandler(db, { aktualisierenDatei: join(dir, 'neu-bauen'), teamzentrale: join(dir, 'tz.html'), publicDir: dir, setupToken: 'einrichten-123', datendienstUrl: `http://127.0.0.1:${up.port}`, datendienstKey: 'geheim', spracheUrl: `http://127.0.0.1:${up.port}`, ki: async (a) => ({ aufbau: `${a.felder.length} Felder: ${a.text}` }), secureCookies: false, publicUrl: 'https://coach.example.de' }));
   await new Promise<void>((r) => server.listen(0, r));
   base = `http://127.0.0.1:${(server.address() as { port: number }).port}`;
 });
@@ -149,6 +149,15 @@ describe('Server', () => {
     const r = await audio(trainer);
     expect(r.status).toBe(200);
     expect((await r.json()).text).toBe('1234 Bytes Übung');
+  });
+
+  it('verteilt Text mit der KI nur angemeldet', async () => {
+    expect((await call('/api/ki/status')).status).toBe(401);
+    expect((await call('/api/ki/status', { jar: trainer })).json.bereit).toBe(true);
+    const r = await call('/api/ki/verteilen', { method: 'POST', jar: trainer, body: { maske: 'Übung', text: 'Zwei Tore', felder: [{ key: 'aufbau', label: 'Aufbau' }] } });
+    expect(r.status).toBe(200);
+    expect(r.json.felder.aufbau).toBe('1 Felder: Zwei Tore');
+    expect((await call('/api/ki/verteilen', { method: 'POST', body: { text: 'x' } })).status).toBe(401);
   });
 
   it('liefert das Frontend aus und lässt keine Pfade außerhalb zu', async () => {

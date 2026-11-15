@@ -6,6 +6,7 @@ import {
   checkPasswordRules, clearAttempts, countUsers, createInvite, createSession, createUser, deleteSession, findUserByEmail,
   hashPassword, noteAttempt, openInvite, tooManyAttempts, useInvite, userForSession, verifyPassword, type User,
 } from './auth.js';
+import { KiFehler, KI_MODELL, type KiAnfrage } from './ki.js';
 
 export interface Config {
   /** Ordner mit dem gebauten Frontend (index.html, assets/). */
@@ -30,6 +31,8 @@ export interface Config {
   aktualisierenDatei?: string;
   /** Interner Sprachdienst (Whisper auf dem eigenen Server): Aufnahme rein, Text raus. */
   spracheUrl?: string;
+  /** KI-Verteilung auf Felder (Anthropic), nur wenn ANTHROPIC_API_KEY in der .env steht. */
+  ki?: (a: KiAnfrage) => Promise<Record<string, string>>;
 }
 
 const COOKIE = 'coachai_session';
@@ -75,6 +78,7 @@ export function createHandler(db: Db, cfg: Config) {
   const sessionCookie = (t: string, maxAge: number) => `${COOKIE}=${encodeURIComponent(t)}; Path=/; HttpOnly; SameSite=Strict; Max-Age=${maxAge}${cfg.secureCookies ? '; Secure' : ''}`;
   const clearCookie = `${COOKIE}=; Path=/; HttpOnly; SameSite=Strict; Max-Age=0${cfg.secureCookies ? '; Secure' : ''}`;
 
+  const kiNutzung = new Map<number, number[]>();
   function currentUser(req: IncomingMessage): User | null { return userForSession(db, cookies(req)[COOKIE]); }
   function requireUser(req: IncomingMessage): User { const u = currentUser(req); if (!u) throw new HttpError(401, 'Bitte anmelden.'); return u; }
 
@@ -150,6 +154,26 @@ export function createHandler(db: Db, cfg: Config) {
       else if (m !== 'GET') throw new HttpError(405, 'Nicht erlaubt.');
       const stand = cfg.teamzentrale && existsSync(cfg.teamzentrale) ? statSync(cfg.teamzentrale).mtime.toISOString() : null;
       return send(res, 200, { angefordert: existsSync(cfg.aktualisierenDatei), stand });
+    }
+    if (path === '/api/ki/status' && m === 'GET') {
+      requireUser(req);
+      return send(res, 200, { bereit: !!cfg.ki, modell: cfg.ki ? KI_MODELL : null });
+    }
+    if (path === '/api/ki/verteilen' && m === 'POST') {
+      const u = requireUser(req);
+      if (!cfg.ki) throw new HttpError(503, 'KI noch nicht eingerichtet: ANTHROPIC_API_KEY fehlt in deploy/.env.');
+      // Schutz vor Fehlbedienung und Kosten: höchstens 60 Verteilungen je Trainer und Stunde.
+      const stunde = Date.now() - 3600e3, l = (kiNutzung.get(u.id) ?? []).filter((t) => t > stunde);
+      if (l.length >= 60) throw new HttpError(429, 'Stundengrenze für die KI erreicht. Bitte später erneut.');
+      kiNutzung.set(u.id, [...l, Date.now()]);
+      const b = await readJson(req);
+      try {
+        const felder = await cfg.ki({ maske: String(b.maske ?? '').slice(0, 60), text: b.text as string, felder: b.felder as KiAnfrage['felder'], kontext: typeof b.kontext === 'string' ? b.kontext : undefined });
+        return send(res, 200, { felder });
+      } catch (e) {
+        if (e instanceof KiFehler) throw new HttpError(e.status, e.message);
+        throw e;
+      }
     }
     if (path === '/api/sprache' && m === 'POST') {
       requireUser(req);

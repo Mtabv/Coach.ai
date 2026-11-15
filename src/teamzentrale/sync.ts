@@ -9,6 +9,7 @@
  */
 import { abgleichen } from './merge';
 import { diktatStarten } from './diktat';
+import { kiUebungStarten } from './kiUebung';
 
 type Obj = Record<string, unknown>;
 type Daten = Record<string, unknown>;
@@ -328,6 +329,7 @@ async function start() {
   if (!st.nutzer) { location.href = '/'; return; }
   kontoKasten(st.nutzer.name);
   diktatStarten();
+  kiUebungStarten();
   dateiStand = schnappschuss();
   try {
     const gespeichert = await laden();

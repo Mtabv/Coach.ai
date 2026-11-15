@@ -11,6 +11,8 @@ services:
       COACHAI_DATENDIENST_KEY: ${COACHAI_DATENDIENST_KEY:?fehlt in .env}
       COACHAI_DATENDIENST_URL: http://datendienst:8000
       COACHAI_SPRACHE_URL: http://sprachdienst:8100
+      # KI-Verteilung (Claude Sonnet 5.5). Ohne Schlüssel bleibt die Funktion aus, alles andere läuft normal.
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       COACHAI_ADRESSE: https://${COACHAI_DOMAIN:?fehlt in .env}
       COACHAI_HTTPS: "1"
     volumes:
