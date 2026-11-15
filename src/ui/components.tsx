@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import type { DataStatus } from '../domain/types';
 import { FLAG_LABEL, type FV } from '../dossier/model';
+import { isEmbeddedHost } from '../export/hostBridge';
+import { MAX_SEKUNDEN, MIC_SVG, anhaengen, aufnahmeStarten, dauer, diktatMoeglich, inText, type Aufnahme } from '../sprache/aufnahme';
 
 export function Badge({ tone = 'neutral', children, title }: { tone?: 'neutral' | 'ok' | 'warn' | 'danger' | 'info' | 'demo' | 'dark' | 'lime'; children: ReactNode; title?: string }) {
   return (
@@ -110,73 +112,70 @@ export function TextInput({ label, value, onChange, hint, type = 'text', placeho
 }
 
 // ---------------------------------------------------------------------------
-// Diktat – nur, wenn der Browser Spracherkennung anbietet
+// Diktat – Aufnahme im Browser, Umwandlung auf dem eigenen Server (Whisper)
 // ---------------------------------------------------------------------------
 
-type SpeechRecognitionLike = {
-  lang: string;
-  continuous: boolean;
-  interimResults: boolean;
-  start: () => void;
-  stop: () => void;
-  onresult: ((e: { resultIndex: number; results: ArrayLike<ArrayLike<{ transcript: string }> & { isFinal: boolean }> }) => void) | null;
-  onend: (() => void) | null;
-  onerror: ((e: { error: string }) => void) | null;
-};
+/** Diktieren geht, wenn der Browser aufnehmen kann und die App auf dem 11Plan-Server läuft. */
+const diktatHier = () => diktatMoeglich() && !isEmbeddedHost() && /^https?:$/.test(window.location.protocol);
+export const speechSupported = () => diktatHier();
 
-function speechCtor(): (new () => SpeechRecognitionLike) | null {
-  if (typeof window === 'undefined') return null;
-  const w = window as unknown as Record<string, unknown>;
-  return (w.SpeechRecognition || w.webkitSpeechRecognition || null) as (new () => SpeechRecognitionLike) | null;
-}
-
-export const speechSupported = () => speechCtor() !== null;
-
-export function TextArea({ label, value, onChange, hint, placeholder, rows = 3, dictation = false, id: givenId }: {
+export function TextArea({ label, value, onChange, hint, placeholder, rows = 3, dictation = true, id: givenId }: {
   label: string;
   value: string;
   onChange: (v: string) => void;
   hint?: ReactNode;
   placeholder?: string;
   rows?: number;
+  /** Mikrofon am Feld (Standard: an). */
   dictation?: boolean;
   id?: string;
 }) {
   const autoId = useId('ta');
   const id = givenId ?? autoId;
-  const [listening, setListening] = useState(false);
+  const [zustand, setZustand] = useState<'bereit' | 'rec' | 'arbeit'>('bereit');
+  const [sek, setSek] = useState(0);
   const [err, setErr] = useState<string | null>(null);
-  const recRef = useRef<SpeechRecognitionLike | null>(null);
+  const aufnahme = useRef<Aufnahme | null>(null);
   const valueRef = useRef(value);
   valueRef.current = value;
-  const Ctor = dictation ? speechCtor() : null;
+  const an = dictation && diktatHier();
 
-  useEffect(() => () => recRef.current?.stop(), []);
+  useEffect(() => {
+    if (zustand !== 'rec') return;
+    const t = window.setInterval(() => {
+      const ms = Date.now() - (aufnahme.current?.start ?? Date.now());
+      setSek(Math.floor(ms / 1000));
+      if (ms > MAX_SEKUNDEN * 1000) void toggle();
+    }, 500);
+    return () => window.clearInterval(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [zustand]);
+  useEffect(() => () => { void aufnahme.current?.stoppen(); }, []);
 
-  const toggle = () => {
-    if (!Ctor) return;
-    if (listening) {
-      recRef.current?.stop();
+  const toggle = async () => {
+    if (zustand === 'arbeit') return;
+    setErr(null);
+    if (zustand === 'rec' && aufnahme.current) {
+      const a = aufnahme.current;
+      aufnahme.current = null;
+      setZustand('arbeit');
+      try {
+        const text = await inText(await a.stoppen());
+        if (text) onChange(anhaengen(valueRef.current, text));
+        else setErr('Nichts verstanden – bitte nochmal.');
+      } catch (e) {
+        setErr(`Diktat: ${(e as Error).message}`);
+      } finally {
+        setZustand('bereit');
+      }
       return;
     }
-    const rec = new Ctor();
-    rec.lang = 'de-DE';
-    rec.continuous = true;
-    rec.interimResults = false;
-    rec.onresult = (e) => {
-      let add = '';
-      for (let i = e.resultIndex; i < e.results.length; i++) if (e.results[i].isFinal) add += e.results[i][0].transcript;
-      if (add.trim()) onChange((valueRef.current ? valueRef.current.trimEnd() + ' ' : '') + add.trim());
-    };
-    rec.onerror = (e) => setErr(e.error === 'not-allowed' ? 'Mikrofon nicht freigegeben – bitte Texteingabe nutzen.' : 'Diktat nicht verfügbar – bitte Texteingabe nutzen.');
-    rec.onend = () => setListening(false);
-    recRef.current = rec;
-    setErr(null);
     try {
-      rec.start();
-      setListening(true);
-    } catch {
-      setErr('Diktat konnte nicht gestartet werden.');
+      aufnahme.current = await aufnahmeStarten();
+      setSek(0);
+      setZustand('rec');
+    } catch (e) {
+      setErr(`${(e as Error).message} – bitte Texteingabe nutzen.`);
     }
   };
 
@@ -184,9 +183,11 @@ export function TextArea({ label, value, onChange, hint, placeholder, rows = 3, 
     <Field label={label} hint={hint} htmlFor={id}>
       <div className="textarea-wrap">
         <textarea id={id} className="input textarea" rows={rows} value={value} placeholder={placeholder} onChange={(e) => onChange(e.target.value)} />
-        {Ctor && (
-          <button type="button" className={`btn btn-icon dictate ${listening ? 'is-on' : ''}`} onClick={toggle} aria-pressed={listening} aria-label={listening ? 'Diktat beenden' : 'Diktieren'} title={listening ? 'Diktat beenden' : 'Diktieren (Spracherkennung des Browsers)'}>
-            {listening ? '■' : '🎙'}
+        {an && (
+          <button type="button" className={`btn btn-icon dictate ${zustand === 'rec' ? 'is-on' : ''}`} onClick={() => void toggle()} disabled={zustand === 'arbeit'} aria-pressed={zustand === 'rec'}
+            aria-label={zustand === 'rec' ? 'Aufnahme beenden' : zustand === 'arbeit' ? 'wird umgewandelt' : 'In dieses Feld diktieren'}
+            title={zustand === 'rec' ? 'Aufnahme beenden' : zustand === 'arbeit' ? 'wird in Text umgewandelt …' : 'In dieses Feld diktieren'}>
+            {zustand === 'rec' ? <span className="dictate-zeit">● {dauer(sek * 1000)}</span> : zustand === 'arbeit' ? <span className="dictate-kreis" /> : <span dangerouslySetInnerHTML={{ __html: MIC_SVG }} />}
           </button>
         )}
       </div>

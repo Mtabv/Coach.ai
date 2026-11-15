@@ -7,6 +7,16 @@ import { DossierTab } from '../match/DossierTab';
 import { ExportTab } from '../match/ExportTab';
 import { QuestionnaireTab } from '../match/QuestionnaireTab';
 import { eingebettet } from '../zugang/vorbereitung';
+import { useDatenImRahmen } from '../zugang/datenLaden';
+import type { Match, TeamProfile } from '../../domain/types';
+
+/** Eingebettet: Daten laden selbst und zeigt, ob gerade geladen wird. */
+function DatenImRahmen({ match, team }: { match: Match; team: TeamProfile }) {
+  const { laeuft, fortschritt, fehler } = useDatenImRahmen(match, team);
+  if (laeuft) return <Notice tone="info" title="Daten von fussball.de und FuPa werden geladen …">{fortschritt ?? 'Das dauert etwa eine halbe Minute.'}</Notice>;
+  if (fehler) return <Notice tone="warn" title="Daten konnten nicht geladen werden">{fehler} – im Schritt „Daten“ erneut versuchen.</Notice>;
+  return null;
+}
 
 const TABS: { tab: Extract<Route, { name: 'spiel' }>['tab']; label: string; short: string }[] = [
   { tab: 'daten', label: 'Datenbasis prüfen', short: 'Daten' },
@@ -60,6 +70,7 @@ export function MatchWorkspace({ matchId, tab }: { matchId: string; tab: Extract
           </div>
         </div>
       </div>}
+      {eingebettet && <DatenImRahmen match={match} team={team} />}
       <nav className="stepper" aria-label="Arbeitsschritte">
         {tabs.map((t, i) => (
           <a key={t.tab} href={href({ name: 'spiel', matchId, tab: t.tab })} className={`step ${t.tab === tab ? 'is-active' : ''} ${i < idx ? 'is-done' : ''}`} aria-current={t.tab === tab ? 'step' : undefined}>

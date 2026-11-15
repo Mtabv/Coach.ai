@@ -2944,3 +2944,7 @@ input[type='file']::file-selector-button { font: inherit; color: var(--ink); bac
 /* Dossier als Reiter in der Teamzentrale: ohne Kopfzeile, knapper Rand. */
 .app.eingebettet .main { padding-top: 12px; padding-bottom: 16px; }
 .app.eingebettet .page { padding-top: 0; }
+.dictate .dictate-zeit { font-size: 12px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.dictate .dictate-kreis { width: 12px; height: 12px; border-radius: 50%; border: 2px solid currentColor; border-right-color: transparent; display: inline-block; animation: diktatDreh .8s linear infinite; }
+.dictate svg { display: block; }
+@keyframes diktatDreh { to { transform: rotate(360deg); } }

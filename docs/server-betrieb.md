@@ -61,6 +61,8 @@ Die Spielvorbereitung hat die Reiter „Gegnervorbereitung“, „Aufstellung“
 - Das Dossier übernimmt bei jedem Öffnen, was in der Gegnervorbereitung steht (`src/ui/zugang/vorbereitung.ts`): Gegnerbeobachtung und Plan nach Spielphasen (gleiche Frage-Kennungen), drei Botschaften (je Zeile eine), Leitmotiv, Merksätze (leer = keine), Kleidung und Kader. Leere Felder ändern im Dossier nichts. Den eigenen Fragebogen des Dossiers gibt es eingebettet nicht mehr.
 - „Spieltagsdossier abschließen“ am Ende der Gegnervorbereitung springt direkt zum Abschluss. Der Abschluss friert die Version ein und meldet ihn an die Teamzentrale (`postMessage`, nur gleiche Adresse); dort steht dann „Dossier ✓“ und das Spiel gilt als vorbereitet.
 - Damit das Einbetten klappt, erlaubt Caddy Rahmen nur von der eigenen Adresse (`X-Frame-Options SAMEORIGIN`).
+- Daten je Spiel: Hinter dem Spieltitel steht „✓ Daten geladen · Stand“ mit „aktualisieren“ oder „Daten noch nicht geladen – jetzt laden“. Geladen wird über das Dossier (unsichtbar im Hintergrund, `&laden=1`); es meldet den Stand erst, wenn er auf dem Server gespeichert ist. Beim ersten Öffnen lädt das Dossier die Daten selbst.
+- Wappen: Die Teamzentrale ordnet die FuPa-Wappen über den Vereinsnamen zu (Abkürzungen wie „KS“, „Eintr.“), nicht über den Tabellenplatz – FuPa und fussball.de sind oft unterschiedlich weit.
 - Den Startstand (Mannschaftsprofil) legt der Container `teamzentrale` als `/daten/dossier-start.json` ab, solange auf dem Server noch kein Dossier-Stand gespeichert ist.
 
 ### Speichern in der Teamzentrale
@@ -74,7 +76,7 @@ Die Spielvorbereitung hat die Reiter „Gegnervorbereitung“, „Aufstellung“
 
 ### Diktieren
 
-Unter jedem mehrzeiligen Textfeld der Teamzentrale steht „Diktieren“: antippen, sprechen, „Stopp“ antippen. Nach wenigen Sekunden wird der Text an das Feld angehängt und wie jede Eingabe gespeichert.
+An jedem Textfeld der Teamzentrale und des Spieltagsdossiers steht ein Mikrofon-Symbol: antippen, sprechen, nochmal antippen. Nach wenigen Sekunden wird der Text an das Feld angehängt und wie jede Eingabe gespeichert. Die früheren Entwurfsknöpfe („Sprechen“, „Sprachnachricht“, „Sprachaufnahme“ mit Browser-Spracherkennung) sind ersetzt; gemeinsamer Code in `src/sprache/aufnahme.ts`.
 
 - Die Aufnahme geht über `/api/sprache` (nur angemeldet) an den Container `sprachdienst` (`tools/sprachdienst/`, faster-whisper). Sie verlässt den Server nicht und wird nicht gespeichert; es gibt kein Protokoll mit Inhalten.
 - Modell: `small` (etwa 460 MB, einmal beim ersten Start geladen und im Volume `sprach-modelle` abgelegt). Anderes Modell über `WHISPER_MODELL` in `deploy/.env`: `base` ist schneller, `medium` genauer, braucht aber deutlich mehr Speicher.

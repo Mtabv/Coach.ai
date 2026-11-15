@@ -12,6 +12,8 @@ export const eingebettet = typeof window !== 'undefined' && window.self !== wind
 export const tzSpiel = q.get('tz');
 /** Direkt zum Abschluss springen („Spieltagsdossier abschließen“ in der Teamzentrale). */
 export const zumAbschluss = q.get('schritt') === 'abschluss';
+/** Unsichtbar geöffnet, nur um die Daten von fussball.de und FuPa zu laden („Daten laden“ im Spielkopf). */
+export const nurLaden = q.get('laden') === '1';
 
 export interface TzVorbereitung {
   antworten: Record<string, string>;
@@ -30,6 +32,12 @@ export function ausTeamzentrale(): TzVorbereitung | null {
     const f = (window.parent as unknown as { __11planVorbereitung?: (id: string) => TzVorbereitung | null }).__11planVorbereitung;
     return typeof f === 'function' ? f(tzSpiel) : null;
   } catch { return null; }
+}
+
+/** Meldung an die Teamzentrale, z. B. Datenstand oder Ladefehler. */
+export function melden(typ: 'datenstand' | 'daten-geladen' | 'daten-fehler', daten: Record<string, unknown> = {}) {
+  if (!eingebettet || !tzSpiel) return;
+  try { window.parent.postMessage({ typ: `11plan-${typ}`, spiel: tzSpiel, ...daten }, window.location.origin); } catch { /* ohne Teamzentrale nichts zu melden */ }
 }
 
 /** Meldet der Teamzentrale, dass das Dossier abgeschlossen bzw. wieder geöffnet wurde. */

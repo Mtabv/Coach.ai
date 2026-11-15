@@ -25,7 +25,8 @@ export function useSpielAusTeamzentrale() {
       const t = s.teams.find((x) => x.id === team.id);
       if (tz && t && s.preparations[id]) updatePrep(s, id, (p) => uebernehmen(p, t, home, tz, now()));
     };
-    const schritt = (id: string) => zumAbschluss ? 'export' as const : (state.preparations[id]?.dataLoadedAt ? 'dossier' as const : 'daten' as const);
+    // Eingebettet lädt das Dossier die Daten selbst; ohne Teamzentrale bleibt der erste Schritt „Daten“.
+    const schritt = (_id: string) => zumAbschluss ? 'export' as const : tz ? 'dossier' as const : 'daten' as const;
     const team = state.teams.find((t) => t.id === state.activeTeamId) ?? state.teams[0];
     if (!team) return;
     const vorhanden = state.matches.find((m) => m.teamId === team.id && m.date === datum && m.opponent === gegner);
@@ -65,7 +66,7 @@ export function useSpielAusTeamzentrale() {
       if (!m.isHome) fahrzeitSetzen(s, m.id);
       vorbereitungSetzen(s, m.id, m.isHome);
     });
-    navigate({ name: 'spiel', matchId: m.id, tab: zumAbschluss ? 'export' : 'daten' });
+    navigate({ name: 'spiel', matchId: m.id, tab: schritt(m.id) });
     // nur einmal beim Öffnen
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

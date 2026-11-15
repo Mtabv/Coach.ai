@@ -296,15 +296,45 @@ def img64(url):
     res = 'data:image/png;base64,' + base64.b64encode(b).decode() if len(b) > 200 else None
     if res: CACHE['bilder']['w64:' + url] = res
     return res
+# Zuordnung über den Vereinsnamen, nie über den Tabellenplatz: FuPa und fussball.de sind oft
+# unterschiedlich weit (Nachholspiele, späteres Eintragen), dann stimmen die Plätze nicht überein.
+ABK = {'ks': 'kassel', 'ffm': 'frankfurt', 'eintr': 'eintracht', 'vikt': 'viktoria', 'bor': 'borussia', 'germ': 'germania'}
+def _woerter(n):
+    return {ABK.get(w, w) for w in re.sub(r'[^a-z0-9]+', ' ', fold(n)).split() if len(ABK.get(w, w)) > 2}
+def _zweite(n):
+    m = re.search(r'\s(ii|iii|2|3)$', fold(n)); return {'ii': '2', 'iii': '3'}.get(m.group(1), m.group(1)) if m else ''
+def namensnaehe(a, b):
+    if _zweite(a) != _zweite(b): return 0
+    x, y = re.sub(r'[^a-z0-9]+', ' ', fold(a)).strip(), re.sub(r'[^a-z0-9]+', ' ', fold(b)).strip()
+    if not x or not y: return 0
+    if x == y: return 1
+    if x in y or y in x: return 0.9
+    tx, ty = _woerter(a), _woerter(b)
+    gleich = lambda p, q: p == q or (min(len(p), len(q)) >= 4 and (p.startswith(q) or q.startswith(p)))
+    inter = sum(1 for p in tx if any(gleich(p, q) for q in ty))
+    union = len(tx) + len(ty) - inter
+    return inter / union if union else 0
+def zuordnen(namen, kandidaten):
+    """Eindeutige Zuordnung Name -> Kandidat, beste Paare zuerst; unter 0,5 Ähnlichkeit keine."""
+    paare = sorted(((namensnaehe(n, k), n, k) for n in namen for k in kandidaten), key=lambda t: -t[0])
+    out, vergeben = {}, set()
+    for sc, n, k in paare:
+        if sc < 0.5: break
+        if n in out or k in vergeben: continue
+        out[n] = k; vergeben.add(k)
+    return out
 crests = {}
 try:
     ft = get('/api/coachai/fupa/tabelle', wettbewerb='kassel-gruppenliga-2', saison='2026-27')['rows']
-    byrank = {x['rank']: x for x in ft}
+    byname = {x['team']: x for x in ft if x.get('team')}
+    paar = zuordnen([x['team'] for x in table], list(byname))
     for x in table:
-        f = byrank.get(x['place'])
+        f = byname.get(paar.get(x['team']))
         if f: crests[x['team']] = img64(f.get('team_image'))
+    ohne = [x['team'] for x in table if x['team'] not in paar]
+    if ohne: print('Wappen ohne eindeutigen FuPa-Namen (Suche folgt):', ohne)
 except Exception as e: print('Wappen Liga:', e)
-for name in sorted({g['opp'] for g in games} - set(crests)):
+for name in sorted(({g['opp'] for g in games} | {x['team'] for x in table}) - set(crests) - {OWN}):
     base = re.sub(r'\s+(II|2)$', '', name); nr = 2 if re.search(r'\s(II|2)$', name) else 1
     variants = [base, base.replace(' KS', ' Kassel'), base.replace('KS', 'Kassel')]
     try:
