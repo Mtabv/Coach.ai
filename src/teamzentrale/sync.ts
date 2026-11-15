@@ -28,7 +28,7 @@ const NUR_ANSICHT = new Set([
   'calView', 'weekStart', 'showAbs', 'picked', 'activeSpot', 'trainTab', 'unitFilter', 'exFilter', 'exKind', 'exQ',
   'pickFor', 'moreUp', 'morePast', 'exId', 'trainEv', 'game', 'post', 'absForm', 'declining', 'editing', 'flash',
   'anaTab', 'anaPlayer', 'focusSug', 'setTab', 'pvTab', 'kSort', 'evFocus', 'evForm', 'nu', 'nuPhase', 'cmpA', 'cmpB',
-  'komTab', 'dragged', 'pvNow', 'msg', 'showEv', 'pvAna', 'spieler', 'absOpen', 'dashWeek', 'flashNext', 'dossierEnde',
+  'komTab', 'dragged', 'pvNow', 'msg', 'showEv', 'pvAna', 'spieler', 'absOpen', 'dashWeek', 'flashNext', 'dossierEnde', 'exEdit',
 ]);
 
 const global = (name: string): unknown => {
