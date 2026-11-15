@@ -1,3 +1,4 @@
+import { MaskenDiktatKnopf } from '../sprache/MaskenDiktatKnopf';
 import { useState } from 'react';
 import { createMatch } from '../../domain/factory';
 import { isValidDate, isValidTime } from '../../domain/time';
@@ -50,6 +51,7 @@ export function NewMatchPage() {
         <div>
           <p className="eyebrow">Spiel anlegen</p>
           <h1>Neue Begegnung</h1>
+          <div className="knopf-leiste"><MaskenDiktatKnopf titel="Neue Begegnung" /></div>
           <p className="muted">{team.name}. Neue Begegnungen starten ohne Antworten oder Botschaften anderer Spiele. Der zuletzt bestätigte Kader wird übernommen.</p>
         </div>
       </div>

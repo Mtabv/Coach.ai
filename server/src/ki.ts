@@ -42,7 +42,7 @@ Regeln:
 function pruefen(a: KiAnfrage) {
   if (typeof a.text !== 'string' || !a.text.trim()) throw new KiFehler(400, 'Kein Text.');
   if (a.text.length > 12000) throw new KiFehler(413, 'Der Text ist zu lang.');
-  if (!Array.isArray(a.felder) || !a.felder.length || a.felder.length > 25) throw new KiFehler(400, 'Felder fehlen.');
+  if (!Array.isArray(a.felder) || !a.felder.length || a.felder.length > 40) throw new KiFehler(400, 'Felder fehlen.');
   for (const f of a.felder) {
     if (!f || typeof f.key !== 'string' || !/^[a-z][a-z0-9_]{0,30}$/.test(f.key)) throw new KiFehler(400, 'Ungültiges Feld.');
     if (typeof f.label !== 'string' || f.label.length > 80) throw new KiFehler(400, 'Ungültiges Feld.');

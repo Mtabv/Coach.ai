@@ -8,6 +8,7 @@ import { ExportTab } from '../match/ExportTab';
 import { QuestionnaireTab } from '../match/QuestionnaireTab';
 import { eingebettet } from '../zugang/vorbereitung';
 import { useDatenImRahmen } from '../zugang/datenLaden';
+import { MaskenDiktatKnopf } from '../sprache/MaskenDiktatKnopf';
 import type { Match, TeamProfile } from '../../domain/types';
 
 /** Eingebettet: Daten laden selbst und zeigt, ob gerade geladen wird. */
@@ -82,6 +83,7 @@ export function MatchWorkspace({ matchId, tab }: { matchId: string; tab: Extract
           </a>
         ))}
       </nav>
+      {tab !== 'export' && <div className="knopf-leiste"><MaskenDiktatKnopf titel={`${tabs[idx]?.label ?? 'Dossier'} – ${match.opponent}`} /></div>}
       {tab === 'daten' && <DataTab match={match} team={team} />}
       {tab === 'fragebogen' && !eingebettet && <QuestionnaireTab match={match} team={team} />}
       {tab === 'dossier' && <DossierTab match={match} team={team} />}

@@ -1,3 +1,4 @@
+import { MaskenDiktatKnopf } from '../sprache/MaskenDiktatKnopf';
 import { useState } from 'react';
 import { ALL_SLIDES, createTeam, now, uid } from '../../domain/factory';
 import { computeAwaySchedule, computeHomeSchedule, formatTimestamp } from '../../domain/time';
@@ -33,6 +34,7 @@ export function NewTeamPage() {
         <div>
           <p className="eyebrow">Mannschaft einrichten</p>
           <h1>Neue Mannschaft</h1>
+          <div className="knopf-leiste"><MaskenDiktatKnopf titel="Mannschaft" /></div>
           <p className="muted">Jede Mannschaft erhält eigene Standards. Zeitmuster, Kleidung und Kader legen Sie im nächsten Schritt fest.</p>
         </div>
       </div>
@@ -78,6 +80,7 @@ export function TeamPage() {
         <div>
           <p className="eyebrow">Mannschaft einrichten</p>
           <h1>{team.name}</h1>
+          <div className="knopf-leiste"><MaskenDiktatKnopf titel="Mannschaft" /></div>
           <p className="muted">Einmalige Einrichtung. Änderungen werden automatisch gespeichert und wirken nur auf neue bzw. noch nicht bestätigte Dossiers.</p>
         </div>
         <div className="row gap wrap">

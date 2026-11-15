@@ -2948,3 +2948,4 @@ input[type='file']::file-selector-button { font: inherit; color: var(--ink); bac
 .dictate .dictate-kreis { width: 12px; height: 12px; border-radius: 50%; border: 2px solid currentColor; border-right-color: transparent; display: inline-block; animation: diktatDreh .8s linear infinite; }
 .dictate svg { display: block; }
 @keyframes diktatDreh { to { transform: rotate(360deg); } }
+.knopf-leiste { display: flex; justify-content: flex-end; margin: 8px 0; }

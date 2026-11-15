@@ -76,7 +76,7 @@ Die Spielvorbereitung hat die Reiter „Gegnervorbereitung“, „Aufstellung“
 
 ### Diktieren
 
-An jedem Textfeld der Teamzentrale und des Spieltagsdossiers steht ein Mikrofon-Symbol: antippen, sprechen, nochmal antippen. Nach wenigen Sekunden wird der Text an das Feld angehängt und wie jede Eingabe gespeichert. Die früheren Entwurfsknöpfe („Sprechen“, „Sprachnachricht“, „Sprachaufnahme“ mit Browser-Spracherkennung) sind ersetzt; gemeinsamer Code in `src/sprache/aufnahme.ts`.
+Pro Eingabemaske gibt es **ein** Mikrofon („Diktieren“, oben rechts auf der Seite bzw. im Kopf eines offenen Dialogs): antippen, alles für diese Seite am Stück erzählen, „Fertig“. Whisper macht Text daraus, die KI (siehe unten) verteilt ihn auf alle Textfelder der Maske; Textfelder bekommen den Text angehängt, einzeilige Felder werden nur gefüllt, wenn sie leer sind. Ohne KI-Schlüssel landet der Text im zuletzt benutzten Feld. In „Übung erfassen“ heißt der Knopf „Ganze Übung diktieren“ und kennt die Felder genauer. Gemeinsamer Code: `src/sprache/aufnahme.ts`, `src/sprache/maskenKi.ts`; Teamzentrale `src/teamzentrale/maskenDiktat.ts`, Dossier `src/ui/sprache/MaskenDiktatKnopf.tsx`.
 
 - Die Aufnahme geht über `/api/sprache` (nur angemeldet) an den Container `sprachdienst` (`tools/sprachdienst/`, faster-whisper). Sie verlässt den Server nicht und wird nicht gespeichert; es gibt kein Protokoll mit Inhalten.
 - Modell: `small` (etwa 460 MB, einmal beim ersten Start geladen und im Volume `sprach-modelle` abgelegt). Anderes Modell über `WHISPER_MODELL` in `deploy/.env`: `base` ist schneller, `medium` genauer, braucht aber deutlich mehr Speicher.

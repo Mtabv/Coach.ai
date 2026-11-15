@@ -37,7 +37,7 @@ export function QuestionnaireTab({ match, team }: { match: Match; team: TeamProf
           </div>
         </div>
         <p className="muted small">
-          Bereits bekannte Angaben sind übernommen. „Nicht bekannt“ ist eine gültige Antwort. {speechSupported() ? 'Über das Mikrofonsymbol an jedem Textfeld diktieren: antippen, sprechen, nochmal antippen.' : 'Für Diktat können Sie die Diktierfunktion Ihrer Tastatur nutzen.'}
+          Bereits bekannte Angaben sind übernommen. „Nicht bekannt“ ist eine gültige Antwort. {speechSupported() ? 'Über „Diktieren“ oben alles am Stück einsprechen – die KI verteilt es auf die Fragen.' : 'Für Diktat können Sie die Diktierfunktion Ihrer Tastatur nutzen.'}
         </p>
         {match.id === REFERENCE_MATCH_ID && (
           <Notice tone="demo" title="Historischer Referenzfall">
@@ -122,7 +122,7 @@ function TextAnswer({ q, ans, setAnswer }: { q: QuestionDef; ans: Answer | undef
   return (
     <>
       {!unknown && (
-        <TextArea label="Ihre Beobachtung" value={ans?.text ?? ''} placeholder={q.placeholder} dictation onChange={(v) => setAnswer({ text: v, state: v.trim() ? 'beantwortet' : 'offen' })} />
+        <TextArea label="Ihre Beobachtung" value={ans?.text ?? ''} placeholder={q.placeholder} onChange={(v) => setAnswer({ text: v, state: v.trim() ? 'beantwortet' : 'offen' })} />
       )}
       <div className="row gap wrap">
         {q.allowUnknown && (
@@ -335,7 +335,7 @@ function KitAnswer({ prep, setPrep, ans, setAnswer, summary }: { prep: Preparati
         </button>
       )}
       {confirmed && <p className="small muted">{summary}</p>}
-      <TextArea label="Weitere organisatorische Besonderheiten" value={prep.organisation.notes} rows={2} dictation onChange={(v) => setPrep((p) => (p.organisation.notes = v))} />
+      <TextArea label="Weitere organisatorische Besonderheiten" value={prep.organisation.notes} rows={2} onChange={(v) => setPrep((p) => (p.organisation.notes = v))} />
     </>
   );
 }
@@ -468,7 +468,7 @@ function MissionAnswer({ prep, setPrep }: { prep: Preparation; setPrep: SetPrep 
       {prep.mission.messages.map((m, i) => (
         <fieldset key={i} className="mission">
           <legend>Botschaft {i + 1}</legend>
-          <TextArea label="In Ihren Worten" value={m.coachRaw} rows={2} dictation onChange={(v) => setMsg(i, { coachRaw: v })} placeholder="Was sollen die Jungs mitnehmen?" />
+          <TextArea label="In Ihren Worten" value={m.coachRaw} rows={2} onChange={(v) => setMsg(i, { coachRaw: v })} placeholder="Was sollen die Jungs mitnehmen?" />
           <button
             className="btn btn-small"
             disabled={!m.coachRaw.trim() || busy === i}

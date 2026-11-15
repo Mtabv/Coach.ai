@@ -119,14 +119,14 @@ export function TextInput({ label, value, onChange, hint, type = 'text', placeho
 const diktatHier = () => diktatMoeglich() && !isEmbeddedHost() && /^https?:$/.test(window.location.protocol);
 export const speechSupported = () => diktatHier();
 
-export function TextArea({ label, value, onChange, hint, placeholder, rows = 3, dictation = true, id: givenId }: {
+export function TextArea({ label, value, onChange, hint, placeholder, rows = 3, dictation = false, id: givenId }: {
   label: string;
   value: string;
   onChange: (v: string) => void;
   hint?: ReactNode;
   placeholder?: string;
   rows?: number;
-  /** Mikrofon am Feld (Standard: an). */
+  /** Mikrofon am einzelnen Feld (Standard: aus – es gibt ein Mikrofon pro Seite). */
   dictation?: boolean;
   id?: string;
 }) {
