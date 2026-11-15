@@ -28,11 +28,14 @@ export interface Config {
   dossierStart?: string;
   /** Merkzettel für den Bau-Container: Teamzentrale sofort neu bauen (Knopf „Jetzt aktualisieren“). */
   aktualisierenDatei?: string;
+  /** Interner Sprachdienst (Whisper auf dem eigenen Server): Aufnahme rein, Text raus. */
+  spracheUrl?: string;
 }
 
 const COOKIE = 'coachai_session';
 const MAX_BODY = 25 * 1024 * 1024; // Zustand mit Wappen und Bildern als Daten-URLs
 const HISTORY_KEEP = 50;
+const MAX_AUDIO = 20 * 1024 * 1024; // etwa eine Viertelstunde Sprache
 const TYPES: Record<string, string> = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.svg': 'image/svg+xml', '.png': 'image/png', '.jpg': 'image/jpeg', '.ico': 'image/x-icon', '.json': 'application/json', '.woff2': 'font/woff2', '.webmanifest': 'application/manifest+json' };
 
 class HttpError extends Error { constructor(public status: number, message: string) { super(message); } }
@@ -147,6 +150,24 @@ export function createHandler(db: Db, cfg: Config) {
       else if (m !== 'GET') throw new HttpError(405, 'Nicht erlaubt.');
       const stand = cfg.teamzentrale && existsSync(cfg.teamzentrale) ? statSync(cfg.teamzentrale).mtime.toISOString() : null;
       return send(res, 200, { angefordert: existsSync(cfg.aktualisierenDatei), stand });
+    }
+    if (path === '/api/sprache' && m === 'POST') {
+      requireUser(req);
+      if (!cfg.spracheUrl) throw new HttpError(503, 'Diktieren ist auf diesem Server nicht eingerichtet.');
+      let size = 0; const chunks: Buffer[] = [];
+      for await (const c of req) { size += (c as Buffer).length; if (size > MAX_AUDIO) throw new HttpError(413, 'Die Aufnahme ist zu lang.'); chunks.push(c as Buffer); }
+      if (!size) throw new HttpError(400, 'Keine Aufnahme.');
+      const hinweis = String(req.headers['x-hinweis'] || '').slice(0, 1500);
+      let r: Response;
+      try {
+        r = await fetch(cfg.spracheUrl.replace(/\/$/, '') + '/text', {
+          method: 'POST', body: Buffer.concat(chunks), headers: { 'Content-Type': 'application/octet-stream', ...(hinweis ? { 'X-Hinweis': hinweis } : {}) },
+          signal: AbortSignal.timeout(300_000),
+        });
+      } catch { throw new HttpError(502, 'Der Sprachdienst ist gerade nicht erreichbar.'); }
+      const b = await r.json().catch(() => ({})) as { text?: string; fehler?: string };
+      if (!r.ok || typeof b.text !== 'string') throw new HttpError(r.status === 413 ? 413 : 502, b.fehler || 'Die Aufnahme konnte nicht umgewandelt werden.');
+      return send(res, 200, { text: b.text });
     }
     const doc = /^\/api\/dokumente\/([a-z0-9-]{1,40})$/.exec(path);
     if (doc && m === 'GET') {

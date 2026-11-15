@@ -16,11 +16,14 @@ beforeAll(async () => {
   mkdirSync(join(dir, '.vite'));
   writeFileSync(join(dir, '.vite', 'manifest.json'), JSON.stringify({ 'src/teamzentrale/sync.ts': { file: 'assets/tz-test.js' } }));
   // Stellvertreter für den Datendienst: merkt sich den mitgeschickten Schlüssel.
-  upstream = createServer((req, res) => { upstreamKey = String(req.headers['x-api-key']); res.writeHead(200, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ pfad: req.url })); });
+  upstream = createServer((req, res) => {
+    // Stellvertreter für den Sprachdienst: antwortet mit der Größe der Aufnahme und dem Hinweis.
+    if (req.url === '/text') { let n = 0; req.on('data', (c) => { n += c.length; }); req.on('end', () => { res.writeHead(200, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ text: `${n} Bytes ${decodeURIComponent(String(req.headers['x-hinweis'] || ''))}`.trim() })); }); return; }
+    upstreamKey = String(req.headers['x-api-key']); res.writeHead(200, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ pfad: req.url })); });
   await new Promise<void>((r) => upstream.listen(0, r));
   const up = upstream.address() as { port: number };
   writeFileSync(join(dir, 'tz.html'), '<!doctype html><html lang="de"><head><link href="https://fonts.googleapis.com/css2?x" rel="stylesheet"></head><body><aside class="side">Teamzentrale</aside></body></html>');
-  server = createServer(createHandler(db, { aktualisierenDatei: join(dir, 'neu-bauen'), teamzentrale: join(dir, 'tz.html'), publicDir: dir, setupToken: 'einrichten-123', datendienstUrl: `http://127.0.0.1:${up.port}`, datendienstKey: 'geheim', secureCookies: false, publicUrl: 'https://coach.example.de' }));
+  server = createServer(createHandler(db, { aktualisierenDatei: join(dir, 'neu-bauen'), teamzentrale: join(dir, 'tz.html'), publicDir: dir, setupToken: 'einrichten-123', datendienstUrl: `http://127.0.0.1:${up.port}`, datendienstKey: 'geheim', spracheUrl: `http://127.0.0.1:${up.port}`, secureCookies: false, publicUrl: 'https://coach.example.de' }));
   await new Promise<void>((r) => server.listen(0, r));
   base = `http://127.0.0.1:${(server.address() as { port: number }).port}`;
 });
@@ -138,6 +141,14 @@ describe('Server', () => {
     expect(r.status).toBe(200);
     expect(r.json.angefordert).toBe(true);
     expect(typeof r.json.stand).toBe('string');
+  });
+
+  it('wandelt Aufnahmen nur angemeldet über den Sprachdienst in Text um', async () => {
+    const audio = (jar?: Jar) => fetch(base + '/api/sprache', { method: 'POST', body: new Uint8Array(1234), headers: { 'X-CoachAI': '1', 'X-Hinweis': encodeURIComponent('Übung'), ...(jar ? { Cookie: jar.cookie } : {}) } });
+    expect((await audio()).status).toBe(401);
+    const r = await audio(trainer);
+    expect(r.status).toBe(200);
+    expect((await r.json()).text).toBe('1234 Bytes Übung');
   });
 
   it('liefert das Frontend aus und lässt keine Pfade außerhalb zu', async () => {

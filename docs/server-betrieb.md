@@ -13,6 +13,8 @@ Hetzner Cloud **CPX22** (2 vCPU, 4 GB RAM). Der Server baut bei jedem Update die
 | `caddy` | HTTPS mit automatischem Zertifikat für die eigene Domain | ja, Port 80 und 443 |
 | `app` | Oberfläche, Login, gemeinsamer Datenstand (SQLite), Weiterleitung zum Datendienst | nein, nur über Caddy |
 | `datendienst` | Abruf von fussball.de und FuPa mit Zwischenspeicher | nein |
+| `teamzentrale` | baut die Teamzentrale mit den aktuellen Daten | nein |
+| `sprachdienst` | Diktieren: Sprachaufnahme in Text (Whisper, läuft auf dem eigenen Server) | nein |
 
 Alle Dateien liegen in `deploy/`. Die Einstellungen stehen in `deploy/.env`, die nur auf dem Server existiert (Vorlage: `deploy/.env.beispiel`).
 
@@ -64,6 +66,16 @@ Der Server passt die Seite beim Ausliefern an: dunkler Modus, Schriften vom eige
 - Alle 15 Sekunden und beim Zurückkehren in den Tab werden Änderungen der anderen Trainer geholt. Während jemand tippt, wartet der neue Stand, bis das Feld verlassen wird.
 - Haben zwei Trainer gleichzeitig gespeichert, werden beide Änderungen zusammengeführt (`src/teamzentrale/merge.ts`). Nur wenn beide genau dieselbe Angabe unterschiedlich geändert haben, gilt die zuletzt gespeicherte.
 - Kommt eine neue Datei mit neueren Daten von fussball.de und FuPa, bleiben die Eingaben erhalten und werden über die neuen Daten gelegt.
+
+### Diktieren
+
+Unter jedem mehrzeiligen Textfeld der Teamzentrale steht „Diktieren“: antippen, sprechen, „Stopp“ antippen. Nach wenigen Sekunden wird der Text an das Feld angehängt und wie jede Eingabe gespeichert.
+
+- Die Aufnahme geht über `/api/sprache` (nur angemeldet) an den Container `sprachdienst` (`tools/sprachdienst/`, faster-whisper). Sie verlässt den Server nicht und wird nicht gespeichert; es gibt kein Protokoll mit Inhalten.
+- Modell: `small` (etwa 460 MB, einmal beim ersten Start geladen und im Volume `sprach-modelle` abgelegt). Anderes Modell über `WHISPER_MODELL` in `deploy/.env`: `base` ist schneller, `medium` genauer, braucht aber deutlich mehr Speicher.
+- Das Modell belegt im Betrieb etwa 0,8 GB Arbeitsspeicher und wird nach 20 Minuten ohne Diktat wieder freigegeben. 30 Sekunden Sprache brauchen je nach Serverauslastung etwa 10 bis 20 Sekunden.
+- Damit Namen richtig geschrieben werden, schickt die Seite die Spielernamen aus dem Kader als Hinweis mit.
+- Der Browser fragt beim ersten Mal nach dem Mikrofon. Das geht nur über HTTPS (also auf der echten Adresse).
 
 ## Login
 

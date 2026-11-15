@@ -1,0 +1,10 @@
+# Sprachdienst: Diktat -> Text mit Whisper, läuft komplett auf dem eigenen Server. Nur intern erreichbar.
+FROM python:3.13-slim
+WORKDIR /app
+COPY tools/sprachdienst/requirements.txt /app/requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt && mkdir -p /modelle && chown nobody /modelle
+COPY tools/sprachdienst/sprachdienst.py /app/sprachdienst.py
+ENV MODELL_ORDNER=/modelle HF_HOME=/modelle/hf PYTHONUNBUFFERED=1
+USER nobody
+EXPOSE 8100
+CMD ["python", "/app/sprachdienst.py"]

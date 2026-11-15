@@ -18,6 +18,7 @@ const handler = createHandler(db, {
   teamzentrale: join(dataDir, 'teamzentrale.html'),
   dossierStart: join(dataDir, 'dossier-start.json'),
   aktualisierenDatei: join(dataDir, 'neu-bauen'),
+  spracheUrl: env.COACHAI_SPRACHE_URL || undefined,
 });
 
 const port = Number(env.PORT || 3000);

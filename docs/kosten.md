@@ -23,6 +23,7 @@ Offen und beim Bestellen zu prüfen:
 | Daten von fussball.de und FuPa | öffentliche Seiten, Abruf über den eigenen Datendienst |
 | Fahrzeiten | OpenStreetMap (Nominatim und OSRM), Ergebnis wird gespeichert |
 | Schriften | liegen auf dem eigenen Server |
+| Diktieren | Whisper läuft auf dem eigenen Server, kein externer Dienst |
 | GitHub und automatisches Aufspielen | ein Update braucht wenige Minuten GitHub Actions, im kostenlosen Kontingent |
 
 ## Später, ab Version 2

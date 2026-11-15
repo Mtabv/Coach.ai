@@ -1,0 +1,4 @@
+# Fest gepinnt: neuere PyAV-Versionen passen nicht zu faster-whisper 1.2.1 (Fehler „metadata_errors“).
+faster-whisper==1.2.1
+ctranslate2==4.9.0
+av==15.1.0

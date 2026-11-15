@@ -8,6 +8,7 @@
  * - zeigt in der Seitenleiste, wer angemeldet ist, den Speicherstand, „Trainer einladen“ und „Abmelden“.
  */
 import { abgleichen } from './merge';
+import { diktatStarten } from './diktat';
 
 type Obj = Record<string, unknown>;
 type Daten = Record<string, unknown>;
@@ -326,6 +327,7 @@ async function start() {
   const st = await (await fetch('/api/status', { credentials: 'same-origin' })).json();
   if (!st.nutzer) { location.href = '/'; return; }
   kontoKasten(st.nutzer.name);
+  diktatStarten();
   dateiStand = schnappschuss();
   try {
     const gespeichert = await laden();
