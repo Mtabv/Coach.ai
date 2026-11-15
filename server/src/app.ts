@@ -1,5 +1,5 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
-import { createReadStream, existsSync, readFileSync, statSync } from 'node:fs';
+import { createReadStream, existsSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { extname, join, normalize, resolve } from 'node:path';
 import type { Db } from './db.js';
 import {
@@ -26,6 +26,8 @@ export interface Config {
   teamzentrale?: string;
   /** Startstand für das Spieltagsdossier (Mannschaftsprofil), solange auf dem Server noch nichts gespeichert ist. */
   dossierStart?: string;
+  /** Merkzettel für den Bau-Container: Teamzentrale sofort neu bauen (Knopf „Jetzt aktualisieren“). */
+  aktualisierenDatei?: string;
 }
 
 const COOKIE = 'coachai_session';
@@ -137,6 +139,14 @@ export function createHandler(db: Db, cfg: Config) {
     if (path === '/api/team' && m === 'GET') {
       requireUser(req);
       return send(res, 200, { nutzer: db.prepare('SELECT id, name, email, role FROM users ORDER BY id').all() });
+    }
+    if (path === '/api/aktualisieren') {
+      requireUser(req);
+      if (!cfg.aktualisierenDatei) throw new HttpError(404, 'Nicht verfügbar.');
+      if (m === 'POST') writeFileSync(cfg.aktualisierenDatei, new Date().toISOString());
+      else if (m !== 'GET') throw new HttpError(405, 'Nicht erlaubt.');
+      const stand = cfg.teamzentrale && existsSync(cfg.teamzentrale) ? statSync(cfg.teamzentrale).mtime.toISOString() : null;
+      return send(res, 200, { angefordert: existsSync(cfg.aktualisierenDatei), stand });
     }
     const doc = /^\/api\/dokumente\/([a-z0-9-]{1,40})$/.exec(path);
     if (doc && m === 'GET') {

@@ -12,6 +12,14 @@ for i in $(seq 1 60); do
   [ "$i" = 1 ] && echo "$(date '+%F %T') Warte auf den Datendienst …"
   sleep 5
 done
+# Warten bis zum nächsten Lauf; „Jetzt aktualisieren“ in 11Plan (Datei neu-bauen) verkürzt die Wartezeit.
+warten() {
+  local bis=$(( $(date +%s) + $1 ))
+  while [ "$(date +%s)" -lt "$bis" ]; do
+    if [ -f "$A/neu-bauen" ]; then rm -f "$A/neu-bauen"; echo "$(date '+%F %T') Aktualisierung in 11Plan angefordert."; return; fi
+    sleep 10
+  done
+}
 while true; do
   if [ ! -f "$W/seed-state-all.json" ]; then
     echo "$(date '+%F %T') Warte auf das Mannschaftsprofil $W/seed-state-all.json (einmalig hochladen, siehe docs/server-betrieb.md)."
@@ -22,11 +30,16 @@ while true; do
     cp "$W/coach-ai-tsg.html" "$A/teamzentrale.html.neu" && mv "$A/teamzentrale.html.neu" "$A/teamzentrale.html"
     # Mannschaftsprofil als Startstand für das Spieltagsdossier
     cp "$W/seed-state-all.json" "$A/dossier-start.json"
-    echo "$(date '+%F %T') Fertig. Nächster Lauf in $(( ${INTERVALL:-21600} / 3600 )) Stunden."
-    sleep "${INTERVALL:-21600}"
+    if grep -q '"nachholen": true' "$W/real/status.json" 2>/dev/null; then
+      echo "$(date '+%F %T') Fertig. Ergebnis oder Spielbericht fehlen noch – nächster Versuch in 15 Minuten."
+      warten 900
+    else
+      echo "$(date '+%F %T') Fertig. Nächster Lauf in $(( ${INTERVALL:-21600} / 3600 )) Stunden."
+      warten "${INTERVALL:-21600}"
+    fi
   else
     echo "$(date '+%F %T') Lauf fehlgeschlagen, die bisherige Seite bleibt. Letzte Meldungen:"
     tail -15 "$W/letzter-lauf.log"
-    sleep 300
+    warten 300
   fi
 done

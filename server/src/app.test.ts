@@ -20,7 +20,7 @@ beforeAll(async () => {
   await new Promise<void>((r) => upstream.listen(0, r));
   const up = upstream.address() as { port: number };
   writeFileSync(join(dir, 'tz.html'), '<!doctype html><html lang="de"><head><link href="https://fonts.googleapis.com/css2?x" rel="stylesheet"></head><body><aside class="side">Teamzentrale</aside></body></html>');
-  server = createServer(createHandler(db, { teamzentrale: join(dir, 'tz.html'), publicDir: dir, setupToken: 'einrichten-123', datendienstUrl: `http://127.0.0.1:${up.port}`, datendienstKey: 'geheim', secureCookies: false, publicUrl: 'https://coach.example.de' }));
+  server = createServer(createHandler(db, { aktualisierenDatei: join(dir, 'neu-bauen'), teamzentrale: join(dir, 'tz.html'), publicDir: dir, setupToken: 'einrichten-123', datendienstUrl: `http://127.0.0.1:${up.port}`, datendienstKey: 'geheim', secureCookies: false, publicUrl: 'https://coach.example.de' }));
   await new Promise<void>((r) => server.listen(0, r));
   base = `http://127.0.0.1:${(server.address() as { port: number }).port}`;
 });
@@ -130,6 +130,14 @@ describe('Server', () => {
     expect(alt.status).toBe(409);
     expect(alt.json.version).toBe(1);
     expect((await call('/api/dokumente/Bad_Name', { jar: trainer })).status).toBe(404);
+  });
+
+  it('nimmt „Jetzt aktualisieren“ nur angemeldet an und legt den Merkzettel für den Bau ab', async () => {
+    expect((await call('/api/aktualisieren', { method: 'POST' })).status).toBe(401);
+    const r = await call('/api/aktualisieren', { method: 'POST', jar: trainer });
+    expect(r.status).toBe(200);
+    expect(r.json.angefordert).toBe(true);
+    expect(typeof r.json.stand).toBe('string');
   });
 
   it('liefert das Frontend aus und lässt keine Pfade außerhalb zu', async () => {

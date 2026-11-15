@@ -168,7 +168,7 @@ function kontoKasten(name: string) {
   document.head.appendChild(css);
   const box = document.createElement('div');
   box.className = 'konto11';
-  box.innerHTML = '<div>Angemeldet als <b></b></div><div class="row"><button class="btn small ghost" data-k="einladen">Trainer einladen</button><button class="btn small ghost" data-k="ab">Abmelden</button></div><div data-k="link" hidden></div><div class="note" data-k="status">Wird geladen …</div><div class="note" data-k="stand"></div>';
+  box.innerHTML = '<div>Angemeldet als <b></b></div><div class="row"><button class="btn small ghost" data-k="einladen">Trainer einladen</button><button class="btn small ghost" data-k="ab">Abmelden</button></div><div data-k="link" hidden></div><div class="note" data-k="status">Wird geladen …</div><div class="note" data-k="stand"></div><button class="btn small ghost" data-aktualisieren="1">Jetzt von fussball.de aktualisieren</button>';
   box.querySelector('b')!.textContent = name;
   anzeige = box.querySelector('[data-k=status]');
   datenstandZeigen(box.querySelector<HTMLElement>('[data-k=stand]'));
@@ -205,6 +205,43 @@ function datenstandZeigen(el: HTMLElement | null) {
   el.textContent = `Daten von fussball.de und FuPa: ${heute ? 'heute' : t.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' })} ${zeit}`;
   if (stunden > 24) { el.style.color = 'var(--warn)'; el.textContent += ' – älter als ein Tag, die Aktualisierung hakt.'; }
 }
+
+/**
+ * „Jetzt von fussball.de aktualisieren“: Der Server baut die Teamzentrale sofort neu (nur Neues).
+ * Sobald die neue Fassung da ist, wird gespeichert und die Seite neu geladen.
+ */
+let aktualisiertSeit = 0;
+async function aktualisieren(knopf: HTMLElement) {
+  if (aktualisiertSeit) return;
+  aktualisiertSeit = Date.now();
+  const vorher = await (await fetch('/api/aktualisieren', { credentials: 'same-origin' })).json().catch(() => ({ stand: null }));
+  const r = await fetch('/api/aktualisieren', { method: 'POST', headers: HEADERS, credentials: 'same-origin' });
+  if (!r.ok) { aktualisiertSeit = 0; hinweis('Aktualisieren gerade nicht möglich.'); return; }
+  const knoepfe = [...document.querySelectorAll<HTMLElement>('[data-aktualisieren]')];
+  knoepfe.forEach((k) => { k.textContent = 'Daten werden geholt …'; k.setAttribute('disabled', ''); });
+  void knopf;
+  const pruefen = async () => {
+    const d = await (await fetch('/api/aktualisieren', { credentials: 'same-origin' })).json().catch(() => null);
+    if (d && d.stand && d.stand !== vorher.stand) {
+      hinweis('Neue Daten von fussball.de sind da. Die Seite lädt neu …');
+      await speichernJetzt();
+      setTimeout(() => location.reload(), 800);
+      return;
+    }
+    if (Date.now() - aktualisiertSeit > 5 * 60_000) {
+      aktualisiertSeit = 0;
+      document.querySelectorAll<HTMLElement>('[data-aktualisieren]').forEach((k) => { k.textContent = 'Jetzt von fussball.de aktualisieren'; k.removeAttribute('disabled'); });
+      hinweis('Die Aktualisierung dauert ungewöhnlich lange. Bitte später erneut versuchen.');
+      return;
+    }
+    setTimeout(() => void pruefen(), 5000);
+  };
+  setTimeout(() => void pruefen(), 5000);
+}
+document.addEventListener('click', (e) => {
+  const k = (e.target as HTMLElement).closest?.('[data-aktualisieren]') as HTMLElement | null;
+  if (k) { e.preventDefault(); void aktualisieren(k); }
+});
 
 function hinweis(text: string) {
   const el = document.createElement('div');

@@ -64,7 +64,7 @@ for g in r['saison']:
     d, t = local(g['datetime_utc']); home = g['home_team_id'] == TID or fold(g['home_team']) == fold(OWN)
     comp = g.get('competition') or ''
     played = isnum(g['home_score']) and isnum(g['away_score'])
-    if not played and d < TODAY: continue  # ausgefallen oder verlegt
+    if not played and d < (datetime.strptime(TODAY, '%Y-%m-%d') - __import__('datetime').timedelta(days=3)).strftime('%Y-%m-%d'): continue  # ausgefallen oder verlegt (die letzten drei Tage bleiben: Ergebnis kann noch kommen)
     kind = 'liga' if comp.startswith('Gruppenliga') else 'pokal' if 'pokal' in comp.lower() else 'test'
     label = f"Gruppenliga, {mdOf[g['id']]}. Spieltag" if kind == 'liga' and g['id'] in mdOf else 'Kreispokal' if kind == 'pokal' else 'Freundschaftsspiel'
     opp = g['away_team'] if home else g['home_team']
@@ -72,7 +72,8 @@ for g in r['saison']:
     if played:
         hs, as_ = int(g['home_score']), int(g['away_score']); gf, ga = (hs, as_) if home else (as_, hs); res = f"{gf}:{ga}"
     venue = g.get('location') or ''
-    games.append(dict(id='g'+g['id'], fid=g['id'], date=d, time=t, opp=opp, home=home, res=res, gf=gf, ga=ga, comp=label, kind=kind, venue=venue))
+    bericht = None if not res else ('vollständig' if (r.get('vollstaendig') or {}).get(g['id']) else 'unvollständig')
+    games.append(dict(id='g'+g['id'], fid=g['id'], date=d, time=t, opp=opp, home=home, res=res, gf=gf, ga=ga, comp=label, kind=kind, venue=venue, bericht=bericht))
 games.sort(key=lambda x: x['date'])
 
 # ---------- Fahrzeit zu Auswärtsspielen (OpenStreetMap: Nominatim + OSRM) ----------
@@ -138,7 +139,12 @@ for x in pflicht:
     for e in (d or {}).get('events') or []:
         if e.get('type') == 'substitution' and e.get('team') == side:
             m = re.match(r'^(.*?)\s*\(\d+\)\s*für\s*(.*?)\s*\(\d+\)\s*$', e.get('description') or '')
-            if m: subs.append(dict(min=minute(e['time']) or 0, inn=m.group(1).strip(), out=m.group(2).strip()))
+            if m: subs.append(dict(min=minute(e['time']) or 0, inn=m.group(1).strip(), out=m.group(2).strip())); continue
+            # Neueres Format bei fussball.de: nur ein Name. Steht er auf der Bank, ist es der Eingewechselte;
+            # der Ausgewechselte fehlt dann (seine Minuten zählen wie bisher bis 90).
+            n1 = re.sub(r'\s*\(\d+\)\s*$', '', e.get('description') or '').strip()
+            if n1 and fold(n1) in {fold(b) for b in bench} and fold(n1) not in {fold(sb['inn']) for sb in subs}:
+                subs.append(dict(min=minute(e['time']) or 0, inn=n1, out=''))
     lineups[x['id']] = dict(xi=xi, bench=bench, subs=subs)
     outs = {fold(sb['out']): sb['min'] for sb in subs}
     for n in xi:
@@ -347,6 +353,15 @@ out = dict(
     mission=prep.get('mission'),
 )
 cache_sichern()
+# Am Spieltag öfter nachsehen: Spiel der letzten zwei Tage ist abgepfiffen, aber Ergebnis oder Spielbericht fehlen noch
+from datetime import timedelta
+_jetzt = datetime.now(ZoneInfo('Europe/Berlin'))
+def _abgepfiffen(x):
+    try: return datetime.fromisoformat(f"{x['date']}T{x['time'] or '15:00'}").replace(tzinfo=ZoneInfo('Europe/Berlin')) + timedelta(minutes=105) <= _jetzt
+    except Exception: return False
+_offen = [x for x in games if x['date'] >= (_jetzt - timedelta(days=2)).strftime('%Y-%m-%d') and _abgepfiffen(x) and x.get('bericht') != 'vollständig']
+json.dump({'nachholen': bool(_offen), 'spiele': [f"{x['date']} {x['opp']}" for x in _offen]}, open(f'{S}/real/status.json', 'w'), ensure_ascii=False)
+print('Spieltag-Nachschau:', [f"{x['date']} {x['opp']}" for x in _offen] or 'nichts offen')
 open(f'{S}/real/data.js', 'w').write('const REAL = ' + json.dumps(out, ensure_ascii=False) + ';\n')
 print('Spiele', len(games), '| nächstes', nxt['date'], nxt['time'], nxt['opp'], '| Kader', len(players), 'Fotos', sum(1 for p in players if p['photo']))
 print('Liga-Berichte', league_full, '/', len(lg), '| eigene vollst.', full, '| bins', own_for, own_against, lb_scaled)

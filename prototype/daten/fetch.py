@@ -34,13 +34,26 @@ out['liga'] = get(f'/api/coachai/team/{TID}/liga')
 out['saison'] = get(f'/api/coachai/team/{TID}/saison', von=SAISON_VON, bis=SAISON_BIS)
 out['kader'] = get('/api/coachai/fupa/kader/tsg-wilhelmshoehe-m1-2026-27')
 
-# Spielberichte: vorhandene behalten, nur neu gespielte Spiele abrufen
+# Spielberichte: vorhandene behalten, nur neu gespielte Spiele abrufen – und unvollständige der letzten
+# 14 Tage erneut, bis Abpfiff, beide Aufstellungen und alle Torschützen eingetragen sind.
+def vollstaendig(d, g):
+    if not d: return False
+    ev = d.get('events') or []
+    if not any(e.get('type') == 'final-whistle' for e in ev): return False
+    lu = d.get('lineup') or {}
+    if any(len((lu.get(x) or {}).get('starting') or []) < 7 for x in ('home', 'away')): return False
+    tore = [e for e in ev if e.get('type') == 'goal']
+    try: soll = int(g['home_score']) + int(g['away_score'])
+    except Exception: return False
+    return len(tore) == soll and all((e.get('description') or '').strip() for e in tore)
 played = [g for g in out['saison'] if isnum(g.get('home_score'))]
 bekannt = {d['game_id']: d for d in alt.get('details', []) if d.get('game_id')}
-neu = [g['id'] for g in played if g['id'] not in bekannt]
+grenze = (datetime.now(ZoneInfo('Europe/Berlin')) - __import__('datetime').timedelta(days=14)).strftime('%Y-%m-%d')
+neu = [g['id'] for g in played if g['id'] not in bekannt or (not vollstaendig(bekannt[g['id']], g) and (g.get('date') or g.get('datetime_utc') or '')[:10] >= grenze)]
 for i in range(0, len(neu), 17):
     for d in get('/api/coachai/spiele/aufstellungen', ids=','.join(neu[i:i+17])): bekannt[d['game_id']] = d
 out['details'] = [bekannt[g['id']] for g in played if g['id'] in bekannt]
+out['vollstaendig'] = {g['id']: vollstaendig(bekannt.get(g['id']), g) for g in played}
 
 # Spieltage: komplett gespielte aus dem letzten Lauf, offene neu
 heute = datetime.now(ZoneInfo('Europe/Berlin')).strftime('%Y-%m-%d')

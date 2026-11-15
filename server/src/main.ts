@@ -17,6 +17,7 @@ const handler = createHandler(db, {
   publicUrl: env.COACHAI_ADRESSE || 'http://localhost:3000',
   teamzentrale: join(dataDir, 'teamzentrale.html'),
   dossierStart: join(dataDir, 'dossier-start.json'),
+  aktualisierenDatei: join(dataDir, 'neu-bauen'),
 });
 
 const port = Number(env.PORT || 3000);
