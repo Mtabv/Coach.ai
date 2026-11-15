@@ -26,7 +26,7 @@ Nach der Anmeldung zeigt 11Plan die Teamzentrale mit den echten Daten der Mannsc
 
 **Nur Neues laden:** Jeder Lauf holt Tabelle, Spielplan und FuPa-Kader neu (je ein Abruf) und nur die Spielberichte von Spielen, die seit dem letzten Lauf gespielt wurden, dazu die noch offenen Spieltage. Alte Spielberichte, Fotos, Wappen, Vereinssuche und Fahrzeiten liegen im Zwischenspeicher (`/arbeit/real/raw.json`, `/arbeit/real/cache.json`). Ein normaler Lauf dauert damit Sekunden statt Minuten; ein Lauf ohne Zwischenspeicher liefert nachweislich dieselben Daten.
 
-**Nach dem Abpfiff:** Zwei Stunden nach Anstoß gilt ein Spiel als gespielt (Nachbereitung statt Vorbereitung), auch wenn fussball.de noch nichts hat. Solange Ergebnis oder Spielbericht fehlen oder unvollständig sind (Abpfiff, beide Aufstellungen, alle Torschützen), fragt der Server alle 15 Minuten nach statt alle 6 Stunden. Der Knopf „Jetzt von fussball.de aktualisieren“ legt `/daten/neu-bauen` ab; der Bau-Container startet dann sofort, die Seite lädt danach von selbst neu.
+**Nach dem Abpfiff:** Zwei Stunden nach Anstoß gilt ein Spiel als gespielt (Nachbereitung statt Vorbereitung), auch wenn fussball.de noch nichts hat. Solange Ergebnis oder Spielbericht fehlen oder unvollständig sind (Abpfiff, beide Aufstellungen, alle Torschützen), fragt der Server alle 15 Minuten nach statt alle 6 Stunden. Der Knopf „Daten aktualisieren“ legt `/daten/neu-bauen` ab; der Bau-Container startet dann sofort, die Seite lädt danach von selbst neu.
 
 **Selbstkontrolle:** Der Datendienst prüft sich jede Minute selbst (`deploy/datendienst-start.sh`). Antwortet er dreimal nicht, beendet er sich und Docker startet ihn neu. `docker compose ps` zeigt für `app` und `datendienst` „healthy“ oder „unhealthy“.
 

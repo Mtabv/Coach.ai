@@ -16,7 +16,7 @@ const berichtVon = g => (REAL.games.find(x => x.id === g.id) || {}).bericht;
 const berichtLabel = g => !g.res ? 'Ergebnis folgt' : berichtVon(g) === 'vollständig' ? 'vollständig' : 'unvollständig';
 function berichtBanner(g) {
   if (g.res && berichtVon(g) === 'vollständig') return '';
-  const knopf = `<button class="btn small" data-aktualisieren="1">Jetzt von fussball.de aktualisieren</button>`;
+  const knopf = `<button class="btn small" data-aktualisieren="1">Daten aktualisieren</button>`;
   const text = !g.res
     ? '<b>Abgepfiffen.</b> Ergebnis und Spielbericht von fussball.de folgen – der Server fragt alle 15 Minuten nach. Du kannst schon den Fragebogen ausfüllen und den Spieltagskader benoten.'
     : '<b>Ergebnis da, Spielbericht noch unvollständig.</b> Es fehlen z. B. noch Torschützen oder die Aufstellung. Der Server fragt alle 15 Minuten nach; du kannst schon nachbereiten.';

@@ -168,7 +168,7 @@ function kontoKasten(name: string) {
   document.head.appendChild(css);
   const box = document.createElement('div');
   box.className = 'konto11';
-  box.innerHTML = '<div>Angemeldet als <b></b></div><div class="row"><button class="btn small ghost" data-k="einladen">Trainer einladen</button><button class="btn small ghost" data-k="ab">Abmelden</button></div><div data-k="link" hidden></div><div class="note" data-k="status">Wird geladen …</div><div class="note" data-k="stand"></div><button class="btn small ghost" data-aktualisieren="1">Jetzt von fussball.de aktualisieren</button>';
+  box.innerHTML = '<div>Angemeldet als <b></b></div><div class="row"><button class="btn small ghost" data-k="einladen">Trainer einladen</button><button class="btn small ghost" data-k="ab">Abmelden</button></div><div data-k="link" hidden></div><div class="note" data-k="status">Wird geladen …</div><div class="note" data-k="stand"></div><button class="btn small ghost" data-aktualisieren="1">Daten aktualisieren</button>';
   box.querySelector('b')!.textContent = name;
   anzeige = box.querySelector('[data-k=status]');
   datenstandZeigen(box.querySelector<HTMLElement>('[data-k=stand]'));
@@ -207,7 +207,7 @@ function datenstandZeigen(el: HTMLElement | null) {
 }
 
 /**
- * „Jetzt von fussball.de aktualisieren“: Der Server baut die Teamzentrale sofort neu (nur Neues).
+ * „Daten aktualisieren“: Der Server baut die Teamzentrale sofort neu (nur Neues).
  * Sobald die neue Fassung da ist, wird gespeichert und die Seite neu geladen.
  */
 let aktualisiertSeit = 0;
@@ -230,7 +230,7 @@ async function aktualisieren(knopf: HTMLElement) {
     }
     if (Date.now() - aktualisiertSeit > 5 * 60_000) {
       aktualisiertSeit = 0;
-      document.querySelectorAll<HTMLElement>('[data-aktualisieren]').forEach((k) => { k.textContent = 'Jetzt von fussball.de aktualisieren'; k.removeAttribute('disabled'); });
+      document.querySelectorAll<HTMLElement>('[data-aktualisieren]').forEach((k) => { k.textContent = 'Daten aktualisieren'; k.removeAttribute('disabled'); });
       hinweis('Die Aktualisierung dauert ungewöhnlich lange. Bitte später erneut versuchen.');
       return;
     }
