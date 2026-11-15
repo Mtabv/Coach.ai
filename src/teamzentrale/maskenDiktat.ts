@@ -11,6 +11,7 @@ let zuletzt: Eingabe | null = null;
 
 /** Karten, die eine eigene Maske mit eigenem Knopf bekommen (Felder dort zählen nicht zur Seite). */
 const KARTEN: { id: string; finden: () => Element | null; knopf: string; titel: string }[] = [
+  { id: 'phasen', finden: () => document.querySelector('#main [data-phrate]')?.closest('.card') ?? null, knopf: 'Phasen diktieren', titel: 'Unser Plan nach Spielphasen bewerten (1 = gar nicht umgesetzt, 5 = sehr gut) mit Begründung' },
   { id: 'noten', finden: () => document.querySelector('#main [data-grade]')?.closest('.card') ?? null, knopf: 'Noten diktieren', titel: 'Spielernoten mit Begründung (Schulnoten 1 bis 6)' },
 ];
 
