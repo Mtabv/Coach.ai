@@ -6,6 +6,12 @@ set -u
 W="${ARBEIT:-/arbeit}"; A="${AUSGABE:-/ausgabe}"; P="${PROTOTYP:-/app/prototype}"
 mkdir -p "$W/real"
 printf '%s' "${COACHAI_DATENDIENST_KEY:?fehlt}" > "$W/fdkey.txt"
+# Vor dem ersten Lauf warten, bis der Datendienst antwortet (startet gleichzeitig mit uns).
+for i in $(seq 1 60); do
+  python3 -c "import urllib.request,os; urllib.request.urlopen(os.environ.get('FD_URL','http://datendienst:8000') + '/docs', timeout=5)" 2>/dev/null && break
+  [ "$i" = 1 ] && echo "$(date '+%F %T') Warte auf den Datendienst …"
+  sleep 5
+done
 while true; do
   if [ ! -f "$W/seed-state-all.json" ]; then
     echo "$(date '+%F %T') Warte auf das Mannschaftsprofil $W/seed-state-all.json (einmalig hochladen, siehe docs/server-betrieb.md)."
@@ -21,6 +27,6 @@ while true; do
   else
     echo "$(date '+%F %T') Lauf fehlgeschlagen, die bisherige Seite bleibt. Letzte Meldungen:"
     tail -15 "$W/letzter-lauf.log"
-    sleep 900
+    sleep 300
   fi
 done

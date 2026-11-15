@@ -47,7 +47,8 @@ services:
     volumes:
       - teamzentrale-arbeit:/arbeit
       - app-daten:/ausgabe
-    depends_on: [datendienst]
+    depends_on:
+      datendienst: { condition: service_healthy }
     networks: [intern]
 
   caddy:
