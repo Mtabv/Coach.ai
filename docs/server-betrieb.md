@@ -80,7 +80,7 @@ Die Spielvorbereitung hat die Reiter „Gegnervorbereitung“, „Aufstellung“
 
 ### Neue Daten nach einem Spiel
 
-Gesprächsimpulse und KI-Erkenntnisse werden aus den Daten des letzten Baus berechnet. Die Seite fragt alle 5 Minuten nach, ob der Server neu gebaut hat; dann erscheint „Neue Daten … – Jetzt neu laden“, und beim nächsten Zurückkehren zur Seite lädt sie selbst neu, wenn alles gespeichert ist. Noten aus den Nachbereitungen zählen für die Impulse „zuletzt schwächere/starke Noten“. Die KI-Erkenntnisse gehören zum nächsten Spiel: Beim nächsten Gegner wird neu ausgewählt, Handänderungen verfallen. „Gespräch nicht nötig“ blendet einen Impuls für drei Wochen aus.
+Gesprächsimpulse und KI-Erkenntnisse werden aus den Daten des letzten Baus berechnet. Die Seite fragt alle 5 Minuten nach, ob der Server neu gebaut hat; dann erscheint „Neue Daten … – Jetzt neu laden“, und beim nächsten Zurückkehren zur Seite lädt sie selbst neu, wenn alles gespeichert ist. Noten aus den Nachbereitungen zählen für die Impulse „zuletzt schwächere/starke Noten“. Die KI-Erkenntnisse gehören zum nächsten Spiel: Beim nächsten Gegner wird neu ausgewählt, Handänderungen verfallen. „Gespräch nicht nötig“ blendet einen Impuls für drei Wochen aus. Weitere Anlässe: Note 5 oder schlechter in einem Spiel der letzten drei Wochen (höchste Priorität), Gruppengespräche mit Abwehr (viele Gegentore), Angriff (wenig oder viele Tore), Mannschaft (Niederlagen- oder Siegesserie, späte Gegentore). Damit immer mindestens vier Impulse da sind, gibt es Ersatz-Anlässe: kurze Mannschaftsrunde nach dem letzten Spiel und Feedback-Gespräche mit Stammspielern ohne Gespräch in den letzten 60 Tagen. Angezeigt werden die fünf wichtigsten; wird einer weggeklickt, rückt der nächste nach.
 
 ### Diktieren
 
