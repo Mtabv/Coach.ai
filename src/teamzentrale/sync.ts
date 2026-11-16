@@ -10,6 +10,7 @@
 import { abgleichen } from './merge';
 import { maskenDiktatStarten } from './maskenDiktat';
 import { kiUebungStarten } from './kiUebung';
+import { autorenMerken, autorenStarten, autorenStempeln } from './autoren';
 
 type Obj = Record<string, unknown>;
 type Daten = Record<string, unknown>;
@@ -144,6 +145,7 @@ function kontoKasten(name: string) {
 .konto11 { border-top: 1px solid var(--line); margin-top: 10px; padding: 10px 10px 0; display: grid; gap: 6px; font-size: 14px; color: var(--muted); }
 .konto11 .row { display: flex; flex-wrap: wrap; gap: 6px; }
 .konto11 input { width: 100%; font-size: 12px; }
+.hinweis11.neue-daten button { margin-left: 8px; font: inherit; padding: 3px 10px; border-radius: 6px; border: 1px solid var(--accent); background: var(--accent); color: #111; cursor: pointer; }
 .hinweis11 { position: fixed; right: 16px; bottom: 16px; z-index: 99; background: var(--accent-soft); color: var(--accent); border: 1px solid var(--accent); border-radius: 8px; padding: 8px 12px; font-size: 14px; }
 /* Handy: Kopfbereich kompakt, Menü in einer wischbaren Zeile, Inhalt beginnt sofort */
 @media (max-width: 900px) {
@@ -161,6 +163,7 @@ function kontoKasten(name: string) {
   .konto11 .row .btn { padding: 4px 8px; font-size: 13px; }
   .demo { display: none; }
   .hinweis11 { left: 12px; right: 12px; bottom: 12px; }
+  .hinweis11 button { margin-left: 8px; }
 }
 /* Zustand des Speicherns auf dem Handy als kleiner Punkt am Logo */
 .side .brand[data-status]::after { content: ''; display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-left: 6px; vertical-align: middle; background: var(--accent); }
@@ -245,6 +248,33 @@ document.addEventListener('click', (e) => {
   if (k) { e.preventDefault(); void aktualisieren(k); }
 });
 
+/**
+ * Neue Daten vom Server (der Bau-Container hat die Teamzentrale neu gebaut, z. B. nach einem Spiel):
+ * Ist die Seite gerade nicht sichtbar und alles gespeichert, lädt sie beim nächsten Hinsehen neu;
+ * sonst erscheint ein Hinweis mit Knopf. So stehen Gesprächsimpulse und Erkenntnisse auf dem neuen Stand.
+ */
+let seitenStand: string | null = null;
+let neuerStand = false;
+async function aufNeueDatenAchten() {
+  const d = await (await fetch('/api/aktualisieren', { credentials: 'same-origin' })).json().catch(() => null) as { stand?: string } | null;
+  if (!d?.stand) return;
+  if (!seitenStand) { seitenStand = d.stand; return; }
+  if (d.stand === seitenStand || neuerStand) return;
+  neuerStand = true;
+  if (document.querySelector('.neue-daten')) return;
+  const el = document.createElement('div');
+  el.className = 'hinweis11 neue-daten';
+  el.setAttribute('role', 'status');
+  el.innerHTML = 'Neue Daten von fussball.de und FuPa sind da (Ergebnisse, Impulse, Erkenntnisse). <button type="button">Jetzt neu laden</button>';
+  el.querySelector('button')!.addEventListener('click', async () => { await speichernJetzt(); location.reload(); });
+  document.body.appendChild(el);
+}
+async function neuLadenWennRuhig() {
+  if (!neuerStand || wartend || tipptGerade()) return;
+  await speichernJetzt();
+  if (json(schnappschuss()) === json(server.daten)) location.reload();
+}
+
 function hinweis(text: string) {
   const el = document.createElement('div');
   el.className = 'hinweis11';
@@ -284,7 +314,7 @@ async function speichern(aktuell: Daten) {
     const fremd = neu.inhalt?.daten ?? dateiStand;
     const zusammen = zusammenfuehren(server.daten, aktuell, fremd);
     server = { version: neu.version, daten: fremd };
-    if (json(zusammen) !== json(aktuell)) { anwenden(zusammen); if (!tipptGerade()) neuZeichnen(); }
+    if (json(zusammen) !== json(aktuell)) { anwenden(zusammen); if (!tipptGerade()) neuZeichnen(); autorenMerken(); }
     return;
   }
   if (r.status === 401) { location.href = '/'; return; }
@@ -297,6 +327,7 @@ async function speichernJetzt() {
   if (laeuft) return;
   laeuft = true;
   try {
+    autorenStempeln();
     const aktuell = schnappschuss();
     if (json(aktuell) !== json(server.daten)) { status('Speichert …'); await speichern(aktuell); }
   } catch {
@@ -310,6 +341,7 @@ async function holen() {
   try {
     const neu = await laden();
     if (neu.version > server.version && neu.inhalt) {
+      autorenStempeln();
       const aktuell = schnappschuss();
       const zusammen = zusammenfuehren(server.daten, aktuell, neu.inhalt.daten);
       server = { version: neu.version, daten: neu.inhalt.daten };
@@ -318,6 +350,7 @@ async function holen() {
     if (wartend && !tipptGerade()) {
       anwenden(wartend.daten);
       neuZeichnen();
+      autorenMerken();
       if (wartend.von) hinweis(`Neuer Stand von ${wartend.von} geladen.`);
       wartend = null;
     }
@@ -347,10 +380,16 @@ async function start() {
     status('Server nicht erreichbar. Eingaben werden gespeichert, sobald er wieder da ist.', 'warn');
     server = { version: 0, daten: dateiStand };
   }
+  // Ab hier gilt jede Änderung als eigene: Stand merken, Stempel anzeigen.
+  autorenMerken();
+  void autorenStarten(st.nutzer.name);
   setInterval(() => { if (!wartend) void speichernJetzt(); }, 1500);
   setInterval(() => void holen(), 15000);
-  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') void holen(); else void speichernJetzt(); });
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') { void neuLadenWennRuhig(); void holen(); } else void speichernJetzt(); });
+  void aufNeueDatenAchten();
+  setInterval(() => void aufNeueDatenAchten(), 5 * 60_000);
   window.addEventListener('pagehide', () => {
+    autorenStempeln();
     const aktuell = schnappschuss();
     if (json(aktuell) === json(server.daten)) return;
     const body = JSON.stringify({ basisVersion: server.version, inhalt: { basis: dateiStand, daten: aktuell } });

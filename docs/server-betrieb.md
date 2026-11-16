@@ -74,6 +74,14 @@ Die Spielvorbereitung hat die Reiter „Gegnervorbereitung“, „Aufstellung“
 - Haben zwei Trainer gleichzeitig gespeichert, werden beide Änderungen zusammengeführt (`src/teamzentrale/merge.ts`). Nur wenn beide genau dieselbe Angabe unterschiedlich geändert haben, gilt die zuletzt gespeicherte.
 - Kommt eine neue Datei mit neueren Daten von fussball.de und FuPa, bleiben die Eingaben erhalten und werden über die neuen Daten gelegt.
 
+### Wer hat was geändert?
+
+`src/teamzentrale/autoren.ts` merkt sich bei jedem Speichern, welche Einträge **der angemeldete Trainer** seit dem letzten Abgleich geändert hat (Texte, Noten, Bewertungen, Trainingseinheiten, Übungen, Kader je Spiel …), und legt Name und Zeit in `state.autoren` ab. Änderungen des anderen Trainers kommen mit dessen Stempel herein. Anzeige: farbiger Rand am Feld und „✎ Name · Zeit“ darunter, „Zuletzt bearbeitet von … am … um …“ in Training und Übung, Name mit Farbpunkt an den Trainingskarten in Kalender und Dashboard, Farb-Legende in der Seitenleiste. Vorbelegungen der Seite (z. B. Kleidung, Gesprächsanlass) zählen nicht als Änderung.
+
+### Neue Daten nach einem Spiel
+
+Gesprächsimpulse und KI-Erkenntnisse werden aus den Daten des letzten Baus berechnet. Die Seite fragt alle 5 Minuten nach, ob der Server neu gebaut hat; dann erscheint „Neue Daten … – Jetzt neu laden“, und beim nächsten Zurückkehren zur Seite lädt sie selbst neu, wenn alles gespeichert ist. Noten aus den Nachbereitungen zählen für die Impulse „zuletzt schwächere/starke Noten“. Die KI-Erkenntnisse gehören zum nächsten Spiel: Beim nächsten Gegner wird neu ausgewählt, Handänderungen verfallen. „Gespräch nicht nötig“ blendet einen Impuls für drei Wochen aus.
+
 ### Diktieren
 
 Pro Eingabemaske gibt es **ein** Mikrofon („Diktieren“, oben rechts auf der Seite bzw. im Kopf eines offenen Dialogs): antippen, alles für diese Seite am Stück erzählen, „Fertig“. Whisper macht Text daraus, die KI (siehe unten) verteilt ihn auf alle Textfelder der Maske; Textfelder bekommen den Text angehängt, einzeilige Felder werden nur gefüllt, wenn sie leer sind. Ohne KI-Schlüssel landet der Text im zuletzt benutzten Feld. In „Übung erfassen“ heißt der Knopf „Ganze Übung diktieren“ und kennt die Felder genauer. Karten mit Auswahlfeldern bekommen einen eigenen Knopf, zuerst „Noten diktieren“ in der Nachbereitung (Note 1–6 und Begründung je Spieler, z. B. „Max Muster eine Zwei, sicher im Aufbau“). Gemeinsamer Code: `src/sprache/aufnahme.ts`, `src/sprache/maskenKi.ts`; Teamzentrale `src/teamzentrale/maskenDiktat.ts`, Dossier `src/ui/sprache/MaskenDiktatKnopf.tsx`.
