@@ -61,4 +61,8 @@ jobs:
             # Teamzentrale sofort mit dem neuen Stand bauen (sonst erst beim nächsten Lauf)
             docker compose exec -T app sh -c "date -Iseconds > /daten/neu-bauen" || true
             docker image prune -f >/dev/null
-            docker compose ps'
+            # Warten, bis die App gesund meldet; sonst Protokoll zeigen und den Lauf rot machen
+            for i in $(seq 1 40); do st=$(docker inspect -f "{{.State.Health.Status}}" coachai-app-1 2>/dev/null || echo fehlt); [ "$st" = healthy ] && break; sleep 3; done
+            docker compose logs --no-color --tail 15 app
+            docker compose ps
+            echo "App: $st"; [ "$st" = healthy ]'
