@@ -11,7 +11,7 @@ import { abgleichen } from './merge';
 import { maskenDiktatStarten } from './maskenDiktat';
 import { kiUebungStarten } from './kiUebung';
 import { autorenMerken, autorenStarten, autorenStempeln } from './autoren';
-import { betreuerAnpassen, dossierPdfStarten, kalenderAboStarten, rolle, spielerStarten, teamZugaengeOeffnen, trainerZugaenge } from './rolle';
+import { betreuerAnpassen, dossierPdfStarten, kalenderAboStarten, rolle, spielerStarten, trainerZugaenge } from './rolle';
 
 type Obj = Record<string, unknown>;
 type Daten = Record<string, unknown>;
@@ -30,7 +30,7 @@ const NUR_ANSICHT = new Set([
   'calView', 'weekStart', 'showAbs', 'picked', 'activeSpot', 'trainTab', 'unitFilter', 'exFilter', 'exKind', 'exQ',
   'pickFor', 'moreUp', 'morePast', 'exId', 'trainEv', 'game', 'post', 'absForm', 'declining', 'editing', 'flash',
   'anaTab', 'anaPlayer', 'focusSug', 'setTab', 'pvTab', 'kSort', 'evFocus', 'evForm', 'nu', 'nuPhase', 'cmpA', 'cmpB',
-  'komTab', 'dragged', 'pvNow', 'msg', 'showEv', 'pvAna', 'spieler', 'absOpen', 'dashWeek', 'flashNext', 'dossierEnde', 'exEdit', 'prNeu', 'prEdit', 'pvMe', 'pvWoche', 'dutyForm',
+  'komTab', 'dragged', 'pvNow', 'msg', 'showEv', 'pvAna', 'spieler', 'absOpen', 'dashWeek', 'flashNext', 'dossierEnde', 'exEdit', 'prNeu', 'prEdit', 'pvMe', 'pvWoche', 'dutyForm', 'rideForm',
 ]);
 
 const global = (name: string): unknown => {
@@ -157,11 +157,8 @@ function kontoKasten(name: string) {
   .nav { order: 3; min-width: 0; flex-wrap: nowrap !important; overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; margin: 0 -12px; padding: 0 12px; width: calc(100% + 24px) !important; }
   .nav::-webkit-scrollbar { display: none; }
   .nav a { white-space: nowrap; padding: 6px 10px; flex: none; }
-  .konto11 { order: 2; margin: 0 0 0 auto; padding: 0; border: 0; display: flex; align-items: center; gap: 6px; font-size: 12px; }
-  .konto11 > div:first-child, .konto11 [data-k=status], .konto11 [data-k=stand] { display: none; }
-  .konto11 .row { flex-wrap: nowrap; }
-  .konto11 [data-k=link] { position: absolute; left: 12px; right: 12px; top: 100%; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 10px; }
-  .konto11 .row .btn { padding: 4px 8px; font-size: 13px; }
+  .app > .konto11 { margin: 8px 12px 24px; padding: 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); }
+  .konto11 > .btn { justify-self: start; }
   .demo { display: none; }
   .hinweis11 { left: 12px; right: 12px; bottom: 12px; }
   .hinweis11 button { margin-left: 8px; }
@@ -174,29 +171,20 @@ function kontoKasten(name: string) {
   document.head.appendChild(css);
   const box = document.createElement('div');
   box.className = 'konto11';
-  box.innerHTML = `<div>Angemeldet als <b></b>${rolle.rolle === 'betreuer' ? ' (Betreuer)' : ''}</div><div class="row">${rolle.rolle === 'trainer' ? '<button class="btn small ghost" data-k="einladen">Trainer einladen</button><button class="btn small ghost" data-k="einladenB">Betreuer einladen</button><button class="btn small ghost" data-k="team">Team &amp; Zugänge</button>' : ''}<button class="btn small ghost" data-kalabo="1">Kalender abonnieren</button><button class="btn small ghost" data-k="ab">Abmelden</button></div><div data-k="link" hidden></div><div class="note" data-k="status">Wird geladen …</div><div class="note" data-k="stand"></div><button class="btn small ghost" data-aktualisieren="1">Daten aktualisieren</button>`;
+  box.innerHTML = `<div>Angemeldet als <b></b>${rolle.rolle === 'betreuer' ? ' (Betreuer)' : ''}</div><div class="row"><button class="btn small ghost" data-kalabo="1">Kalender abonnieren</button><button class="btn small ghost" data-k="ab">Abmelden</button></div><div data-k="link" hidden></div><div class="note" data-k="status">Wird geladen …</div><div class="note" data-k="stand"></div><button class="btn small ghost" data-aktualisieren="1">Daten aktualisieren</button>`;
   box.querySelector('b')!.textContent = name;
   anzeige = box.querySelector('[data-k=status]');
   datenstandZeigen(box.querySelector<HTMLElement>('[data-k=stand]'));
-  (document.querySelector('.side') || document.body).appendChild(box);
+  // Breiter Bildschirm: in der Seitenleiste; Handy: ganz unten unter dem Inhalt
+  const handy = window.matchMedia('(max-width: 900px)');
+  const platzieren = () => { const ziel = handy.matches ? document.querySelector('.app') : document.querySelector('.side'); (ziel || document.body).appendChild(box); };
+  platzieren(); handy.addEventListener('change', platzieren);
   box.addEventListener('click', async (e) => {
     const k = (e.target as HTMLElement).getAttribute('data-k');
     if (k === 'ab') {
       await speichernJetzt();
       await fetch('/api/abmelden', { method: 'POST', headers: HEADERS, credentials: 'same-origin' });
       location.href = '/';
-    }
-    if (k === 'team') { teamZugaengeOeffnen(); return; }
-    if (k === 'einladen' || k === 'einladenB') {
-      const betreuer = k === 'einladenB';
-      const d = await (await fetch('/api/einladungen', { method: 'POST', headers: HEADERS, credentials: 'same-origin', body: JSON.stringify({ rolle: betreuer ? 'betreuer' : 'trainer' }) })).json();
-      const el = box.querySelector<HTMLElement>('[data-k=link]')!;
-      el.hidden = false;
-      el.textContent = `${betreuer ? 'Betreuer-Link' : 'Trainer-Link'}, 7 Tage und nur einmal gültig:`;
-      const i = document.createElement('input');
-      i.type = 'text'; i.readOnly = true; i.value = d.link || d.fehler;
-      el.appendChild(i); i.select();
-      if (d.link && navigator.clipboard) navigator.clipboard.writeText(d.link).then(() => { el.firstChild!.textContent = 'Link kopiert, 7 Tage und nur einmal gültig:'; }, () => {});
     }
   });
 }

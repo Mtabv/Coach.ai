@@ -74,7 +74,7 @@ export async function spielerStarten(anwenden: (d: Obj) => void) {
     else if (d.dutyleave) a = { typ: 'dienstAustragen', did: d.dutyleave };
     else if (d.dutygive) { if (!wert('dg-' + d.dutygive)) { ev.stopPropagation(); return; } a = { typ: 'dienstAbgeben', did: d.dutygive, an: wert('dg-' + d.dutygive) }; }
     else if (d.noticeok) a = { typ: 'mitteilungOk', id: d.noticeok };
-    else if (d.rideoffer) a = { typ: 'fahrtAnbieten', gid: d.rideoffer, plaetze: Number(wert('rideseats-' + d.rideoffer)) || 1, ab: wert('rideab-' + d.rideoffer) };
+    else if (d.rideoffer) { a = { typ: 'fahrtAnbieten', gid: d.rideoffer, plaetze: Number(wert('rideseats-' + d.rideoffer)) || 1, ab: '' }; state().rideForm = null; }
     else if (d.rideseek) a = { typ: 'fahrtSuchen', gid: d.rideseek };
     else if (d.ridetake) { if (!wert('ridepick-' + d.ridetake)) { ev.stopPropagation(); return; } a = { typ: 'fahrtMitnehmen', gid: d.ridetake, mit: wert('ridepick-' + d.ridetake) }; }
     else if (d.ridedrop) { const [gid, mit] = d.ridedrop.split('|'); a = { typ: 'fahrtEntfernen', gid, mit }; }
@@ -224,7 +224,7 @@ function zugaengeKarte() {
 interface Konto { id: number; name: string; email: string; role: string; seit: string; angemeldet: number; push: number }
 interface Einladung { id: number; role: string; bis: number; von: string | null }
 let team: { ich: number; nutzer: Konto[]; einladungen: Einladung[] } | null = null;
-let teamOffen = false, neueEinladung = '';
+let neueEinladung = '';
 const istTrainerRolle = (r: string) => r === 'trainer' || r === 'co-trainer';
 
 async function teamLaden() {
@@ -240,14 +240,15 @@ async function teamAnfrage(url: string, method: string, body?: Obj): Promise<boo
   return false;
 }
 
+const teamSeite = () => location.hash === '#einstellungen' && (state().setTab ?? 'training') === 'team';
 function teamKarte() {
-  if (location.hash !== '#kader' || !team) return;
+  if (!teamSeite() || !team) return;
   const main = document.getElementById('main');
   if (!main || main.querySelector('.teamzugaenge')) return;
   const karte = document.createElement('details');
   karte.className = 'card teamzugaenge';
   karte.id = 'team-zugaenge';
-  karte.open = teamOffen;
+  karte.open = true;
   const t = team, trainer = t.nutzer.filter((n) => istTrainerRolle(n.role)), betreuer = t.nutzer.filter((n) => !istTrainerRolle(n.role));
   const zeile = (n: Konto) => {
     const ich = n.id === t.ich, tr = istTrainerRolle(n.role);
@@ -255,14 +256,14 @@ function teamKarte() {
       <span class="row" style="gap:6px;flex-wrap:nowrap">${ich ? '<span class="note">eigenes Konto</span>' : `<select class="f" data-tzrolle="${n.id}" aria-label="Rolle von ${esc(n.name)}"><option value="trainer"${tr ? ' selected' : ''}>Trainer</option><option value="betreuer"${tr ? '' : ' selected'}>Betreuer</option></select><button class="ib" data-tzweg="${n.id}" data-tzname="${esc(n.name)}" title="Zugang entfernen" aria-label="Zugang von ${esc(n.name)} entfernen">✕</button>`}</span></div>`;
   };
   karte.innerHTML = `<summary><b>Team &amp; Zugänge</b> <span class="note">· ${trainer.length} Trainer · ${betreuer.length} Betreuer${t.einladungen.length ? ` · ${t.einladungen.length} offene Einladung${t.einladungen.length > 1 ? 'en' : ''}` : ''}</span></summary>
-    <p class="sub"><b>Trainer</b> sehen und bearbeiten alles. <b>Betreuer</b> sehen Kalender, Training (nur ansehen), Kader und Spielersicht – keine Noten, Gespräche, Bewertungen oder Spieltagsvorbereitung. Eine geänderte Rolle gilt beim nächsten Öffnen der Seite. Spieler bekommen ihren Zugang unten bei „Spieler-Zugänge“.</p>
+    <p class="sub"><b>Trainer</b> sehen und bearbeiten alles. <b>Betreuer</b> sehen Kalender, Training (nur ansehen), Kader und Spielersicht – keine Noten, Gespräche, Bewertungen oder Spieltagsvorbereitung. Eine geänderte Rolle gilt beim nächsten Öffnen der Seite. Spieler bekommen ihren persönlichen Link im Kader bei „Spieler-Zugänge“.</p>
     <div class="zg-liste">${[...trainer, ...betreuer].map(zeile).join('')}</div>
     <div class="row" style="gap:6px;margin-top:10px"><button class="btn small ghost" data-tzneu="trainer">+ Trainer einladen</button><button class="btn small ghost" data-tzneu="betreuer">+ Betreuer einladen</button></div>
     ${neueEinladung ? `<div class="zg-link"><input type="text" readonly value="${esc(neueEinladung)}" aria-label="Einladungslink"><a class="btn small" target="_blank" rel="noopener" href="https://wa.me/?text=${encodeURIComponent('Hier ist deine Einladung zu 11Plan (7 Tage und nur einmal gültig): ' + neueEinladung)}">Per WhatsApp</a></div><p class="note">Link kopiert. Er gilt 7 Tage und nur einmal.</p>` : ''}
     ${t.einladungen.length ? `<p class="note" style="margin-top:10px"><b>Offene Einladungen</b></p>${t.einladungen.map((e) => `<div class="zg"><span class="posb">${istTrainerRolle(e.role) ? 'TR' : 'BT'}</span><span>${istTrainerRolle(e.role) ? 'Trainer' : 'Betreuer'}<span class="note"> · gültig bis ${new Date(e.bis).toLocaleDateString('de-DE')}${e.von ? ` · von ${esc(e.von)}` : ''}</span></span><button class="btn ghost small" data-tzinvweg="${e.id}">Zurückziehen</button></div>`).join('')}` : ''}`;
-  const spieler = main.querySelector('.zugaenge');
-  if (spieler) spieler.before(karte); else main.querySelector('.head')?.after(karte) ?? main.prepend(karte);
-  karte.addEventListener('toggle', () => { teamOffen = karte.open; });
+  // In Einstellungen › Mannschaft, Rollen und Rechte: oben vor den übrigen Karten des Reiters
+  const rechte = [...main.querySelectorAll('.card')].find((c) => c.querySelector('h3')?.textContent?.trim() === 'Rollen und Rechte');
+  if (rechte) rechte.before(karte); else main.append(karte);
   const neu = async () => { await teamLaden(); karte.remove(); teamKarte(); };
   karte.addEventListener('change', async (e) => {
     const sel = (e.target as HTMLElement).closest<HTMLSelectElement>('[data-tzrolle]'); if (!sel) return;
@@ -288,13 +289,6 @@ function teamKarte() {
     }
     await neu();
   });
-}
-
-/** Aus der Seitenleiste: zum Kader springen und „Team & Zugänge“ aufklappen. */
-export function teamZugaengeOeffnen() {
-  teamOffen = true;
-  const zeigen = () => { const k = document.getElementById('team-zugaenge') as HTMLDetailsElement | null; if (k) { k.open = true; k.scrollIntoView({ behavior: 'smooth', block: 'start' }); } };
-  if (location.hash === '#kader') zeigen(); else { location.hash = 'kader'; setTimeout(zeigen, 120); }
 }
 
 export async function trainerZugaenge() {
