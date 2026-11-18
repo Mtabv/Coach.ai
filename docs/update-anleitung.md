@@ -1,5 +1,11 @@
 # 11Plan aktualisieren (von zu Hause)
 
+> **Seit 18.11.2026 automatisch:** Jede Änderung auf `main` wird von GitHub geprüft (Typen, Tests) und danach selbst auf den Server aufgespielt (`.github/workflows/deploy.yml`): `git reset --hard origin/main`, `docker compose up -d --build`, Caddy neu laden, Teamzentrale sofort neu bauen. Dauer: wenige Minuten. Fortschritt und Fehler: https://github.com/Mtabv/Coach.ai/actions
+>
+> Zugang: Benutzer `deploy` auf dem Server (Gruppe docker, Besitzer von /opt/coachai), Anmeldung nur mit Schlüssel. In GitHub › Settings › Secrets and variables › Actions liegen `DEPLOY_HOST`, `DEPLOY_USER`, `DEPLOY_SSH_KEY` (privater Schlüssel, als Block oder als eine Zeile `base64 -w0`), `DEPLOY_KNOWN_HOSTS` (Ausgabe von `ssh-keyscan -t ed25519 <IP>`). Der private Schlüssel liegt nicht mehr auf dem Server. Neuer Schlüssel: auf dem Server `sudo -u deploy ssh-keygen -t ed25519 -N "" -f /home/deploy/.ssh/github`, `.pub` nach `/home/deploy/.ssh/authorized_keys`, `base64 -w0 /home/deploy/.ssh/github` in `DEPLOY_SSH_KEY`, Datei löschen.
+>
+> Die Schritte unten braucht es nur noch, wenn GitHub einmal nicht aufspielen kann.
+
 Im Gäste- oder Vereins-WLAN ist der Zugang zum Server (Port 22) oft gesperrt. Dann zu Hause oder über den Handy-Hotspot.
 
 ## 1. Datei bereitlegen
