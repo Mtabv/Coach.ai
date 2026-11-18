@@ -53,5 +53,9 @@ jobs:
             git reset --hard origin/main
             cd deploy
             docker compose up -d --build --remove-orphans
+            # Caddy liest eine geänderte Caddyfile nur nach einem Neuladen
+            docker compose exec -T caddy caddy reload --config /etc/caddy/Caddyfile || docker compose restart caddy
+            # Teamzentrale sofort mit dem neuen Stand bauen (sonst erst beim nächsten Lauf)
+            docker compose exec -T app sh -c "date -Iseconds > /daten/neu-bauen" || true
             docker image prune -f >/dev/null
             docker compose ps'
