@@ -20,6 +20,7 @@ const handler = createHandler(db, {
   publicUrl: env.COACHAI_ADRESSE || 'http://localhost:3000',
   teamzentrale: join(dataDir, 'teamzentrale.html'),
   dossierStart: join(dataDir, 'dossier-start.json'),
+  dossierOrdner: join(dataDir, 'dossiers'),
   aktualisierenDatei: join(dataDir, 'neu-bauen'),
   spracheUrl: env.COACHAI_SPRACHE_URL || undefined,
   // Push: Schlüssel erzeugt der Server selbst (Datenordner). Kontaktangabe für die Push-Dienste.

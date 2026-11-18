@@ -23,7 +23,7 @@ beforeAll(async () => {
   await new Promise<void>((r) => upstream.listen(0, r));
   const up = upstream.address() as { port: number };
   writeFileSync(join(dir, 'tz.html'), '<!doctype html><html lang="de"><head><link href="https://fonts.googleapis.com/css2?x" rel="stylesheet"></head><body><aside class="side">Teamzentrale</aside></body></html>');
-  server = createServer(createHandler(db, { aktualisierenDatei: join(dir, 'neu-bauen'), teamzentrale: join(dir, 'tz.html'), publicDir: dir, setupToken: 'einrichten-123', datendienstUrl: `http://127.0.0.1:${up.port}`, datendienstKey: 'geheim', spracheUrl: `http://127.0.0.1:${up.port}`, ki: async (a) => ({ aufbau: `${a.felder.length} Felder: ${a.text}` }), secureCookies: false, publicUrl: 'https://coach.example.de' }));
+  server = createServer(createHandler(db, { aktualisierenDatei: join(dir, 'neu-bauen'), teamzentrale: join(dir, 'tz.html'), publicDir: dir, setupToken: 'einrichten-123', datendienstUrl: `http://127.0.0.1:${up.port}`, datendienstKey: 'geheim', spracheUrl: `http://127.0.0.1:${up.port}`, ki: async (a) => ({ aufbau: `${a.felder.length} Felder: ${a.text}` }), secureCookies: false, publicUrl: 'https://coach.example.de', dossierOrdner: join(dir, 'dossiers') }));
   await new Promise<void>((r) => server.listen(0, r));
   base = `http://127.0.0.1:${(server.address() as { port: number }).port}`;
 });
@@ -249,6 +249,19 @@ describe('Server', () => {
     expect((await call('/api/dokumente/teamzentrale', { jar: trainer })).status).toBe(200);
     // Der letzte Trainer bleibt: alle anderen Trainer zu Betreuern machen, dann kann man sich nicht selbst entfernen
     expect((await call(`/api/team/${ich}`, { method: 'DELETE', jar: trainer })).status).toBe(400);
+  });
+
+  it('Dossier-PDF: nur Trainer laden hoch, Angemeldete sehen es an', async () => {
+    const put = (body: Buffer | string, jar: Jar) => fetch(base + '/api/dossier-pdf/g1', { method: 'PUT', headers: { 'X-CoachAI': '1', 'Content-Type': 'application/pdf', Cookie: jar.cookie }, body });
+    expect((await put('kein pdf', trainer)).status).toBe(400);
+    expect((await put('%PDF-1.7 test', trainer)).status).toBe(200);
+    expect((await call('/api/dossier-pdf', { jar: trainer })).json.pdfs.g1.kb).toBe(0);
+    const r = await fetch(base + '/api/dossier-pdf/g1', { headers: { Cookie: trainer.cookie } });
+    expect(r.headers.get('content-type')).toBe('application/pdf');
+    expect(await r.text()).toBe('%PDF-1.7 test');
+    expect((await fetch(base + '/api/dossier-pdf/g1')).status).toBe(401);
+    expect((await call('/api/dossier-pdf/g1', { method: 'DELETE', jar: trainer })).status).toBe(200);
+    expect((await fetch(base + '/api/dossier-pdf/g1', { headers: { Cookie: trainer.cookie } })).status).toBe(404);
   });
 
   it('liefert das Frontend aus und lässt keine Pfade außerhalb zu', async () => {

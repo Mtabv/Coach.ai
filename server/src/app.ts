@@ -1,5 +1,5 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
-import { createReadStream, existsSync, readFileSync, statSync, writeFileSync } from 'node:fs';
+import { createReadStream, existsSync, mkdirSync, readFileSync, readdirSync, renameSync, statSync, unlinkSync, writeFileSync } from 'node:fs';
 import { extname, join, normalize, resolve } from 'node:path';
 import type { Db } from './db.js';
 import {
@@ -32,6 +32,8 @@ export interface Config {
   dossierStart?: string;
   /** Merkzettel für den Bau-Container: Teamzentrale sofort neu bauen (Knopf „Jetzt aktualisieren“). */
   aktualisierenDatei?: string;
+  /** Ordner für die freigegebenen Spieltagsdossiers als PDF (je Spiel eine Datei), für Spieler zum Ansehen. */
+  dossierOrdner?: string;
   /** Interner Sprachdienst (Whisper auf dem eigenen Server): Aufnahme rein, Text raus. */
   spracheUrl?: string;
   /** KI-Verteilung auf Felder (Anthropic), nur wenn ANTHROPIC_API_KEY in der .env steht. */
@@ -43,6 +45,7 @@ export interface Config {
 const COOKIE = 'coachai_session';
 const MAX_BODY = 25 * 1024 * 1024; // Zustand mit Wappen und Bildern als Daten-URLs
 const HISTORY_KEEP = 50;
+const MAX_PDF = 40 * 1024 * 1024;
 const MAX_AUDIO = 20 * 1024 * 1024; // etwa eine Viertelstunde Sprache
 const TYPES: Record<string, string> = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.svg': 'image/svg+xml', '.png': 'image/png', '.jpg': 'image/jpeg', '.ico': 'image/x-icon', '.json': 'application/json', '.woff2': 'font/woff2', '.webmanifest': 'application/manifest+json' };
 
@@ -331,6 +334,35 @@ export function createHandler(db: Db, cfg: Config) {
         if (e instanceof KiFehler) throw new HttpError(e.status, e.message);
         throw e;
       }
+    }
+    // ---------- Spieltagsdossier als PDF: Trainer gibt frei, alle Angemeldeten können es ansehen ----------
+    if (path === '/api/dossier-pdf' && m === 'GET') {
+      requireUser(req);
+      const ord = cfg.dossierOrdner, liste: Record<string, { am: string; kb: number }> = {};
+      if (ord && existsSync(ord)) for (const f of readdirSync(ord)) { const x = /^([A-Za-z0-9_-]{1,80})\.pdf$/.exec(f); if (x) { const st = statSync(join(ord, f)); liste[x[1]] = { am: st.mtime.toISOString(), kb: Math.round(st.size / 1024) }; } }
+      return send(res, 200, { pdfs: liste });
+    }
+    const dpdf = /^\/api\/dossier-pdf\/([A-Za-z0-9_-]{1,80})$/.exec(path);
+    if (dpdf) {
+      if (!cfg.dossierOrdner) throw new HttpError(503, 'Auf diesem Server nicht eingerichtet.');
+      const datei = join(cfg.dossierOrdner, `${dpdf[1]}.pdf`);
+      if (m === 'GET') {
+        requireUser(req);
+        if (!existsSync(datei)) throw new HttpError(404, 'Für dieses Spiel ist noch kein Dossier freigegeben.');
+        res.writeHead(200, { 'Content-Type': 'application/pdf', 'Content-Length': statSync(datei).size, 'Content-Disposition': `inline; filename="Spieltagsdossier-${dpdf[1]}.pdf"`, 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' });
+        createReadStream(datei).pipe(res); return;
+      }
+      if (m === 'PUT') {
+        requireTrainer(req);
+        let size = 0; const chunks: Buffer[] = [];
+        for await (const c of req) { size += (c as Buffer).length; if (size > MAX_PDF) throw new HttpError(413, 'Die PDF ist zu groß (höchstens 40 MB).'); chunks.push(c as Buffer); }
+        const buf = Buffer.concat(chunks);
+        if (buf.subarray(0, 5).toString('latin1') !== '%PDF-') throw new HttpError(400, 'Das ist keine PDF-Datei.');
+        mkdirSync(cfg.dossierOrdner, { recursive: true });
+        writeFileSync(datei + '.neu', buf); renameSync(datei + '.neu', datei);
+        return send(res, 200, { ok: true, kb: Math.round(size / 1024) });
+      }
+      if (m === 'DELETE') { requireTrainer(req); if (existsSync(datei)) unlinkSync(datei); return send(res, 200, { ok: true }); }
     }
     if (path === '/api/sprache' && m === 'POST') {
       requireUser(req);

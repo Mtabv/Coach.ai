@@ -313,3 +313,55 @@ export async function trainerZugaenge() {
   window.addEventListener('hashchange', () => setTimeout(karten, 30));
   karten();
 }
+
+// =====================================================================================================
+// Spieltagsdossier als PDF: Trainer gibt es frei (Dossier-Reiter), alle sehen es unter „Spiel“
+// =====================================================================================================
+
+let pdfs: Record<string, { am: string; kb: number }> | null = null;
+async function pdfsLaden() {
+  const r = await fetch('/api/dossier-pdf', { credentials: 'same-origin' }).catch(() => null);
+  pdfs = r && r.ok ? (await r.json() as { pdfs: typeof pdfs }).pdfs : {};
+}
+
+function pdfFeld(el: HTMLElement) {
+  if (!pdfs) return;
+  const gid = el.dataset.gid!, p = pdfs[gid], freigeben = el.dataset.modus === 'freigeben' && rolle.rolle === 'trainer';
+  const url = `/api/dossier-pdf/${encodeURIComponent(gid)}`;
+  const stand = p ? `${new Date(p.am).toLocaleDateString('de-DE')} um ${new Date(p.am).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })} Uhr` : '';
+  const html = p
+    ? `<div class="row"><a class="btn small" href="${url}" target="_blank" rel="noopener">📄 Dossier als PDF ansehen</a>${freigeben ? '<label class="btn ghost small">Neue Fassung hochladen<input type="file" accept="application/pdf" class="visually-hidden" data-pdfhoch="1"></label><button class="btn ghost small" data-pdfweg="1">Freigabe zurücknehmen</button>' : ''}</div><span class="note">Stand ${stand}</span>`
+    : freigeben
+      ? `<span class="note">Noch nicht freigegeben. So geht es: Im Dossier unten „Druckansicht öffnen · Als PDF speichern“, die PDF sichern und hier hochladen.</span><div class="row"><label class="btn small">PDF hochladen<input type="file" accept="application/pdf" class="visually-hidden" data-pdfhoch="1"></label></div>`
+      : '<span class="note">Das Dossier zu diesem Spiel ist noch nicht freigegeben.</span>';
+  if (el.dataset.html === html) return;
+  el.dataset.html = html; el.innerHTML = html;
+}
+
+function pdfFelder() { document.querySelectorAll<HTMLElement>('.dossier-pdf[data-gid]').forEach(pdfFeld); }
+
+/** Für alle Rollen: Felder füllen, sobald sie auf der Seite erscheinen; Trainer laden hoch. */
+export async function dossierPdfStarten() {
+  await pdfsLaden();
+  let geplant = false;
+  new MutationObserver(() => { if (geplant) return; geplant = true; requestAnimationFrame(() => { geplant = false; pdfFelder(); }); }).observe(document.body, { childList: true, subtree: true });
+  pdfFelder();
+  if (rolle.rolle !== 'trainer') return;
+  document.addEventListener('change', async (e) => {
+    const inp = (e.target as HTMLElement).closest<HTMLInputElement>('[data-pdfhoch]'); if (!inp?.files?.[0]) return;
+    const feld = inp.closest<HTMLElement>('.dossier-pdf')!, datei = inp.files[0];
+    if (datei.type && datei.type !== 'application/pdf') { hinweis('Bitte eine PDF-Datei wählen.'); return; }
+    feld.querySelector('.note')?.replaceChildren(document.createTextNode('Wird hochgeladen …'));
+    const r = await fetch(`/api/dossier-pdf/${encodeURIComponent(feld.dataset.gid!)}`, { method: 'PUT', headers: { 'X-CoachAI': '1', 'Content-Type': 'application/pdf' }, credentials: 'same-origin', body: datei });
+    const b = await r.json().catch(() => ({})) as { fehler?: string };
+    hinweis(r.ok ? 'Dossier freigegeben – die Spieler sehen es jetzt unter „Spiel“.' : b.fehler || 'Hochladen hat nicht geklappt.');
+    await pdfsLaden(); pdfFelder();
+  });
+  document.addEventListener('click', async (e) => {
+    const b = (e.target as HTMLElement).closest<HTMLElement>('[data-pdfweg]'); if (!b) return;
+    const feld = b.closest<HTMLElement>('.dossier-pdf')!;
+    if (!confirm('Freigabe zurücknehmen? Die Spieler sehen das Dossier dann nicht mehr.')) return;
+    await fetch(`/api/dossier-pdf/${encodeURIComponent(feld.dataset.gid!)}`, { method: 'DELETE', headers: HEADERS, credentials: 'same-origin' });
+    await pdfsLaden(); pdfFelder();
+  });
+}

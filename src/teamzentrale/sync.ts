@@ -11,7 +11,7 @@ import { abgleichen } from './merge';
 import { maskenDiktatStarten } from './maskenDiktat';
 import { kiUebungStarten } from './kiUebung';
 import { autorenMerken, autorenStarten, autorenStempeln } from './autoren';
-import { betreuerAnpassen, rolle, spielerStarten, teamZugaengeOeffnen, trainerZugaenge } from './rolle';
+import { betreuerAnpassen, dossierPdfStarten, rolle, spielerStarten, teamZugaengeOeffnen, trainerZugaenge } from './rolle';
 
 type Obj = Record<string, unknown>;
 type Daten = Record<string, unknown>;
@@ -364,6 +364,7 @@ async function start() {
   const st = await (await fetch('/api/status', { credentials: 'same-origin' })).json();
   if (!st.nutzer) { location.href = '/'; return; }
   // Spieler: eigene App, eigene Daten, keine gemeinsamen Speicherungen
+  void dossierPdfStarten();
   if (rolle.rolle === 'spieler') { await spielerStarten((d) => anwenden(d)); return; }
   kontoKasten(st.nutzer.name);
   if (rolle.rolle === 'betreuer') betreuerAnpassen(); else void trainerZugaenge();
