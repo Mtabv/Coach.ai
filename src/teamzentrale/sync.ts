@@ -167,7 +167,11 @@ function kontoKasten(name: string) {
   #main .dgrid, #main .grid.g2, #main .grid.g3 { grid-template-columns: minmax(0, 1fr); }
   #main select, #main input:not([type=checkbox]):not([type=radio]), #main textarea { max-width: 100% !important; }
   #main .card.focus select { width: 100% !important; text-overflow: ellipsis; }
-  #main h1, #main h2, #main h3, #main p, #main .note, #main b { overflow-wrap: anywhere; }
+  #main h1, #main h2, #main h3, #main p, #main .note { overflow-wrap: break-word; }
+  /* Tabellen: Namen nie mitten im Wort trennen – die Tabelle wird stattdessen seitlich wischbar */
+  #main table td, #main table th { overflow-wrap: normal; word-break: normal; }
+  #main table td b, #main table td a, #main table .tn { white-space: nowrap; }
+  #main .scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
   .hinweis11 { left: 12px; right: 12px; bottom: 12px; }
   .hinweis11 button { margin-left: 8px; }
 }

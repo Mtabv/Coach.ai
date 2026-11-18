@@ -198,7 +198,8 @@ function zugaengeKarte() {
       return `<div class="zg"><span class="posb">${esc(p.pos || '')}</span><span><b>${esc(p.name)}</b><span class="note">${z?.seit ? ` · Link seit ${new Date(z.seit).toLocaleDateString('de-DE')}${z.push ? ' · 🔔' : ''}` : ' · noch kein Link'}</span>
         ${l ? `<span class="zg-link"><input type="text" readonly value="${esc(l)}" aria-label="Link für ${esc(p.name)}"><a class="btn small" target="_blank" rel="noopener" href="https://wa.me/?text=${encodeURIComponent(text)}">Per WhatsApp</a></span>` : ''}</span>
         <span class="row" style="gap:6px;flex-wrap:nowrap"><button class="btn ghost small" data-zg="${esc(p.id)}" data-zgname="${esc(p.name)}">${z?.seit ? 'Neuer Link' : 'Link erzeugen'}</button>${z?.seit ? `<button class="ib" data-zgsperren="${esc(p.id)}" title="Zugang sperren" aria-label="Zugang sperren">✕</button>` : ''}</span></div>`; }).join('')}</div>`;
-  main.querySelector('.head')?.after(karte) ?? main.prepend(karte);
+  const kopf = main.querySelector('.head');
+  if (kopf) kopf.after(karte); else main.prepend(karte);
   karte.addEventListener('click', async (e) => {
     const t = (e.target as HTMLElement).closest<HTMLElement>('[data-zg],[data-zgsperren]'); if (!t) return;
     if (t.dataset.zg) {
