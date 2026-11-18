@@ -85,6 +85,15 @@ describe('Spieler', () => {
     expect(neueMitteilungen(vorher, d)).toEqual([{ to: 'p-c', text: expect.stringContaining('Anton A hat dir einen Dienst übergeben') }]);
   });
 
+  it('Dienst nur an jemanden, der an den Diensttagen da ist – Abwesenheit an anderen Tagen zählt nicht', () => {
+    const jetzt = new Date('2026-11-18T10:00:00Z');
+    // p-b ist den ganzen Monat verletzt → nicht wählbar
+    expect(() => spielerAktion(stand(), 'p-a', { typ: 'dienstAbgeben', did: 'd1', an: 'p-b' }, jetzt)).toThrow(/nicht da/);
+    // p-c fehlt nur am Mittwoch (kein Training) → wählbar
+    const d = stand(); (d.absences as Daten[]).push({ pid: 'p-c', from: '2026-11-18', to: '2026-11-18', why: 'privat' });
+    expect((spielerAktion(d, 'p-a', { typ: 'dienstAbgeben', did: 'd1', an: 'p-c' }, jetzt).duties as Daten[])[0].who).toEqual(['p-c']);
+  });
+
   it('Fahrgemeinschaft: anbieten, suchen, mitnehmen', () => {
     let d = spielerAktion(stand(), 'p-a', { typ: 'fahrtAnbieten', gid: 'g1', plaetze: 2, ab: '12:45' });
     d = spielerAktion(d, 'p-b', { typ: 'fahrtSuchen', gid: 'g1' });

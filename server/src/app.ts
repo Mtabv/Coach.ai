@@ -192,6 +192,50 @@ export function createHandler(db: Db, cfg: Config) {
       requireStab(req);
       return send(res, 200, { nutzer: db.prepare("SELECT id, name, email, role FROM users WHERE role <> 'spieler' ORDER BY id").all() });
     }
+    // ---------- Team & Zugänge: Konten des Trainerteams verwalten (nur Trainer) ----------
+    if (path === '/api/team/verwaltung' && m === 'GET') {
+      const ich = requireTrainer(req), jetzt = Date.now();
+      const nutzer = db.prepare(`SELECT u.id, u.name, u.email, u.role, u.created_at AS seit,
+        (SELECT COUNT(*) FROM sessions s WHERE s.user_id = u.id AND s.expires_at > ?) AS angemeldet,
+        (SELECT COUNT(*) FROM push_abos p WHERE p.user_id = u.id) AS push
+        FROM users u WHERE u.role <> 'spieler' ORDER BY CASE WHEN u.role IN ('trainer','co-trainer') THEN 0 ELSE 1 END, u.name`).all(jetzt);
+      const einladungen = db.prepare(`SELECT i.rowid AS id, i.role, i.expires_at AS bis, u.name AS von FROM invites i LEFT JOIN users u ON u.id = i.created_by
+        WHERE i.used_at IS NULL AND i.expires_at > ? ORDER BY i.expires_at`).all(jetzt);
+      return send(res, 200, { ich: ich.id, nutzer, einladungen });
+    }
+    const teamKonto = /^\/api\/team\/(\d{1,9})$/.exec(path);
+    if (teamKonto && (m === 'PATCH' || m === 'DELETE')) {
+      const ich = requireTrainer(req), id = Number(teamKonto[1]);
+      const ziel = db.prepare("SELECT id, name, role FROM users WHERE id = ? AND role <> 'spieler'").get(id) as { id: number; name: string; role: string } | undefined;
+      if (!ziel) throw new HttpError(404, 'Dieses Konto gibt es nicht.');
+      if (ziel.id === ich.id) throw new HttpError(400, 'Das eigene Konto kann man hier nicht ändern – das muss ein anderer Trainer machen.');
+      const trainer = (db.prepare("SELECT COUNT(*) AS n FROM users WHERE role IN ('trainer','co-trainer')").get() as { n: number }).n;
+      const istT = ziel.role === 'trainer' || ziel.role === 'co-trainer';
+      if (m === 'PATCH') {
+        const b = await readJson(req), rolle = b.rolle === 'betreuer' ? 'betreuer' : b.rolle === 'trainer' ? 'trainer' : '';
+        if (!rolle) throw new HttpError(400, 'Unbekannte Rolle.');
+        if (istT && rolle === 'betreuer' && trainer <= 1) throw new HttpError(400, 'Es muss mindestens ein Trainer bleiben.');
+        db.prepare('UPDATE users SET role = ? WHERE id = ?').run(rolle, id);
+        return send(res, 200, { ok: true });
+      }
+      if (istT && trainer <= 1) throw new HttpError(400, 'Es muss mindestens ein Trainer bleiben.');
+      db.exec('BEGIN');
+      try {
+        // Verweise lösen: Speicherstände bleiben erhalten, nur der Name „gespeichert von“ fällt weg.
+        db.prepare('UPDATE docs SET updated_by = NULL WHERE updated_by = ?').run(id);
+        db.prepare('UPDATE app_state SET updated_by = NULL WHERE updated_by = ?').run(id);
+        db.prepare('UPDATE invites SET created_by = ? WHERE created_by = ?').run(ich.id, id);
+        db.prepare('DELETE FROM users WHERE id = ?').run(id);
+        db.exec('COMMIT');
+      } catch (e) { db.exec('ROLLBACK'); throw e; }
+      return send(res, 200, { ok: true });
+    }
+    const einladungWeg = /^\/api\/einladungen\/offen\/(\d{1,9})$/.exec(path);
+    if (einladungWeg && m === 'DELETE') {
+      requireTrainer(req);
+      db.prepare('DELETE FROM invites WHERE rowid = ? AND used_at IS NULL').run(Number(einladungWeg[1]));
+      return send(res, 200, { ok: true });
+    }
     // ---------- Spieler-Zugänge (persönliche Links) ----------
     if (path === '/api/spieler/links' && m === 'GET') {
       requireTrainer(req);

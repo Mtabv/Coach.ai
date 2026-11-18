@@ -164,7 +164,7 @@ describe('Server', () => {
     // Gemeinsamer Stand wie von der Teamzentrale gespeichert
     const g = await call('/api/dokumente/teamzentrale', { jar: trainer });
     const daten = { kaderNamen: { 'p-a': 'Anton A', 'p-b': 'Bernd B' }, events: [{ id: 'e1', date: '2026-11-20', type: 'tr', time: '19:00', unit: 'u1' }],
-      duties: [{ id: 'd1', title: 'Materialdienst', from: '2026-11-16', to: '2026-11-22', slots: 1, who: ['p-a'] }], absences: [{ pid: 'p-b', from: '2026-11-01', to: '2026-11-30', why: 'verletzt: Kreuzband' }],
+      duties: [{ id: 'd1', title: 'Materialdienst', from: '2026-11-16', to: '2026-11-22', slots: 1, who: ['p-a'] }], absences: [{ pid: 'p-b', from: '2026-11-01', to: '2026-11-15', why: 'verletzt: Kreuzband' }],
       talks: { 'p-a': [{ notizen: 'vertraulich' }] }, state: { grades: { g0: { 'p-a': '5' } }, texts: { 'a-q1-g1': 'geheim' }, notices: [] } };
     expect((await call('/api/dokumente/teamzentrale', { method: 'PUT', jar: trainer, body: { basisVersion: g.json.version, inhalt: { basis: {}, daten } } })).status).toBe(200);
 
@@ -219,6 +219,36 @@ describe('Server', () => {
     expect(end.events[0]).toMatchObject({ time: '18:30', unit: 'u1' });
     expect(end.state.grades).toEqual({ g0: { 'p-a': '5' } });
     expect(end.talks).toEqual(daten.talks);
+  });
+
+  it('Team & Zugänge: Trainer ändern Rollen, entfernen Zugänge, ziehen Einladungen zurück', async () => {
+    const v = await call('/api/team/verwaltung', { jar: trainer });
+    expect(v.status).toBe(200);
+    const bea = v.json.nutzer.find((n: { name: string }) => n.name === 'Bea'), ich = v.json.ich;
+    expect(bea.role).toBe('betreuer');
+    expect(v.json.nutzer.some((n: { role: string }) => n.role === 'spieler')).toBe(false);
+    // Betreuer dürfen nicht verwalten, niemand ändert sich selbst
+    const bj: Jar = { cookie: '' };
+    await call('/api/anmelden', { method: 'POST', jar: bj, body: { email: 'b@example.de', passwort: 'betreuer-pass-1' } });
+    expect((await call('/api/team/verwaltung', { jar: bj })).status).toBe(403);
+    expect((await call(`/api/team/${ich}`, { method: 'PATCH', jar: trainer, body: { rolle: 'betreuer' } })).status).toBe(400);
+    // Betreuer wird Trainer und sieht dann alles
+    expect((await call(`/api/team/${bea.id}`, { method: 'PATCH', jar: trainer, body: { rolle: 'trainer' } })).status).toBe(200);
+    expect((await call('/api/zustand', { jar: bj })).status).not.toBe(403);
+    expect((await call(`/api/team/${bea.id}`, { method: 'PATCH', jar: trainer, body: { rolle: 'betreuer' } })).status).toBe(200);
+    // Einladung anlegen und zurückziehen
+    const inv = await call('/api/einladungen', { method: 'POST', jar: trainer, body: { rolle: 'betreuer' } });
+    const offen = (await call('/api/team/verwaltung', { jar: trainer })).json.einladungen;
+    expect(offen.length).toBeGreaterThan(0);
+    for (const e of offen) await call(`/api/einladungen/offen/${e.id}`, { method: 'DELETE', jar: trainer });
+    expect((await call('/api/team/verwaltung', { jar: trainer })).json.einladungen).toEqual([]);
+    expect((await call(`/api/einladungen/${String(inv.json.link).split('#einladung/')[1]}`)).json.gueltig).toBe(false);
+    // Zugang entfernen: sofort abgemeldet, Speicherstand bleibt
+    expect((await call(`/api/team/${bea.id}`, { method: 'DELETE', jar: trainer })).status).toBe(200);
+    expect((await call('/api/dokumente/teamzentrale', { jar: bj })).status).toBe(401);
+    expect((await call('/api/dokumente/teamzentrale', { jar: trainer })).status).toBe(200);
+    // Der letzte Trainer bleibt: alle anderen Trainer zu Betreuern machen, dann kann man sich nicht selbst entfernen
+    expect((await call(`/api/team/${ich}`, { method: 'DELETE', jar: trainer })).status).toBe(400);
   });
 
   it('liefert das Frontend aus und lässt keine Pfade außerhalb zu', async () => {

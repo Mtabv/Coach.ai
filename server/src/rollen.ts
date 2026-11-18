@@ -178,6 +178,8 @@ export function spielerAktion(voll: Daten, pid: string, a: Obj, now = new Date()
       const x = dienst(a.did), an = s(a.an, 80);
       if (!x.who.includes(pid)) throw new AktionsFehler('Das ist nicht dein Dienst.');
       if (!imKader(an) || an === pid || x.who.includes(an)) throw new AktionsFehler('Diesen Spieler kannst du nicht wählen.');
+      const heute = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Berlin' }).format(now);
+      if (dienstTage(d, x).some((iso) => iso >= heute && abwesendAm(d, an, iso))) throw new AktionsFehler(`${name(d, an)} ist an einem Diensttag nicht da.`);
       x.who = x.who.map((y) => (y === pid ? an : y));
       mitteilen(d, an, `${esc(name(d, pid))} hat dir einen Dienst übergeben: <b>${esc(dienstTitel(x))}</b>, ${esc(dienstWann(d, x))}.`, now);
       break;

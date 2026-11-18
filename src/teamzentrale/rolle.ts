@@ -217,6 +217,86 @@ function zugaengeKarte() {
   });
 }
 
+// =====================================================================================================
+// Trainer: Team & Zugänge (Trainer und Betreuer verwalten, offene Einladungen)
+// =====================================================================================================
+
+interface Konto { id: number; name: string; email: string; role: string; seit: string; angemeldet: number; push: number }
+interface Einladung { id: number; role: string; bis: number; von: string | null }
+let team: { ich: number; nutzer: Konto[]; einladungen: Einladung[] } | null = null;
+let teamOffen = false, neueEinladung = '';
+const istTrainerRolle = (r: string) => r === 'trainer' || r === 'co-trainer';
+
+async function teamLaden() {
+  const r = await fetch('/api/team/verwaltung', { credentials: 'same-origin' });
+  team = r.ok ? await r.json() : null;
+}
+
+async function teamAnfrage(url: string, method: string, body?: Obj): Promise<boolean> {
+  const r = await fetch(url, { method, headers: HEADERS, credentials: 'same-origin', body: body ? JSON.stringify(body) : undefined });
+  if (r.ok) return true;
+  const b = await r.json().catch(() => ({})) as { fehler?: string };
+  hinweis(b.fehler || 'Das hat nicht geklappt.');
+  return false;
+}
+
+function teamKarte() {
+  if (location.hash !== '#kader' || !team) return;
+  const main = document.getElementById('main');
+  if (!main || main.querySelector('.teamzugaenge')) return;
+  const karte = document.createElement('details');
+  karte.className = 'card teamzugaenge';
+  karte.id = 'team-zugaenge';
+  karte.open = teamOffen;
+  const t = team, trainer = t.nutzer.filter((n) => istTrainerRolle(n.role)), betreuer = t.nutzer.filter((n) => !istTrainerRolle(n.role));
+  const zeile = (n: Konto) => {
+    const ich = n.id === t.ich, tr = istTrainerRolle(n.role);
+    return `<div class="zg tz-konto"><span class="posb">${tr ? 'TR' : 'BT'}</span><span><b>${esc(n.name)}</b>${ich ? ' <span class="pill">du</span>' : ''}<span class="note"> · ${esc(n.email)} · ${n.angemeldet ? 'angemeldet' : 'nicht angemeldet'}${n.push ? ' · 🔔' : ''}</span></span>
+      <span class="row" style="gap:6px;flex-wrap:nowrap">${ich ? '<span class="note">eigenes Konto</span>' : `<select class="f" data-tzrolle="${n.id}" aria-label="Rolle von ${esc(n.name)}"><option value="trainer"${tr ? ' selected' : ''}>Trainer</option><option value="betreuer"${tr ? '' : ' selected'}>Betreuer</option></select><button class="ib" data-tzweg="${n.id}" data-tzname="${esc(n.name)}" title="Zugang entfernen" aria-label="Zugang von ${esc(n.name)} entfernen">✕</button>`}</span></div>`;
+  };
+  karte.innerHTML = `<summary><b>Team &amp; Zugänge</b> <span class="note">· ${trainer.length} Trainer · ${betreuer.length} Betreuer${t.einladungen.length ? ` · ${t.einladungen.length} offene Einladung${t.einladungen.length > 1 ? 'en' : ''}` : ''}</span></summary>
+    <p class="sub"><b>Trainer</b> sehen und bearbeiten alles. <b>Betreuer</b> sehen Kalender, Training (nur ansehen), Kader und Spielersicht – keine Noten, Gespräche, Bewertungen oder Spieltagsvorbereitung. Eine geänderte Rolle gilt beim nächsten Öffnen der Seite. Spieler bekommen ihren Zugang unten bei „Spieler-Zugänge“.</p>
+    <div class="zg-liste">${[...trainer, ...betreuer].map(zeile).join('')}</div>
+    <div class="row" style="gap:6px;margin-top:10px"><button class="btn small ghost" data-tzneu="trainer">+ Trainer einladen</button><button class="btn small ghost" data-tzneu="betreuer">+ Betreuer einladen</button></div>
+    ${neueEinladung ? `<div class="zg-link"><input type="text" readonly value="${esc(neueEinladung)}" aria-label="Einladungslink"><a class="btn small" target="_blank" rel="noopener" href="https://wa.me/?text=${encodeURIComponent('Hier ist deine Einladung zu 11Plan (7 Tage und nur einmal gültig): ' + neueEinladung)}">Per WhatsApp</a></div><p class="note">Link kopiert. Er gilt 7 Tage und nur einmal.</p>` : ''}
+    ${t.einladungen.length ? `<p class="note" style="margin-top:10px"><b>Offene Einladungen</b></p>${t.einladungen.map((e) => `<div class="zg"><span class="posb">${istTrainerRolle(e.role) ? 'TR' : 'BT'}</span><span>${istTrainerRolle(e.role) ? 'Trainer' : 'Betreuer'}<span class="note"> · gültig bis ${new Date(e.bis).toLocaleDateString('de-DE')}${e.von ? ` · von ${esc(e.von)}` : ''}</span></span><button class="btn ghost small" data-tzinvweg="${e.id}">Zurückziehen</button></div>`).join('')}` : ''}`;
+  const spieler = main.querySelector('.zugaenge');
+  if (spieler) spieler.before(karte); else main.querySelector('.head')?.after(karte) ?? main.prepend(karte);
+  karte.addEventListener('toggle', () => { teamOffen = karte.open; });
+  const neu = async () => { await teamLaden(); karte.remove(); teamKarte(); };
+  karte.addEventListener('change', async (e) => {
+    const sel = (e.target as HTMLElement).closest<HTMLSelectElement>('[data-tzrolle]'); if (!sel) return;
+    const n = t.nutzer.find((x) => x.id === Number(sel.dataset.tzrolle));
+    if (!confirm(`${n?.name ?? 'Diese Person'} wird ${sel.value === 'trainer' ? 'Trainer und sieht dann alles' : 'Betreuer und sieht dann keine Noten, Gespräche und Spieltagsvorbereitung'}. Fortfahren?`)) { sel.value = istTrainerRolle(n?.role ?? '') ? 'trainer' : 'betreuer'; return; }
+    if (await teamAnfrage(`/api/team/${sel.dataset.tzrolle}`, 'PATCH', { rolle: sel.value })) hinweis('Rolle geändert.');
+    await neu();
+  });
+  karte.addEventListener('click', async (e) => {
+    const b = (e.target as HTMLElement).closest<HTMLElement>('[data-tzweg],[data-tzneu],[data-tzinvweg]'); if (!b) return;
+    if (b.dataset.tzweg) {
+      if (!confirm(`Zugang von ${b.dataset.tzname} entfernen? Die Person wird sofort abgemeldet und kommt nicht mehr hinein. Ihre Einträge in Training, Kalender usw. bleiben erhalten.`)) return;
+      if (await teamAnfrage(`/api/team/${b.dataset.tzweg}`, 'DELETE')) hinweis('Zugang entfernt.');
+    } else if (b.dataset.tzneu) {
+      const r = await fetch('/api/einladungen', { method: 'POST', headers: HEADERS, credentials: 'same-origin', body: JSON.stringify({ rolle: b.dataset.tzneu }) });
+      const d = await r.json() as { link?: string; fehler?: string };
+      if (!d.link) { hinweis(d.fehler || 'Einladung konnte nicht erzeugt werden.'); return; }
+      neueEinladung = d.link;
+      if (navigator.clipboard) void navigator.clipboard.writeText(d.link).catch(() => {});
+    } else if (b.dataset.tzinvweg) {
+      if (!confirm('Einladung zurückziehen? Der Link funktioniert dann nicht mehr.')) return;
+      await teamAnfrage(`/api/einladungen/offen/${b.dataset.tzinvweg}`, 'DELETE');
+    }
+    await neu();
+  });
+}
+
+/** Aus der Seitenleiste: zum Kader springen und „Team & Zugänge“ aufklappen. */
+export function teamZugaengeOeffnen() {
+  teamOffen = true;
+  const zeigen = () => { const k = document.getElementById('team-zugaenge') as HTMLDetailsElement | null; if (k) { k.open = true; k.scrollIntoView({ behavior: 'smooth', block: 'start' }); } };
+  if (location.hash === '#kader') zeigen(); else { location.hash = 'kader'; setTimeout(zeigen, 120); }
+}
+
 export async function trainerZugaenge() {
   const css = document.createElement('style');
   css.textContent = `
@@ -226,9 +306,10 @@ export async function trainerZugaenge() {
     .zg-link { display: flex; gap: 6px; margin-top: 4px; } .zg-link input { flex: 1; font-size: 12px; }
   `;
   document.head.appendChild(css);
-  await zugaengeLaden();
+  await Promise.all([zugaengeLaden(), teamLaden()]);
+  const karten = () => { zugaengeKarte(); teamKarte(); };
   let geplant = false;
-  new MutationObserver(() => { if (geplant) return; geplant = true; requestAnimationFrame(() => { geplant = false; zugaengeKarte(); }); }).observe(document.body, { childList: true, subtree: true });
-  window.addEventListener('hashchange', () => setTimeout(zugaengeKarte, 30));
-  zugaengeKarte();
+  new MutationObserver(() => { if (geplant) return; geplant = true; requestAnimationFrame(() => { geplant = false; karten(); }); }).observe(document.body, { childList: true, subtree: true });
+  window.addEventListener('hashchange', () => setTimeout(karten, 30));
+  karten();
 }
