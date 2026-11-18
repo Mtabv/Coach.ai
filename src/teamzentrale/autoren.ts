@@ -153,6 +153,7 @@ function zeigen() { felderZeigen(); stempelZeigen(); kalenderZeigen(); legende()
 
 export async function autorenStarten(name: string) {
   ich = name;
+  (window as unknown as { __11planIch?: string }).__11planIch = name;
   try {
     const t = await (await fetch('/api/team', { credentials: 'same-origin' })).json() as { nutzer?: { name: string }[] };
     (t.nutzer ?? []).forEach((u, i) => farbe.set(u.name, FARBEN[i % FARBEN.length]));
