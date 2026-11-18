@@ -160,6 +160,14 @@ function kontoKasten(name: string) {
   .app > .konto11 { margin: 8px 12px 24px; padding: 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); }
   .konto11 > .btn { justify-self: start; }
   .demo { display: none; }
+  /* Nichts darf breiter als der Bildschirm werden: Spalte begrenzen, lange Texte und Auswahllisten umbrechen bzw. kürzen */
+  .app { grid-template-columns: minmax(0, 1fr) !important; }
+  main, #main { min-width: 0; max-width: 100vw; grid-template-columns: minmax(0, 1fr); }
+  #main .row > *, #main .grid > *, #main .card > * { min-width: 0; }
+  #main .dgrid, #main .grid.g2, #main .grid.g3 { grid-template-columns: minmax(0, 1fr); }
+  #main select, #main input:not([type=checkbox]):not([type=radio]), #main textarea { max-width: 100% !important; }
+  #main .card.focus select { width: 100% !important; text-overflow: ellipsis; }
+  #main h1, #main h2, #main h3, #main p, #main .note, #main b { overflow-wrap: anywhere; }
   .hinweis11 { left: 12px; right: 12px; bottom: 12px; }
   .hinweis11 button { margin-left: 8px; }
 }
