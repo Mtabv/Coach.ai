@@ -264,6 +264,21 @@ describe('Server', () => {
     expect((await fetch(base + '/api/dossier-pdf/g1', { headers: { Cookie: trainer.cookie } })).status).toBe(404);
   });
 
+  it('Kalender-Abo: persönlicher Link liefert iCal, neuer Link macht den alten ungültig', async () => {
+    const l = await call('/api/kalender/link', { method: 'POST', jar: trainer, body: {} });
+    expect(l.json.webcal).toMatch(/^webcal:\/\/coach\.example\.de\/kalender\/.+\.ics$/);
+    expect((await call('/api/kalender/link', { method: 'POST', jar: trainer, body: {} })).json.https).toBe(l.json.https);
+    const pfad = String(l.json.https).replace('https://coach.example.de', '');
+    const r = await fetch(base + pfad);
+    expect(r.headers.get('content-type')).toContain('text/calendar');
+    const ics = await r.text();
+    expect(ics).toContain('BEGIN:VCALENDAR');
+    expect(ics).toContain('SUMMARY:Training');
+    const neu = await call('/api/kalender/link', { method: 'POST', jar: trainer, body: { neu: true } });
+    expect(neu.json.https).not.toBe(l.json.https);
+    expect((await fetch(base + pfad)).status).toBe(404);
+  });
+
   it('liefert das Frontend aus und lässt keine Pfade außerhalb zu', async () => {
     const r = await fetch(base + '/irgendwo');
     expect(await r.text()).toContain('11Plan');

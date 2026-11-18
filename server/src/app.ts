@@ -10,6 +10,8 @@ import {
 import { AktionsFehler, betreuerSicht, betreuerUebernehmen, dienstErinnerungen, dienstUmlegen, neueMitteilungen, spielerAktion, spielerSicht, type Daten } from './rollen.js';
 import { reinerText, type PushDienst } from './push.js';
 import { KiFehler, KI_MODELL, type KiAnfrage } from './ki.js';
+import { kalenderIcs } from './kalender.js';
+import { randomBytes } from 'node:crypto';
 
 export interface Config {
   /** Ordner mit dem gebauten Frontend (index.html, assets/). */
@@ -335,6 +337,17 @@ export function createHandler(db: Db, cfg: Config) {
         throw e;
       }
     }
+    // ---------- Kalender-Abo (iCal): persönlicher Link zum Einbinden in den eigenen Kalender ----------
+    if (path === '/api/kalender/link' && (m === 'POST' || m === 'DELETE')) {
+      const u = requireUser(req), b = m === 'POST' ? await readJson(req).catch(() => ({} as Record<string, unknown>)) : {};
+      const vorhanden = db.prepare('SELECT token FROM kalender_abos WHERE user_id = ?').get(u.id) as { token: string } | undefined;
+      if (m === 'DELETE' || b.neu === true) db.prepare('DELETE FROM kalender_abos WHERE user_id = ?').run(u.id);
+      if (m === 'DELETE') return send(res, 200, { ok: true });
+      let t = b.neu === true ? undefined : vorhanden?.token;
+      if (!t) { t = randomBytes(24).toString('base64url'); db.prepare('INSERT INTO kalender_abos (token, user_id, created_at) VALUES (?, ?, ?)').run(t, u.id, Date.now()); }
+      const https = `${cfg.publicUrl.replace(/\/$/, '')}/kalender/${t}.ics`;
+      return send(res, 200, { https, webcal: https.replace(/^https?:/, 'webcal:') });
+    }
     // ---------- Spieltagsdossier als PDF: Trainer gibt frei, alle Angemeldeten können es ansehen ----------
     if (path === '/api/dossier-pdf' && m === 'GET') {
       requireUser(req);
@@ -514,6 +527,16 @@ export function createHandler(db: Db, cfg: Config) {
       if (url.pathname.startsWith('/api/')) return await api(req, res, url.pathname);
       if (url.pathname.startsWith('/datenquelle/fussballde/')) return await proxy(req, res, url.pathname, url.search);
       if (url.pathname === '/teamzentrale') return serveTeamzentrale(req, res);
+      const kal = /^\/kalender\/([A-Za-z0-9_-]{20,})\.ics$/.exec(url.pathname);
+      if (kal) {
+        const u = db.prepare('SELECT u.id, u.role, u.pid FROM kalender_abos k JOIN users u ON u.id = k.user_id WHERE k.token = ?').get(kal[1]) as { id: number; role: string; pid: string | null } | undefined;
+        if (!u) { res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' }); return res.end('Dieser Kalender-Link gilt nicht mehr.'); }
+        const d = tzDaten().daten;
+        const sicht = u.role === 'spieler' && u.pid ? spielerSicht(d, u.pid) : u.role === 'betreuer' ? betreuerSicht(d) : d;
+        const ics = kalenderIcs(sicht, { pid: u.role === 'spieler' ? u.pid : null, name: '11Plan' });
+        res.writeHead(200, { 'Content-Type': 'text/calendar; charset=utf-8', 'Content-Disposition': 'inline; filename="11plan.ics"', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'no-referrer' });
+        return res.end(ics);
+      }
       const sl = /^\/s\/([A-Za-z0-9_-]{20,})$/.exec(url.pathname);
       if (sl) {
         // Persönlicher Spieler-Link: anmelden (ein Jahr) und zur Spieler-App

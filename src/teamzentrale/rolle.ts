@@ -365,3 +365,44 @@ export async function dossierPdfStarten() {
     await pdfsLaden(); pdfFelder();
   });
 }
+
+// =====================================================================================================
+// Kalender-Abo (iCal): Termine im eigenen Kalender (iPhone, Android/Google, Outlook)
+// =====================================================================================================
+
+async function kalenderFenster(neu = false) {
+  const r = await fetch('/api/kalender/link', { method: 'POST', headers: HEADERS, credentials: 'same-origin', body: JSON.stringify({ neu }) });
+  const b = await r.json().catch(() => ({})) as { https?: string; webcal?: string; fehler?: string };
+  if (!b.https || !b.webcal) { hinweis(b.fehler || 'Der Kalender-Link konnte nicht erzeugt werden.'); return; }
+  document.querySelector('.kalabo-fenster')?.remove();
+  const f = document.createElement('div');
+  f.className = 'kalabo-fenster';
+  f.innerHTML = `<div class="kalabo-box" role="dialog" aria-modal="true" aria-label="Kalender abonnieren">
+    <div class="row between"><b>📅 In meinen Kalender übernehmen</b><button class="ib" data-kalzu="1" aria-label="Schließen">✕</button></div>
+    <p class="note">Trainings, Spiele (mit Treffpunkt) und Dienste erscheinen dann in deinem normalen Kalender und aktualisieren sich von selbst.</p>
+    <a class="btn" href="${esc(b.webcal)}">iPhone, Mac oder Outlook: Kalender abonnieren</a>
+    <a class="btn ghost" href="https://calendar.google.com/calendar/r?cid=${encodeURIComponent(b.webcal)}" target="_blank" rel="noopener">Android / Google Kalender</a>
+    <label class="note" for="kalabo-link">Oder den Link in einem anderen Kalender als „Abo“ / „aus dem Internet“ einfügen:</label>
+    <div class="row" style="flex-wrap:nowrap;gap:6px"><input type="text" id="kalabo-link" readonly value="${esc(b.https)}"><button class="btn ghost small" data-kalkopie="1">Kopieren</button></div>
+    <p class="note">Der Link ist persönlich – bitte nicht weitergeben. Neuer Abruf im Kalender: je nach App alle 15 Minuten bis einige Stunden (Google bis zu einem Tag).</p>
+    <button class="btn ghost small" data-kalneu="1" style="justify-self:start">Link erneuern (der alte gilt dann nicht mehr)</button></div>`;
+  document.body.appendChild(f);
+  f.addEventListener('click', async (e) => {
+    const t = e.target as HTMLElement;
+    if (t === f || t.closest('[data-kalzu]')) f.remove();
+    else if (t.closest('[data-kalkopie]')) { const i = f.querySelector<HTMLInputElement>('#kalabo-link')!; i.select(); void navigator.clipboard?.writeText(i.value).then(() => hinweis('Link kopiert.'), () => {}); }
+    else if (t.closest('[data-kalneu]') && confirm('Neuen Link erzeugen? Kalender, die den alten Link abonniert haben, bekommen dann keine Termine mehr.')) void kalenderFenster(true);
+  });
+}
+
+/** Für alle Rollen: Knöpfe [data-kalabo] öffnen das Fenster. */
+export function kalenderAboStarten() {
+  const css = document.createElement('style');
+  css.textContent = `
+    .kalabo-fenster { position: fixed; inset: 0; z-index: 1000; background: rgb(0 0 0 / .6); display: grid; place-items: center; padding: 16px; }
+    .kalabo-box { background: var(--card, #161b19); border: 1px solid var(--line); border-radius: 14px; padding: 16px; max-width: 460px; width: 100%; display: grid; gap: 10px; }
+    .kalabo-box .btn { text-align: center; } .kalabo-box input { flex: 1; font-size: 12px; }
+  `;
+  document.head.appendChild(css);
+  document.addEventListener('click', (e) => { if ((e.target as HTMLElement).closest?.('[data-kalabo]')) { e.preventDefault(); void kalenderFenster(); } });
+}
