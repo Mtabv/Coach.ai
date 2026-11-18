@@ -30,7 +30,7 @@ const BETREUER_SCHREIBT_STATE = ['att', 'guests', 'rides', 'notices', 'squad', '
 /** Felder eines Termins, die nur Trainer ändern (Trainingsplanung). */
 const PLANUNG = ['unit', 'ex', 'focus'];
 
-const erlaubteTexte = (k: string) => /^(kleidung|zeitplan)-/.test(k);
+const erlaubteTexte = (k: string) => /^(kleidung|zeitplan|treffpunkt)-/.test(k);
 
 export function betreuerSicht(daten: Daten): Daten {
   const out: Daten = nur(daten, [...BETREUER_LISTEN, 'kaderNamen']);
