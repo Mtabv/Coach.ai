@@ -1,11 +1,15 @@
 import { createHash, randomBytes, scryptSync, timingSafeEqual } from 'node:crypto';
 import type { Db } from './db.js';
 
-export type Role = 'trainer' | 'co-trainer';
-export interface User { id: number; email: string; name: string; role: Role }
+export type Role = 'trainer' | 'co-trainer' | 'betreuer' | 'spieler';
+export interface User { id: number; email: string; name: string; role: Role; pid?: string | null }
+/** Volle Rechte: Trainer (früher auch „co-trainer“). */
+export const istTrainer = (u: User | null | undefined) => !!u && (u.role === 'trainer' || u.role === 'co-trainer');
 
 const SCRYPT = { N: 16384, r: 8, p: 1, len: 64 };
 const SESSION_DAYS = 30;
+/** Spieler melden sich über ihren persönlichen Link an und bleiben ein Jahr angemeldet. */
+const SPIELER_SESSION_DAYS = 365;
 const INVITE_DAYS = 7;
 
 /** Passwort-Hash mit scrypt und zufälligem Salz. Das Passwort selbst wird nie gespeichert. */
@@ -45,9 +49,9 @@ export function findUserByEmail(db: Db, email: string): (User & { pw_hash: strin
   return db.prepare('SELECT id, email, name, role, pw_hash FROM users WHERE email = ?').get(email.trim()) as (User & { pw_hash: string }) | undefined;
 }
 
-export function createSession(db: Db, userId: number, now = Date.now()): { token: string; maxAge: number } {
+export function createSession(db: Db, userId: number, now = Date.now(), tage = SESSION_DAYS): { token: string; maxAge: number } {
   const t = token();
-  const maxAge = SESSION_DAYS * 86400;
+  const maxAge = tage * 86400;
   db.prepare('INSERT INTO sessions (token_hash, user_id, expires_at) VALUES (?, ?, ?)').run(sha(t), userId, now + maxAge * 1000);
   db.prepare('DELETE FROM sessions WHERE expires_at < ?').run(now);
   return { token: t, maxAge };
@@ -55,7 +59,7 @@ export function createSession(db: Db, userId: number, now = Date.now()): { token
 
 export function userForSession(db: Db, t: string | undefined, now = Date.now()): User | null {
   if (!t) return null;
-  const row = db.prepare('SELECT u.id, u.email, u.name, u.role FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.token_hash = ? AND s.expires_at > ?').get(sha(t), now) as User | undefined;
+  const row = db.prepare('SELECT u.id, u.email, u.name, u.role, u.pid FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.token_hash = ? AND s.expires_at > ?').get(sha(t), now) as User | undefined;
   return row ?? null;
 }
 
@@ -90,3 +94,33 @@ export function noteAttempt(db: Db, key: string, now = Date.now()): void {
 export function clearAttempts(db: Db, key: string): void {
   db.prepare('DELETE FROM login_attempts WHERE key = ?').run(key);
 }
+
+// ---------- Spieler: persönlicher Link statt Passwort ----------
+
+/** Spielerkonto zum Kader-Eintrag (pid) anlegen oder holen. Spieler haben kein Passwort. */
+export function spielerKonto(db: Db, pid: string, name: string): User {
+  const vorhanden = db.prepare('SELECT id, email, name, role, pid FROM users WHERE pid = ?').get(pid) as User | undefined;
+  if (vorhanden) {
+    if (vorhanden.name !== name) db.prepare('UPDATE users SET name = ? WHERE id = ?').run(name, vorhanden.id);
+    return { ...vorhanden, name };
+  }
+  const email = `spieler+${pid}@11plan.invalid`;
+  const r = db.prepare("INSERT INTO users (email, name, role, pw_hash, pid) VALUES (?, ?, 'spieler', ?, ?)").run(email, name, hashPassword(token()), pid);
+  return { id: Number(r.lastInsertRowid), email, name, role: 'spieler', pid };
+}
+
+/** Neuer persönlicher Link: alte Links und Anmeldungen dieses Spielers werden ungültig. */
+export function spielerLinkErzeugen(db: Db, userId: number, now = Date.now()): string {
+  const t = token();
+  db.prepare('DELETE FROM zugangslinks WHERE user_id = ?').run(userId);
+  db.prepare('DELETE FROM sessions WHERE user_id = ?').run(userId);
+  db.prepare('INSERT INTO zugangslinks (token_hash, user_id, created_at) VALUES (?, ?, ?)').run(sha(t), userId, now);
+  return t;
+}
+
+export function spielerLinkEinloesen(db: Db, t: string): User | null {
+  const row = db.prepare('SELECT u.id, u.email, u.name, u.role, u.pid FROM zugangslinks z JOIN users u ON u.id = z.user_id WHERE z.token_hash = ?').get(sha(t)) as User | undefined;
+  return row ?? null;
+}
+
+export function spielerSessionTage(): number { return SPIELER_SESSION_DAYS; }

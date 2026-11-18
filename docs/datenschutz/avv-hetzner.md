@@ -58,3 +58,11 @@ Für Version 1 (nur Trainerteam) ist Variante A schnell umsetzbar. Spätestens m
 4. Das PDF des Vertrags ablegen, etwa in der Vereinsablage, nicht im Repository.
 
 Quellen: [Datenschutz bei Hetzner, FAQ](https://docs.hetzner.com/de/general/general-terms-and-conditions/data-privacy-faq/), [Datenschutz bei Hetzner](https://docs.hetzner.com/de/general/company-and-policy/data-protection-at-hetzner/), [Technische und organisatorische Maßnahmen](https://docs.hetzner.com/de/general/security-and-identify/technical-and-organizational-measures/)
+
+
+## Nachtrag 18.11.2026: Spieler- und Betreuer-Zugänge, Push
+
+- Spieler bekommen einen persönlichen Link (ohne Passwort) und sehen nur ihre Spieler-App: Termine, eigene Zu- und Absagen und Abwesenheiten (mit Grund), Dienste, Fahrgemeinschaften. Abwesenheiten anderer sehen sie nur als „abwesend“ ohne Grund. Noten, Bewertungen und Gesprächsnotizen bekommen sie nicht geliefert.
+- Betreuer sehen Organisation (Termine, Dienste, Kader, Anwesenheit, Abwesenheiten mit Grund), keine Noten, Bewertungen, Gespräche oder Spieltagsvorbereitung.
+- Push-Nachrichten laufen über die Push-Dienste von Apple, Google bzw. Mozilla (je nach Gerät); übertragen wird nur der kurze Text der Benachrichtigung (z. B. „Dir wurde der Materialdienst zugewiesen“). Abo-Daten (Gerätekennung des Push-Dienstes) liegen auf dem eigenen Server.
+- Vor dem Start für Spieler: Datenschutzhinweis für die Mannschaft (Zweck, Verantwortlicher, welche Daten, Löschung auf Wunsch) und Abstimmung mit dem Verein (siehe Variante A/B oben).

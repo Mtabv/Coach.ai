@@ -160,6 +160,67 @@ describe('Server', () => {
     expect((await call('/api/ki/verteilen', { method: 'POST', body: { text: 'x' } })).status).toBe(401);
   });
 
+  it('Rollen: Spieler-Link, Spieler-Sicht und Aktionen, Betreuer sieht und ändert nur Erlaubtes', async () => {
+    // Gemeinsamer Stand wie von der Teamzentrale gespeichert
+    const g = await call('/api/dokumente/teamzentrale', { jar: trainer });
+    const daten = { kaderNamen: { 'p-a': 'Anton A', 'p-b': 'Bernd B' }, events: [{ id: 'e1', date: '2026-11-20', type: 'tr', time: '19:00', unit: 'u1' }],
+      duties: [{ id: 'd1', title: 'Materialdienst', from: '2026-11-16', to: '2026-11-22', slots: 1, who: ['p-a'] }], absences: [{ pid: 'p-b', from: '2026-11-01', to: '2026-11-30', why: 'verletzt: Kreuzband' }],
+      talks: { 'p-a': [{ notizen: 'vertraulich' }] }, state: { grades: { g0: { 'p-a': '5' } }, texts: { 'a-q1-g1': 'geheim' }, notices: [] } };
+    expect((await call('/api/dokumente/teamzentrale', { method: 'PUT', jar: trainer, body: { basisVersion: g.json.version, inhalt: { basis: {}, daten } } })).status).toBe(200);
+
+    // Trainer erzeugt den Link, Spieler löst ihn ein
+    expect((await call('/api/spieler/links', { method: 'POST', jar: trainer, body: { pid: 'p-x', name: 'Unbekannt' } })).status).toBe(400);
+    const l = await call('/api/spieler/links', { method: 'POST', jar: trainer, body: { pid: 'p-a', name: 'Anton A' } });
+    expect(l.status).toBe(201);
+    const pfad = String(l.json.link).replace('https://coach.example.de', '');
+    const r = await fetch(base + pfad, { redirect: 'manual' });
+    expect(r.status).toBe(200);
+    const spieler: Jar = { cookie: String(r.headers.get('set-cookie')).split(';')[0] };
+    expect((await call('/api/status', { jar: spieler })).json.nutzer).toMatchObject({ role: 'spieler', pid: 'p-a', email: '' });
+
+    // Spieler: kein Zugriff auf das ganze Dokument, den Dossier-Stand oder Trainerfunktionen
+    expect((await call('/api/dokumente/teamzentrale', { jar: spieler })).status).toBe(403);
+    expect((await call('/api/zustand', { jar: spieler })).status).toBe(403);
+    expect((await call('/api/einladungen', { method: 'POST', jar: spieler })).status).toBe(403);
+    expect((await call('/api/spieler/links', { jar: spieler })).status).toBe(403);
+    const sicht = await call('/api/spieler/stand', { jar: spieler });
+    expect(sicht.json.daten.talks).toBeUndefined();
+    expect(sicht.json.daten.state.grades).toBeUndefined();
+    expect(sicht.json.daten.absences[0].why).toBe('abwesend');
+
+    // Aktion: Dienst abgeben – der Stand des Trainers ändert sich, sonst nichts
+    const ak = await call('/api/spieler/aktion', { method: 'POST', jar: spieler, body: { typ: 'dienstAbgeben', did: 'd1', an: 'p-b' } });
+    expect(ak.status).toBe(200);
+    const nach = await call('/api/dokumente/teamzentrale', { jar: trainer });
+    expect(nach.json.inhalt.daten.duties[0].who).toEqual(['p-b']);
+    expect(nach.json.inhalt.daten.talks).toEqual(daten.talks);
+    expect(nach.json.inhalt.daten.state.notices[0]).toMatchObject({ to: 'p-b' });
+
+    // Neuer Link: alter Link und alte Anmeldung gelten nicht mehr
+    await call('/api/spieler/links', { method: 'POST', jar: trainer, body: { pid: 'p-a', name: 'Anton A' } });
+    expect((await call('/api/spieler/stand', { jar: spieler })).status).toBe(401);
+    expect((await fetch(base + pfad, { redirect: 'manual' })).headers.get('location')).toBe('/?link=ungueltig');
+
+    // Betreuer per Einladung
+    const inv = await call('/api/einladungen', { method: 'POST', jar: trainer, body: { rolle: 'betreuer' } });
+    expect(inv.json.rolle).toBe('betreuer');
+    const betreuer: Jar = { cookie: '' };
+    const t = String(inv.json.link).split('#einladung/')[1];
+    expect((await call(`/api/einladungen/${t}/annehmen`, { method: 'POST', jar: betreuer, body: { name: 'Bea', email: 'b@example.de', passwort: 'betreuer-pass-1' } })).status).toBe(201);
+    const bs = await call('/api/dokumente/teamzentrale', { jar: betreuer });
+    expect(bs.json.inhalt.daten.talks).toBeUndefined();
+    expect(bs.json.inhalt.daten.state.grades).toBeUndefined();
+    expect(bs.json.inhalt.daten.state.texts).toEqual({});
+    expect((await call('/api/zustand', { jar: betreuer })).status).toBe(403);
+    // Betreuer ändert Termin und Planung – nur der Termin kommt an
+    const bd = bs.json.inhalt.daten; bd.events[0].time = '18:30'; bd.events[0].unit = 'u-neu'; bd.state.grades = { g0: { 'p-a': '1' } };
+    expect((await call('/api/dokumente/teamzentrale', { method: 'PUT', jar: betreuer, body: { basisVersion: bs.json.version, inhalt: { basis: {}, daten: bd } } })).status).toBe(200);
+    const end = (await call('/api/dokumente/teamzentrale', { jar: trainer })).json.inhalt.daten;
+    expect(end.events[0]).toMatchObject({ time: '18:30', unit: 'u1' });
+    expect(end.state.grades).toEqual({ g0: { 'p-a': '5' } });
+    expect(end.talks).toEqual(daten.talks);
+  });
+
   it('liefert das Frontend aus und lässt keine Pfade außerhalb zu', async () => {
     const r = await fetch(base + '/irgendwo');
     expect(await r.text()).toContain('11Plan');

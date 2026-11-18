@@ -138,8 +138,11 @@ function Anmelden({ fertig }: { fertig: () => Promise<void> }) {
   const [passwort, setPasswort] = useState('');
   const f = useFormular(async () => { await api('/api/anmelden', { method: 'POST', body: { email, passwort } }); await fertig(); });
   return (
-    <Rahmen titel="Anmelden" text="Zugang für das Trainerteam.">
+    <Rahmen titel="Anmelden" text="Zugang für Trainer und Betreuer. Spieler kommen über ihren persönlichen Link herein.">
       <form className="zugang-form" onSubmit={f.onSubmit}>
+        {new URLSearchParams(window.location.search).get('link') === 'ungueltig' && (
+          <p className="form-fehler" role="alert">Dieser Spieler-Link gilt nicht mehr. Bitte beim Trainer einen neuen Link anfordern.</p>
+        )}
         <Feld label="E-Mail" type="email" autoComplete="username" value={email} onChange={(e) => setEmail(e.target.value)} />
         <Feld label="Passwort" type="password" autoComplete="current-password" value={passwort} onChange={(e) => setPasswort(e.target.value)} />
         {f.fehler && <p className="form-fehler" role="alert">{f.fehler}</p>}

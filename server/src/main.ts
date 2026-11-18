@@ -3,12 +3,14 @@ import { join } from 'node:path';
 import { backup, openDb } from './db.js';
 import { createHandler } from './app.js';
 import { kiDienst } from './ki.js';
+import { pushDienst } from './push.js';
 
 /** Start des 11Plan-Servers. Alle Einstellungen kommen aus Umgebungsvariablen (deploy/.env). */
 const env = process.env;
 const dataDir = env.COACHAI_DATEN || './daten';
 const db = openDb(join(dataDir, 'coachai.db'));
 
+const adresse = env.COACHAI_ADRESSE || 'http://localhost:3000';
 const handler = createHandler(db, {
   publicDir: env.COACHAI_FRONTEND || './dist',
   setupToken: env.COACHAI_EINRICHTUNGSSCHLUESSEL || '',
@@ -20,11 +22,16 @@ const handler = createHandler(db, {
   dossierStart: join(dataDir, 'dossier-start.json'),
   aktualisierenDatei: join(dataDir, 'neu-bauen'),
   spracheUrl: env.COACHAI_SPRACHE_URL || undefined,
+  // Push: Schlüssel erzeugt der Server selbst (Datenordner). Kontaktangabe für die Push-Dienste.
+  push: pushDienst(db, join(dataDir, 'vapid.json'), adresse.startsWith('https:') ? adresse : 'mailto:push@11plan.invalid'),
   ki: env.ANTHROPIC_API_KEY ? kiDienst(env.ANTHROPIC_API_KEY, env.COACHAI_KI_URL || undefined) : undefined,
 });
 
 const port = Number(env.PORT || 3000);
 createServer(handler).listen(port, () => console.log(`11Plan läuft auf Port ${port}`));
+
+// Zeitplan: 15 Uhr Dienst-Erinnerungen, 17 Uhr Dienste von Abwesenden umlegen
+setInterval(() => { handler.zeitplanTick().catch((e) => console.error('Zeitplan', e)); }, 60e3).unref();
 
 // Tägliche Sicherung der Datenbank (zusätzlich zu den Hetzner-Backups), 14 Tage aufbewahrt.
 const doBackup = () => { try { console.log('Sicherung:', backup(db, join(dataDir, 'sicherungen'))); } catch (e) { console.error('Sicherung fehlgeschlagen', e); } };

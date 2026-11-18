@@ -11,6 +11,7 @@ import { abgleichen } from './merge';
 import { maskenDiktatStarten } from './maskenDiktat';
 import { kiUebungStarten } from './kiUebung';
 import { autorenMerken, autorenStarten, autorenStempeln } from './autoren';
+import { betreuerAnpassen, rolle, spielerStarten, trainerZugaenge } from './rolle';
 
 type Obj = Record<string, unknown>;
 type Daten = Record<string, unknown>;
@@ -173,7 +174,7 @@ function kontoKasten(name: string) {
   document.head.appendChild(css);
   const box = document.createElement('div');
   box.className = 'konto11';
-  box.innerHTML = '<div>Angemeldet als <b></b></div><div class="row"><button class="btn small ghost" data-k="einladen">Trainer einladen</button><button class="btn small ghost" data-k="ab">Abmelden</button></div><div data-k="link" hidden></div><div class="note" data-k="status">Wird geladen …</div><div class="note" data-k="stand"></div><button class="btn small ghost" data-aktualisieren="1">Daten aktualisieren</button>';
+  box.innerHTML = `<div>Angemeldet als <b></b>${rolle.rolle === 'betreuer' ? ' (Betreuer)' : ''}</div><div class="row">${rolle.rolle === 'trainer' ? '<button class="btn small ghost" data-k="einladen">Trainer einladen</button><button class="btn small ghost" data-k="einladenB">Betreuer einladen</button>' : ''}<button class="btn small ghost" data-k="ab">Abmelden</button></div><div data-k="link" hidden></div><div class="note" data-k="status">Wird geladen …</div><div class="note" data-k="stand"></div><button class="btn small ghost" data-aktualisieren="1">Daten aktualisieren</button>`;
   box.querySelector('b')!.textContent = name;
   anzeige = box.querySelector('[data-k=status]');
   datenstandZeigen(box.querySelector<HTMLElement>('[data-k=stand]'));
@@ -185,11 +186,12 @@ function kontoKasten(name: string) {
       await fetch('/api/abmelden', { method: 'POST', headers: HEADERS, credentials: 'same-origin' });
       location.href = '/';
     }
-    if (k === 'einladen') {
-      const d = await (await fetch('/api/einladungen', { method: 'POST', headers: HEADERS, credentials: 'same-origin' })).json();
+    if (k === 'einladen' || k === 'einladenB') {
+      const betreuer = k === 'einladenB';
+      const d = await (await fetch('/api/einladungen', { method: 'POST', headers: HEADERS, credentials: 'same-origin', body: JSON.stringify({ rolle: betreuer ? 'betreuer' : 'trainer' }) })).json();
       const el = box.querySelector<HTMLElement>('[data-k=link]')!;
       el.hidden = false;
-      el.textContent = 'Link, 7 Tage und nur einmal gültig:';
+      el.textContent = `${betreuer ? 'Betreuer-Link' : 'Trainer-Link'}, 7 Tage und nur einmal gültig:`;
       const i = document.createElement('input');
       i.type = 'text'; i.readOnly = true; i.value = d.link || d.fehler;
       el.appendChild(i); i.select();
@@ -360,7 +362,10 @@ async function holen() {
 async function start() {
   const st = await (await fetch('/api/status', { credentials: 'same-origin' })).json();
   if (!st.nutzer) { location.href = '/'; return; }
+  // Spieler: eigene App, eigene Daten, keine gemeinsamen Speicherungen
+  if (rolle.rolle === 'spieler') { await spielerStarten((d) => anwenden(d)); return; }
   kontoKasten(st.nutzer.name);
+  if (rolle.rolle === 'betreuer') betreuerAnpassen(); else void trainerZugaenge();
   maskenDiktatStarten();
   kiUebungStarten();
   dateiStand = schnappschuss();
