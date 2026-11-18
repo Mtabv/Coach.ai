@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { betreuerSicht, betreuerUebernehmen, dienstErinnerungen, dienstUmlegen, neueMitteilungen, spielerAktion, spielerSicht, type Daten } from './rollen';
+import { betreuerSicht, betreuerUebernehmen, dienstErinnerungen, dienstTage, dienstUmlegen, neueMitteilungen, spielerAktion, spielerSicht, type Daten } from './rollen';
 
 const stand = (): Daten => ({
   kaderNamen: { 'p-a': 'Anton A', 'p-b': 'Bernd B', 'p-c': 'Carl C' },
@@ -101,6 +101,14 @@ describe('Spieler', () => {
     const vorher = d; d = spielerAktion(d, 'p-a', { typ: 'fahrtMitnehmen', gid: 'g1', mit: 'p-b' });
     expect(((d.state as Daten).rides as Record<string, { fahrer: { mit: string[] }[] }>).g1.fahrer[0].mit).toEqual(['p-b']);
     expect(neueMitteilungen(vorher, d)[0]).toEqual({ to: 'p-b', text: expect.stringContaining('Du fährst bei') });
+  });
+});
+
+describe('Dienstarten', () => {
+  it('Materialdienst nur an Trainings- und Spieltagen, eigener Dienst an jedem Tag', () => {
+    const d = stand();
+    expect(dienstTage(d, (d.duties as Daten[])[0])).toEqual(['2026-11-20', '2026-11-22']);
+    expect(dienstTage(d, { id: 'w', title: 'Weihnachtsmarkt', art: 'frei', from: '2026-12-11', to: '2026-12-13', who: [] })).toEqual(['2026-12-11', '2026-12-12', '2026-12-13']);
   });
 });
 

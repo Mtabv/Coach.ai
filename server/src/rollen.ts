@@ -89,16 +89,17 @@ export function dienstWann(daten: Daten, d: Obj): string {
     const wt = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'][new Date(`${e.date}T12:00:00Z`).getUTCDay()];
     return `${wt} ${tagMonat(String(e.date))}, ${e.time}`;
   }
-  return `${d.from === d.to ? '' : 'Woche '}${tagMonat(String(d.from))}${d.from === d.to ? '' : '–' + tagMonat(String(d.to))}`;
+  return `${d.from === d.to || d.art === 'frei' ? '' : 'Woche '}${tagMonat(String(d.from))}${d.from === d.to ? '' : '–' + tagMonat(String(d.to))}`;
 }
 
-/** Tage, an denen ein Dienst anfällt: Termin-Dienste am Termin, Zeitraum-Dienste an Trainings- und Spieltagen. */
+/** Tage, an denen ein Dienst anfällt: Termin-Dienste am Termin, Zeitraum-Dienste an Trainings- und Spieltagen, eigene Dienste an jedem Tag. */
 export function dienstTage(daten: Daten, d: Obj): string[] {
   const events = arr(daten.events);
   if (d.ev) { const e = events.find((x) => x.id === d.ev); return e ? [String(e.date)] : []; }
   if (typeof d.from !== 'string' || typeof d.to !== 'string') return [];
   const out: string[] = [];
-  for (let x = d.from; x <= d.to; x = plusTage(x, 1)) if (events.some((e) => e.date === x && (e.type === 'tr' || e.type === 'gm'))) out.push(x);
+  // Materialdienst: nur an Trainings- und Spieltagen; eigener Dienst (art 'frei', z. B. Weihnachtsmarkt): jeden Tag
+  for (let x = d.from; x <= d.to; x = plusTage(x, 1)) if (d.art === 'frei' || events.some((e) => e.date === x && (e.type === 'tr' || e.type === 'gm'))) out.push(x);
   return out;
 }
 
