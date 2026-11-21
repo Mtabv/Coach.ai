@@ -59,9 +59,23 @@ export function botschaftenTeilen(t: string): string[] {
   return z.slice(0, 3);
 }
 
-/** „Trikot weiß, Hose schwarz, Stutzen weiß“ → Kleidung; null, wenn nichts erkennbar. */
+const FARBEN = ['schwarz', 'weiß', 'weiss', 'rot', 'blau', 'grün', 'gruen', 'gelb', 'grau', 'orange', 'lila', 'pink', 'türkis', 'beige'];
+const FARBE = `(${FARBEN.join('|')})(?:e|es|er|en|em)?`;
+/** Farbe in Grundform: „weiße“ → „weiß“, „weiss“ → „weiß“, „Schwarzes“ → „schwarz“. */
+const grundfarbe = (w: string) => { const x = w.toLowerCase().replace(/(e|es|er|en|em)$/, ''); return x === 'weiss' ? 'weiß' : x === 'gruen' ? 'grün' : x; };
+
+/**
+ * Kleidung aus freiem Text oder Diktat: „Trikot weiß, Hose schwarz, Stutzen weiß“ ebenso wie
+ * „schwarzes Trikot, weiße Hose, schwarze Stutzen“. null, wenn nichts erkennbar.
+ */
 export function kleidungLesen(t: string): KitCombination | null {
-  const teil = (wort: string) => (new RegExp(`${wort}[:\\s]+([^,;.\\n]+)`, 'i').exec(t)?.[1] ?? '').trim();
+  const teil = (wort: string) => {
+    const vor = new RegExp(`\\b${FARBE}\\s+${wort}\\b`, 'i').exec(t);          // „schwarzes Trikot“
+    if (vor) return grundfarbe(vor[1]);
+    const nach = new RegExp(`${wort}[:\\s]+([^,;.\\n]+)`, 'i').exec(t)?.[1]?.trim() ?? ''; // „Trikot schwarz“
+    const f = new RegExp(`^${FARBE}\\b`, 'i').exec(nach);
+    return f ? grundfarbe(f[1]) + nach.slice(f[0].length).replace(/^\s*(und|,).*/i, '') : nach.replace(/\s+und\s.*$/i, '').trim();
+  };
   const k = { shirt: teil('Trikots?'), shorts: teil('Hosen?'), socks: teil('Stutzen') };
   return k.shirt || k.shorts || k.socks ? k : null;
 }

@@ -6,11 +6,13 @@ def rep(a, b, count=1):
     s = s.replace(a, b) if count == 0 else s.replace(a, b, count)
 
 # ---- Kleidung: Bild je Teil nach Farbe aus allen hinterlegten Kombinationen (z. B. schwarzes Trikot) ----
-rep("function kitSvg(k) {", """const kitFarbe = t => String(t || '').toLowerCase().replace(/ß/g, 'ss').replace(/\\(.*?\\)/g, '').replace(/(es|er|e)\\b/g, '').replace(/\\s+/g, ' ').trim();
+rep("function kitSvg(k) {", """const kitFarbe = t => String(t || '').toLowerCase().replace(/ß/g, 'ss').replace(/\\(.*?\\)/g, '').replace(/(es|er|en|em|e)\\b/g, '').replace(/\\s+/g, ' ').trim();
 /** Aus „Trikot schwarz, Hose weiß, Stutzen schwarz“ die Bilder der Teile in dieser Farbe. */
 function kitBilder(text) {
   const sets = (REAL.kit && REAL.kit.sets) || (REAL.kit && REAL.kit.images ? [{ ...REAL.kit.home, images: REAL.kit.images }] : []);
-  const teil = w => (new RegExp(w + '[:\\\\s]+([^,;.\\\\n]+)', 'i').exec(text || '') || [])[1] || '';
+  const FARB = /^(schwarz|wei(ß|ss)|rot|blau|gr(ü|ue)n|gelb|grau|orange|lila|pink|beige)/i;
+  const teil = w => { const v = new RegExp('([a-zäöüß]+)\\\\s+' + w + '\\\\b', 'i').exec(text || ''); if (v && FARB.test(v[1])) return v[1];
+    return (new RegExp(w + '[:\\\\s]+([^,;.\\\\n]+)', 'i').exec(text || '') || [])[1] || ''; };
   return [['shirt', 'Trikots?'], ['shorts', 'Hosen?'], ['socks', 'Stutzen']].map(([k, w]) => { const f = kitFarbe(teil(w)); if (!f) return ''; const s = sets.find(x => x.images && x.images[k] && kitFarbe(x[k]) === f); if (s) return s.images[k]; const st = (window.__11planKleidung || []).find(b => b.teil === k && kitFarbe(b.farbe) === f); return st ? st.src : ''; });
 }
 function kitSvg(k) {""")

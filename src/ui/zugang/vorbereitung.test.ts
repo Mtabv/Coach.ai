@@ -16,6 +16,9 @@ describe('Übernahme aus der Spielvorbereitung der Teamzentrale', () => {
   it('liest die Kleidung', () => {
     expect(kleidungLesen('Trikot weiß, Hose schwarz, Stutzen weiß')).toEqual({ shirt: 'weiß', shorts: 'schwarz', socks: 'weiß' });
     expect(kleidungLesen('wie immer')).toBeNull();
+    expect(kleidungLesen('Schwarzes Trikot, weiße Hose, schwarze Stutzen')).toEqual({ shirt: 'schwarz', shorts: 'weiß', socks: 'schwarz' });
+    expect(kleidungLesen('Wir spielen im schwarzen Trikot mit weißer Hose und schwarzen Stutzen.')).toEqual({ shirt: 'schwarz', shorts: 'weiß', socks: 'schwarz' });
+    expect(kleidungLesen('Trikot schwarz und Hose weiss, Stutzen schwarz')).toEqual({ shirt: 'schwarz', shorts: 'weiß', socks: 'schwarz' });
   });
 
   it('übernimmt Antworten, Auftrag, Kleidung und Kader; leere Felder ändern nichts', () => {

@@ -68,7 +68,7 @@ function crestFor(crests: Record<string, string> | undefined, team: string): str
 }
 
 /** Farbe eines Teils vergleichbar machen: „Schwarz“, „schwarz “, „schwarzes“ → „schwarz“. */
-const farbe = (t: string | undefined) => (t ?? '').toLowerCase().normalize('NFC').replace(/ß/g, 'ss').replace(/\(.*?\)/g, '').replace(/(es|er|e)\b/g, '').replace(/\s+/g, ' ').trim();
+const farbe = (t: string | undefined) => (t ?? '').toLowerCase().normalize('NFC').replace(/ß/g, 'ss').replace(/\(.*?\)/g, '').replace(/(es|er|en|em|e)\b/g, '').replace(/\s+/g, ' ').trim();
 
 /**
  * Bild für ein Teil der Kleidung: zuerst eigene Bilder der Kombination, sonst ein Bild desselben Teils in derselben
