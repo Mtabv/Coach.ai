@@ -4,6 +4,7 @@ import { effectivePhaseModel, effectiveSlides } from '../domain/dossierOptions';
 import { formFacts, goalPhases, keyStats } from '../domain/insights';
 import { selectKeyPlayers, type SelectedPlayer } from '../domain/players';
 import { kitLabel } from '../domain/questionnaire';
+import { KLEIDUNG_BILDER } from './kleidungBilder';
 import { normalizeName, opponentKpis, seasonSummary, teamResults, type TeamResult } from '../domain/stats';
 import { computeAwaySchedule, computeHomeSchedule, formatDate, isValidDate, isValidTime } from '../domain/time';
 import type { Answer, KitCombination, Match, Preparation, QuestionId, SlideKey, SourceRef, TeamProfile } from '../domain/types';
@@ -67,7 +68,7 @@ function crestFor(crests: Record<string, string> | undefined, team: string): str
 }
 
 /** Farbe eines Teils vergleichbar machen: „Schwarz“, „schwarz “, „schwarzes“ → „schwarz“. */
-const farbe = (t: string | undefined) => (t ?? '').toLowerCase().normalize('NFC').replace(/\(.*?\)/g, '').replace(/(es|er|e)\b/g, '').replace(/\s+/g, ' ').trim();
+const farbe = (t: string | undefined) => (t ?? '').toLowerCase().normalize('NFC').replace(/ß/g, 'ss').replace(/\(.*?\)/g, '').replace(/(es|er|e)\b/g, '').replace(/\s+/g, ' ').trim();
 
 /**
  * Bild für ein Teil der Kleidung: zuerst eigene Bilder der Kombination, sonst ein Bild desselben Teils in derselben
@@ -79,7 +80,8 @@ export function teilBild(kit: KitCombination, team: TeamProfile, teil: 'shirt' |
   const f = farbe(kit[teil]);
   if (!f) return undefined;
   const alle = [team.kits.home, team.kits.away, ...(team.kits.weitere ?? [])].filter(Boolean) as KitCombination[];
-  return alle.find((k) => k.images?.[teil] && farbe(k[teil]) === f)?.images?.[teil];
+  return alle.find((k) => k.images?.[teil] && farbe(k[teil]) === f)?.images?.[teil]
+    ?? KLEIDUNG_BILDER.find((b) => b.teil === teil && farbe(b.farbe) === f)?.src;
 }
 
 function kitView(kit: KitCombination | null, team: TeamProfile): KitView {

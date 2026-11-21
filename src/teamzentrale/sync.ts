@@ -11,6 +11,7 @@ import { abgleichen } from './merge';
 import { maskenDiktatStarten } from './maskenDiktat';
 import { kiUebungStarten } from './kiUebung';
 import { autorenMerken, autorenStarten, autorenStempeln } from './autoren';
+import { KLEIDUNG_BILDER } from '../dossier/kleidungBilder';
 import { betreuerAnpassen, dossierPdfStarten, kalenderAboStarten, rolle, spielerStarten, trainerZugaenge } from './rolle';
 
 type Obj = Record<string, unknown>;
@@ -359,6 +360,9 @@ async function holen() {
     }
   } catch { /* nächster Versuch beim nächsten Abgleich */ } finally { laeuft = false; }
 }
+
+// Standardbilder der Spielkleidung für die Teamzentrale (Spielvorbereitung › Kleidung)
+(window as unknown as { __11planKleidung?: unknown }).__11planKleidung = KLEIDUNG_BILDER;
 
 async function start() {
   const st = await (await fetch('/api/status', { credentials: 'same-origin' })).json();
