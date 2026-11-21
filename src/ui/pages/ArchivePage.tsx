@@ -5,6 +5,7 @@ import { ensureDraft } from '../../state/actions';
 import { useStore } from '../../state/store';
 import { Badge, Card, DemoBadge, Notice, Toast } from '../components';
 import { ScaledSlide } from '../dossier/SlideView';
+import { PdfKnopf } from '../dossier/PdfKnopf';
 
 export function ArchivePage() {
   const { state } = useStore();
@@ -119,9 +120,7 @@ export function ArchiveDossierPage({ dossierId }: { dossierId: string }) {
           >
             PPTX herunterladen
           </button>
-          <a className="btn" href={href({ name: 'druck', dossierId: d.id })}>
-            Druckansicht · Als PDF speichern
-          </a>
+          <PdfKnopf state={state} dossierId={d.id} label="Als PDF speichern (Querformat)" />
           {matchExists && (
             <button
               className="btn btn-ghost"

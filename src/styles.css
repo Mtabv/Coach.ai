@@ -1988,6 +1988,9 @@ select:focus-visible {
   margin: 0;
 }
 @media print {
+  html, body { margin: 0 !important; padding: 0 !important; width: 13.333in; }
+  .print-root { margin: 0 !important; }
+  .print-page { width: 13.333in !important; height: 7.5in !important; overflow: hidden; }
   .no-print {
     display: none !important;
   }

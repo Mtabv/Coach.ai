@@ -7,6 +7,7 @@ import { confirmDossier, currentDraft, ensureDraft } from '../../state/actions';
 import { contentForDossier } from '../../state/selectors';
 import { useStore } from '../../state/store';
 import { Badge, Card, Notice, Toast } from '../components';
+import { PdfKnopf } from '../dossier/PdfKnopf';
 import { anTeamzentrale, eingebettet } from '../zugang/vorbereitung';
 
 export function ExportTab({ match, team }: { match: Match; team: TeamProfile }) {
@@ -89,11 +90,9 @@ export function ExportTab({ match, team }: { match: Match; team: TeamProfile }) 
                 <button className="btn btn-primary" onClick={exportDraft} disabled={busy}>
                   {busy ? 'Erstellt …' : 'PPTX herunterladen'}
                 </button>
-                <a className="btn" href={href({ name: 'druck', dossierId: draft.id })}>
-                  Druckansicht öffnen · Als PDF speichern
-                </a>
+                <PdfKnopf state={state} dossierId={draft.id} label="Als PDF speichern (Querformat)" />
               </div>
-              <p className="muted small">PPTX: editierbare Textfelder und native Tabellen (PptxGenJS). PDF: über die Druckansicht und „Als PDF speichern“ im Druckdialog des Browsers.</p>
+              <p className="muted small">PPTX: editierbare Textfelder und native Tabellen (PptxGenJS). PDF: öffnet die Druckansicht im eigenen Fenster; im Druckdialog „Als PDF sichern“ wählen.</p>
             </>
           ) : (
             <button className="btn" onClick={() => update((s) => void ensureDraft(s, match.id))}>
