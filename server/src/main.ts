@@ -23,6 +23,7 @@ const handler = createHandler(db, {
   dossierOrdner: join(dataDir, 'dossiers'),
   aktualisierenDatei: join(dataDir, 'neu-bauen'),
   spracheUrl: env.COACHAI_SPRACHE_URL || undefined,
+  pdfUrl: env.COACHAI_PDF_URL || undefined,
   // Push: Schlüssel erzeugt der Server selbst (Datenordner). Kontaktangabe für die Push-Dienste.
   push: pushDienst(db, join(dataDir, 'vapid.json'), adresse.startsWith('https:') ? adresse : 'mailto:push@11plan.invalid'),
   ki: env.ANTHROPIC_API_KEY ? kiDienst(env.ANTHROPIC_API_KEY, env.COACHAI_KI_URL || undefined) : undefined,

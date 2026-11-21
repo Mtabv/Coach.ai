@@ -120,7 +120,7 @@ export function ArchiveDossierPage({ dossierId }: { dossierId: string }) {
           >
             PPTX herunterladen
           </button>
-          <PdfKnopf state={state} dossierId={d.id} label="Als PDF speichern (Querformat)" />
+          <PdfKnopf content={content} version={d.version} onMeldung={setToast} />
           {matchExists && (
             <button
               className="btn btn-ghost"

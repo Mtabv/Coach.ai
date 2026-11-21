@@ -34,6 +34,8 @@ export interface Config {
   dossierStart?: string;
   /** Merkzettel für den Bau-Container: Teamzentrale sofort neu bauen (Knopf „Jetzt aktualisieren“). */
   aktualisierenDatei?: string;
+  /** Interner PDF-Dienst (Chrome): rendert Dossier-Folien zu einer PDF-Datei. */
+  pdfUrl?: string;
   /** Ordner für die freigegebenen Spieltagsdossiers als PDF (je Spiel eine Datei), für Spieler zum Ansehen. */
   dossierOrdner?: string;
   /** Interner Sprachdienst (Whisper auf dem eigenen Server): Aufnahme rein, Text raus. */
@@ -347,6 +349,21 @@ export function createHandler(db: Db, cfg: Config) {
       if (!t) { t = randomBytes(24).toString('base64url'); db.prepare('INSERT INTO kalender_abos (token, user_id, created_at) VALUES (?, ?, ?)').run(t, u.id, Date.now()); }
       const https = `${cfg.publicUrl.replace(/\/$/, '')}/kalender/${t}.ics`;
       return send(res, 200, { https, webcal: https.replace(/^https?:/, 'webcal:') });
+    }
+    // ---------- PDF-Export: Folien wie in der Vorschau, als fertige Datei ----------
+    if (path === '/api/dossier/pdf' && m === 'POST') {
+      requireStab(req);
+      if (!cfg.pdfUrl) throw new HttpError(503, 'Der PDF-Export ist auf diesem Server nicht eingerichtet.');
+      let size = 0; const chunks: Buffer[] = [];
+      for await (const c of req) { size += (c as Buffer).length; if (size > MAX_PDF) throw new HttpError(413, 'Das Dossier ist zu groß.'); chunks.push(c as Buffer); }
+      let r: Response;
+      try {
+        r = await fetch(cfg.pdfUrl.replace(/\/$/, '') + '/pdf', { method: 'POST', body: Buffer.concat(chunks), headers: { 'Content-Type': 'application/json' }, signal: AbortSignal.timeout(120_000) });
+      } catch { throw new HttpError(502, 'Der PDF-Dienst ist gerade nicht erreichbar. Bitte gleich noch einmal versuchen.'); }
+      if (!r.ok) throw new HttpError(502, 'Die PDF konnte nicht erzeugt werden. Bitte noch einmal versuchen.');
+      const datei = Buffer.from(await r.arrayBuffer());
+      res.writeHead(200, { 'Content-Type': 'application/pdf', 'Content-Length': datei.length, 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' });
+      return res.end(datei);
     }
     // ---------- Spieltagsdossier als PDF: Trainer gibt frei, alle Angemeldeten können es ansehen ----------
     if (path === '/api/dossier-pdf' && m === 'GET') {

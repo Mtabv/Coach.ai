@@ -1,25 +1,44 @@
-import type { AppState } from '../../domain/types';
-import { href } from '../../router';
-import { eingebettet } from '../zugang/vorbereitung';
+import { useState } from 'react';
+import type { DossierContent } from '../../dossier/model';
+import { saveFile } from '../../export/hostBridge';
+
+/** Dateiname wie beim PowerPoint-Export, nur mit .pdf. */
+const dateiname = (c: DossierContent, version?: number) =>
+  `Dossier_${c.meta.matchLabel}_${c.meta.dateLabel}${version ? `_V${version}` : ''}`
+    // ASCII-sicher wie beim PowerPoint-Export: manche Browser verwerfen Umlaute im Dateinamen
+    .replace(/ä/g, 'ae').replace(/ö/g, 'oe').replace(/ü/g, 'ue').replace(/Ä/g, 'Ae').replace(/Ö/g, 'Oe').replace(/Ü/g, 'Ue').replace(/ß/g, 'ss')
+    .replace(/[^A-Za-z0-9.-]+/g, '_').replace(/_+/g, '_') + '.pdf';
 
 /**
- * „Als PDF speichern“: Eingebettet in die Teamzentrale druckt der Browser sonst nur den Rahmen (mit Rändern,
- * abgeschnittenen Inhalten). Deshalb dort ein eigenes Fenster mit der Druckansicht im Querformat; der aktuelle
- * Stand wird direkt übergeben, der Druckdialog startet von selbst, sobald alle Bilder geladen sind.
+ * „PDF herunterladen“: Der Server rendert genau diese Folien mit Chrome (wie die Vorschau) und schickt eine
+ * fertige PDF-Datei zurück – ohne Druckdialog, randlos, Querformat.
  */
-export function PdfKnopf({ state, dossierId, label }: { state: AppState; dossierId: string; label: string }) {
-  if (!eingebettet) return <a className="btn" href={href({ name: 'druck', dossierId })}>{label}</a>;
+export function PdfKnopf({ content, version, onMeldung }: { content: DossierContent; version?: number; onMeldung?: (t: string) => void }) {
+  const [laeuft, setLaeuft] = useState(false);
   return (
     <button
       type="button"
-      className="btn"
-      onClick={() => {
-        (window as unknown as { __11planDruckStand?: AppState }).__11planDruckStand = state;
-        const w = window.open(`/?dossier=1&drucken=1${href({ name: 'druck', dossierId })}`, '_blank');
-        if (!w) window.alert('Das Fenster für die PDF wurde blockiert. Bitte Pop-ups für 11plan.de erlauben und noch einmal tippen.');
+      className="btn btn-primary"
+      disabled={laeuft}
+      onClick={async () => {
+        setLaeuft(true);
+        try {
+          const r = await fetch('/api/dossier/pdf', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', 'X-CoachAI': '1' }, body: JSON.stringify(content) });
+          if (!r.ok) {
+            const b = (await r.json().catch(() => ({}))) as { fehler?: string };
+            throw new Error(b.fehler || 'Die PDF konnte nicht erzeugt werden.');
+          }
+          // als Datei speichern (nicht im PDF-Betrachter öffnen), damit der Dateiname erhalten bleibt
+          await saveFile(dateiname(content, version), new Blob([await r.arrayBuffer()], { type: 'application/octet-stream' }));
+          onMeldung?.('PDF heruntergeladen.');
+        } catch (e) {
+          onMeldung?.((e as Error).message);
+        } finally {
+          setLaeuft(false);
+        }
       }}
     >
-      {label}
+      {laeuft ? 'PDF wird erstellt …' : 'PDF herunterladen'}
     </button>
   );
 }

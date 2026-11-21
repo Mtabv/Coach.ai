@@ -11,6 +11,7 @@ services:
       COACHAI_DATENDIENST_KEY: ${COACHAI_DATENDIENST_KEY:?fehlt in .env}
       COACHAI_DATENDIENST_URL: http://datendienst:8000
       COACHAI_SPRACHE_URL: http://sprachdienst:8100
+      COACHAI_PDF_URL: http://pdfdienst:8300
       # KI-Verteilung (Claude Sonnet 5.5). Ohne Schlüssel bleibt die Funktion aus, alles andere läuft normal.
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       COACHAI_ADRESSE: https://${COACHAI_DOMAIN:?fehlt in .env}
@@ -69,6 +70,21 @@ services:
     mem_limit: 2g
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8100/status', timeout=5)"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+
+  # PDF-Export des Spieltagsdossiers: Chrome rendert die Folien wie in der Vorschau zu einer PDF-Datei.
+  pdfdienst:
+    build: { context: .., dockerfile: deploy/Dockerfile.pdfdienst }
+    restart: unless-stopped
+    environment:
+      APP_URL: http://app:3000
+    networks: [intern]
+    mem_limit: 1g
+    shm_size: 256m
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:8300/status').then(r=>process.exit(r.ok?0:1),()=>process.exit(1))"]
       interval: 60s
       timeout: 10s
       retries: 3

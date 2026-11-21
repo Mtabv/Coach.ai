@@ -90,9 +90,9 @@ export function ExportTab({ match, team }: { match: Match; team: TeamProfile }) 
                 <button className="btn btn-primary" onClick={exportDraft} disabled={busy}>
                   {busy ? 'Erstellt …' : 'PPTX herunterladen'}
                 </button>
-                <PdfKnopf state={state} dossierId={draft.id} label="Als PDF speichern (Querformat)" />
+                <PdfKnopf content={contentForDossier(state, draft)!} version={draft.version} onMeldung={setToast} />
               </div>
-              <p className="muted small">PPTX: editierbare Textfelder und native Tabellen (PptxGenJS). PDF: öffnet die Druckansicht im eigenen Fenster; im Druckdialog „Als PDF sichern“ wählen.</p>
+              <p className="muted small">PPTX: editierbare Textfelder und native Tabellen (PptxGenJS). PDF: fertige Datei im Querformat, genau wie die Vorschau.</p>
             </>
           ) : (
             <button className="btn" onClick={() => update((s) => void ensureDraft(s, match.id))}>
