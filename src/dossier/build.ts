@@ -66,14 +66,30 @@ function crestFor(crests: Record<string, string> | undefined, team: string): str
   return key ? crests[key] : undefined;
 }
 
+/** Farbe eines Teils vergleichbar machen: „Schwarz“, „schwarz “, „schwarzes“ → „schwarz“. */
+const farbe = (t: string | undefined) => (t ?? '').toLowerCase().normalize('NFC').replace(/\(.*?\)/g, '').replace(/(es|er|e)\b/g, '').replace(/\s+/g, ' ').trim();
+
+/**
+ * Bild für ein Teil der Kleidung: zuerst eigene Bilder der Kombination, sonst ein Bild desselben Teils in derselben
+ * Farbe aus den hinterlegten Kombinationen (Heim, Auswärts, weitere). So zeigt „Trikot schwarz“ das schwarze Trikot,
+ * auch wenn Hose und Stutzen anders kombiniert sind.
+ */
+export function teilBild(kit: KitCombination, team: TeamProfile, teil: 'shirt' | 'shorts' | 'socks'): string | undefined {
+  if (kit.images?.[teil]) return kit.images[teil];
+  const f = farbe(kit[teil]);
+  if (!f) return undefined;
+  const alle = [team.kits.home, team.kits.away, ...(team.kits.weitere ?? [])].filter(Boolean) as KitCombination[];
+  return alle.find((k) => k.images?.[teil] && farbe(k[teil]) === f)?.images?.[teil];
+}
+
 function kitView(kit: KitCombination | null, team: TeamProfile): KitView {
   if (!kit || !(kit.shirt || kit.shorts || kit.socks)) return { label: fv('Spielkleidung offen', 'offen'), images: [] };
-  const same = (k: KitCombination | null) => k && k.shirt === kit.shirt && k.shorts === kit.shorts && k.socks === kit.socks;
-  const imgs = kit.images ?? (same(team.kits.home) ? team.kits.home?.images : same(team.kits.away) ? team.kits.away?.images : undefined) ?? {};
   const images: KitView['images'] = [];
-  if (imgs.shirt) images.push({ part: 'Trikot', src: imgs.shirt, text: kit.shirt });
-  if (imgs.shorts) images.push({ part: 'Hose', src: imgs.shorts, text: kit.shorts });
-  if (imgs.socks) images.push({ part: 'Stutzen', src: imgs.socks, text: kit.socks });
+  const teile = [['shirt', 'Trikot'], ['shorts', 'Hose'], ['socks', 'Stutzen']] as const;
+  for (const [teil, name] of teile) {
+    const src = teilBild(kit, team, teil);
+    if (src) images.push({ part: name, src, text: kit[teil] });
+  }
   return { label: fv(kitLabel(kit), /Beispiel/i.test(kitLabel(kit)) ? 'beispiel' : 'ok'), images };
 }
 

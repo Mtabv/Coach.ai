@@ -255,6 +255,18 @@ export function TeamPage() {
         <Card title="Spielkleidung">
           <KitEditor label="Heim" kit={team.kits.home} onChange={(k) => set((t) => (t.kits.home = k))} />
           <KitEditor label="Auswärts" kit={team.kits.away} onChange={(k) => set((t) => (t.kits.away = k))} />
+          {(team.kits.weitere ?? []).map((w, i) => (
+            <KitEditor
+              key={i}
+              label={`Weitere Kombination ${i + 1}`}
+              kit={w}
+              onChange={(k) => set((t) => { const l = [...(t.kits.weitere ?? [])]; if (k) l[i] = k; else l.splice(i, 1); t.kits.weitere = l; })}
+            />
+          ))}
+          <button type="button" className="btn btn-ghost btn-small" onClick={() => set((t) => (t.kits.weitere = [...(t.kits.weitere ?? []), { shirt: '', shorts: '', socks: '' }]))}>
+            + Weitere Kombination (z. B. schwarzes Trikot)
+          </button>
+          <p className="muted small">Bilder gelten je Teil und Farbe: Steht im Spiel „Trikot schwarz“, erscheint das Bild des schwarzen Trikots – egal, mit welcher Hose kombiniert.</p>
           <TextArea label="Hinweise" value={team.kits.notes ?? ''} onChange={(v) => set((t) => (t.kits.notes = v))} rows={2} />
         </Card>
 

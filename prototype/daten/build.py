@@ -369,7 +369,10 @@ out = dict(
                place=own_row['place'], teams=len(table), home=hr and hr['points'], homeG=hr and hr['games'], away=ar and ar['points'], awayG=ar and ar['games'], games=own_row['games'], points=own_row['points']),
     bins=dict(own_for=own_for, own_against=own_against, league=lb_scaled, full=full, league_full=league_full, league_games=len(lg)),
     facts=dict(opp=facts_opp, own=facts_own), insights=dict(opp=ins_opp, own=ins_own), next=nxt['id'],
-    schedule=team['schedule'], kit=dict(home={k: team['kits']['home'][k] for k in ('shirt', 'shorts', 'socks')}, images=team['kits']['home'].get('images') or {}),
+    schedule=team['schedule'], kit=dict(home={k: team['kits']['home'][k] for k in ('shirt', 'shorts', 'socks')}, images=team['kits']['home'].get('images') or {},
+             # alle Kombinationen mit Bildern (Heim, Auswärts, weitere) – Bilder werden je Teil und Farbe gewählt
+             sets=[dict(shirt=k.get('shirt', ''), shorts=k.get('shorts', ''), socks=k.get('socks', ''), images=k.get('images') or {})
+                   for k in [team['kits'].get('home'), team['kits'].get('away'), *(team['kits'].get('weitere') or [])] if k]),
     asks=[q for q in [
         (f"{nxt['opp']} hat {late_c} von {tot_c} Gegentoren ab der 76. Minute kassiert ({round(lc_share*100)} %, Ligaschnitt {round(league_late_share*100)} %). Soll die Schlussphase in „Unser Plan“, etwa mit frischen Kräften von der Bank?" if tot_c else None),
         (f"Wenn {nxt['opp']} zuerst trifft, gewinnt das Team {first_wins} von {first_for} Spielen. Wie wollen wir in die ersten 15 Minuten gehen?" if first_for else None),

@@ -91,6 +91,8 @@ export interface KitProfile {
   /** Bekannte Kombinationen; die erste gilt als Vorschlag für Heimspiele. */
   home: KitCombination | null;
   away: KitCombination | null;
+  /** Weitere Kombinationen (z. B. schwarzes Trikot als Ausweich); liefern Bilder je Teil und Farbe. */
+  weitere?: KitCombination[];
   notes?: string;
 }
 
